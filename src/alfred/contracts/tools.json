@@ -1,0 +1,787 @@
+{
+  "version": "1.0",
+  "tools": [
+    {
+      "name": "search_files",
+      "description": "Find files by their name. To search inside file text use search_file_contents; for notes use search_notes.",
+      "inputSchema": {
+        "properties": {
+          "query": {
+            "description": "Text the file NAME should contain",
+            "title": "Query",
+            "type": "string"
+          },
+          "folder": {
+            "title": "Folder",
+            "type": "string"
+          },
+          "extension": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "File extension without the dot, e.g. 'pdf'",
+            "title": "Extension"
+          },
+          "modified_within_days": {
+            "anyOf": [
+              {
+                "minimum": 1,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Only files changed in the last N days",
+            "title": "Modified Within Days"
+          }
+        },
+        "required": [
+          "query",
+          "folder"
+        ],
+        "title": "search_filesArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "_meta": {
+        "alfred/group": "files",
+        "alfred/needs_confirmation": false
+      }
+    },
+    {
+      "name": "search_file_contents",
+      "description": "Find files whose text contains a phrase (txt, md, pdf, code).",
+      "inputSchema": {
+        "properties": {
+          "text": {
+            "description": "Text the file CONTENTS should contain",
+            "title": "Text",
+            "type": "string"
+          },
+          "folder": {
+            "title": "Folder",
+            "type": "string"
+          },
+          "extension": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "File extension without the dot, e.g. 'pdf'",
+            "title": "Extension"
+          }
+        },
+        "required": [
+          "text",
+          "folder"
+        ],
+        "title": "search_file_contentsArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "_meta": {
+        "alfred/group": "files",
+        "alfred/needs_confirmation": false
+      }
+    },
+    {
+      "name": "list_directory",
+      "description": "List the files and folders directly inside a folder.",
+      "inputSchema": {
+        "properties": {
+          "path": {
+            "title": "Path",
+            "type": "string"
+          }
+        },
+        "required": [
+          "path"
+        ],
+        "title": "list_directoryArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "_meta": {
+        "alfred/group": "files",
+        "alfred/needs_confirmation": false
+      }
+    },
+    {
+      "name": "read_file",
+      "description": "Read the text of a txt, md or pdf file.",
+      "inputSchema": {
+        "properties": {
+          "path": {
+            "title": "Path",
+            "type": "string"
+          },
+          "max_chars": {
+            "default": 4000,
+            "maximum": 20000,
+            "minimum": 100,
+            "title": "Max Chars",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "path"
+        ],
+        "title": "read_fileArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "_meta": {
+        "alfred/group": "files",
+        "alfred/needs_confirmation": false
+      }
+    },
+    {
+      "name": "disk_usage",
+      "description": "Show free space and the largest folders/files under a path.",
+      "inputSchema": {
+        "properties": {
+          "path": {
+            "title": "Path",
+            "type": "string"
+          },
+          "top_n": {
+            "default": 10,
+            "maximum": 50,
+            "minimum": 1,
+            "title": "Top N",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "path"
+        ],
+        "title": "disk_usageArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "_meta": {
+        "alfred/group": "files",
+        "alfred/needs_confirmation": false
+      }
+    },
+    {
+      "name": "move_file",
+      "description": "Move a file or folder. Never overwrites.",
+      "inputSchema": {
+        "properties": {
+          "source": {
+            "title": "Source",
+            "type": "string"
+          },
+          "destination": {
+            "description": "Target folder or full new path",
+            "title": "Destination",
+            "type": "string"
+          }
+        },
+        "required": [
+          "source",
+          "destination"
+        ],
+        "title": "move_fileArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": false
+      },
+      "_meta": {
+        "alfred/group": "files",
+        "alfred/needs_confirmation": true
+      }
+    },
+    {
+      "name": "rename_file",
+      "description": "Rename a file or folder in place. Never overwrites.",
+      "inputSchema": {
+        "properties": {
+          "path": {
+            "title": "Path",
+            "type": "string"
+          },
+          "new_name": {
+            "description": "New file name only, no folder",
+            "title": "New Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "path",
+          "new_name"
+        ],
+        "title": "rename_fileArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": false
+      },
+      "_meta": {
+        "alfred/group": "files",
+        "alfred/needs_confirmation": true
+      }
+    },
+    {
+      "name": "copy_file",
+      "description": "Copy a file. Never overwrites.",
+      "inputSchema": {
+        "properties": {
+          "source": {
+            "title": "Source",
+            "type": "string"
+          },
+          "destination": {
+            "description": "Target folder or full new path",
+            "title": "Destination",
+            "type": "string"
+          }
+        },
+        "required": [
+          "source",
+          "destination"
+        ],
+        "title": "copy_fileArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      },
+      "_meta": {
+        "alfred/group": "files",
+        "alfred/needs_confirmation": true
+      }
+    },
+    {
+      "name": "zip_folder",
+      "description": "Compress a folder into a .zip. Never overwrites.",
+      "inputSchema": {
+        "properties": {
+          "source": {
+            "title": "Source",
+            "type": "string"
+          },
+          "destination": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Path of the .zip; default: next to the folder",
+            "title": "Destination"
+          }
+        },
+        "required": [
+          "source"
+        ],
+        "title": "zip_folderArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      },
+      "_meta": {
+        "alfred/group": "files",
+        "alfred/needs_confirmation": true
+      }
+    },
+    {
+      "name": "organize_folder",
+      "description": "Sort a folder's loose files into subfolders by type or by month. Shows the full plan before running.",
+      "inputSchema": {
+        "properties": {
+          "path": {
+            "title": "Path",
+            "type": "string"
+          },
+          "strategy": {
+            "default": "by_type",
+            "enum": [
+              "by_type",
+              "by_date"
+            ],
+            "title": "Strategy",
+            "type": "string"
+          }
+        },
+        "required": [
+          "path"
+        ],
+        "title": "organize_folderArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": false
+      },
+      "_meta": {
+        "alfred/group": "files",
+        "alfred/needs_confirmation": true
+      }
+    },
+    {
+      "name": "move_to_recycle_bin",
+      "description": "Delete a file or folder by moving it to the Recycle Bin (restorable). The only way to delete.",
+      "inputSchema": {
+        "properties": {
+          "path": {
+            "title": "Path",
+            "type": "string"
+          }
+        },
+        "required": [
+          "path"
+        ],
+        "title": "move_to_recycle_binArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": false
+      },
+      "_meta": {
+        "alfred/group": "files",
+        "alfred/needs_confirmation": true
+      }
+    },
+    {
+      "name": "open_path",
+      "description": "Open a file or folder in its default app. Refuses programs and scripts.",
+      "inputSchema": {
+        "properties": {
+          "path": {
+            "title": "Path",
+            "type": "string"
+          }
+        },
+        "required": [
+          "path"
+        ],
+        "title": "open_pathArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      },
+      "_meta": {
+        "alfred/group": "open",
+        "alfred/needs_confirmation": false
+      }
+    },
+    {
+      "name": "open_app",
+      "description": "Launch an installed app from the Start Menu.",
+      "inputSchema": {
+        "properties": {
+          "name": {
+            "description": "App name as in the Start Menu, e.g. 'Spotify'",
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "open_appArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      },
+      "_meta": {
+        "alfred/group": "open",
+        "alfred/needs_confirmation": false
+      }
+    },
+    {
+      "name": "system_info",
+      "description": "CPU, RAM, battery and Windows version.",
+      "inputSchema": {
+        "properties": {},
+        "title": "system_infoArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "_meta": {
+        "alfred/group": "system",
+        "alfred/needs_confirmation": false
+      }
+    },
+    {
+      "name": "top_processes",
+      "description": "The processes using the most CPU or memory right now.",
+      "inputSchema": {
+        "properties": {
+          "sort_by": {
+            "default": "cpu",
+            "enum": [
+              "cpu",
+              "memory"
+            ],
+            "title": "Sort By",
+            "type": "string"
+          },
+          "n": {
+            "default": 5,
+            "maximum": 25,
+            "minimum": 1,
+            "title": "N",
+            "type": "integer"
+          }
+        },
+        "title": "top_processesArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "_meta": {
+        "alfred/group": "system",
+        "alfred/needs_confirmation": false
+      }
+    },
+    {
+      "name": "network_status",
+      "description": "Whether the laptop is online, the Wi-Fi name and the local IP address.",
+      "inputSchema": {
+        "properties": {},
+        "title": "network_statusArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "_meta": {
+        "alfred/group": "system",
+        "alfred/needs_confirmation": false
+      }
+    },
+    {
+      "name": "port_in_use",
+      "description": "Which process (name and PID) is using a TCP port.",
+      "inputSchema": {
+        "properties": {
+          "port": {
+            "maximum": 65535,
+            "minimum": 1,
+            "title": "Port",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "port"
+        ],
+        "title": "port_in_useArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "_meta": {
+        "alfred/group": "developer",
+        "alfred/needs_confirmation": false
+      }
+    },
+    {
+      "name": "git_status",
+      "description": "A git repo's branch, commits ahead/behind and changed files.",
+      "inputSchema": {
+        "properties": {
+          "repo_path": {
+            "title": "Repo Path",
+            "type": "string"
+          }
+        },
+        "required": [
+          "repo_path"
+        ],
+        "title": "git_statusArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "_meta": {
+        "alfred/group": "developer",
+        "alfred/needs_confirmation": false
+      }
+    },
+    {
+      "name": "create_note",
+      "description": "Save a new note in Alfred's notes folder.",
+      "inputSchema": {
+        "properties": {
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "content": {
+            "title": "Content",
+            "type": "string"
+          }
+        },
+        "required": [
+          "title",
+          "content"
+        ],
+        "title": "create_noteArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      },
+      "_meta": {
+        "alfred/group": "productivity",
+        "alfred/needs_confirmation": false
+      }
+    },
+    {
+      "name": "search_notes",
+      "description": "Search the notes saved with create_note.",
+      "inputSchema": {
+        "properties": {
+          "query": {
+            "title": "Query",
+            "type": "string"
+          }
+        },
+        "required": [
+          "query"
+        ],
+        "title": "search_notesArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "_meta": {
+        "alfred/group": "productivity",
+        "alfred/needs_confirmation": false
+      }
+    },
+    {
+      "name": "set_reminder",
+      "description": "Show a Windows notification at a time (while Alfred is running).",
+      "inputSchema": {
+        "properties": {
+          "text": {
+            "title": "Text",
+            "type": "string"
+          },
+          "time": {
+            "description": "'YYYY-MM-DD HH:MM' (24h, local) or relative like 'in 20 minutes'",
+            "title": "Time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "text",
+          "time"
+        ],
+        "title": "set_reminderArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      },
+      "_meta": {
+        "alfred/group": "productivity",
+        "alfred/needs_confirmation": false
+      }
+    },
+    {
+      "name": "list_reminders",
+      "description": "List upcoming reminders.",
+      "inputSchema": {
+        "properties": {},
+        "title": "list_remindersArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "_meta": {
+        "alfred/group": "productivity",
+        "alfred/needs_confirmation": false
+      }
+    },
+    {
+      "name": "remember",
+      "description": "Save a fact the user asked Alfred to remember, for later chats.",
+      "inputSchema": {
+        "properties": {
+          "fact": {
+            "description": "One self-contained fact, e.g. 'Resume folder is D:\\docs\\resume'",
+            "title": "Fact",
+            "type": "string"
+          }
+        },
+        "required": [
+          "fact"
+        ],
+        "title": "rememberArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      },
+      "_meta": {
+        "alfred/group": "memory",
+        "alfred/needs_confirmation": false
+      }
+    },
+    {
+      "name": "recall",
+      "description": "Look up saved facts relevant to the query (e.g. where something is).",
+      "inputSchema": {
+        "properties": {
+          "query": {
+            "title": "Query",
+            "type": "string"
+          }
+        },
+        "required": [
+          "query"
+        ],
+        "title": "recallArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "_meta": {
+        "alfred/group": "memory",
+        "alfred/needs_confirmation": false
+      }
+    },
+    {
+      "name": "calculate",
+      "description": "Evaluate an arithmetic expression exactly. Supports + - * / % ** ( ) and sqrt, round, abs.",
+      "inputSchema": {
+        "properties": {
+          "expression": {
+            "description": "Arithmetic, e.g. '34999 * 18 / 100'",
+            "title": "Expression",
+            "type": "string"
+          }
+        },
+        "required": [
+          "expression"
+        ],
+        "title": "calculateArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "_meta": {
+        "alfred/group": "utility",
+        "alfred/needs_confirmation": false
+      }
+    }
+  ]
+}

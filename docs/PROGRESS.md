@@ -8,7 +8,7 @@ Each phase gate adds one line to the log below. Full detail for each phase is in
 |---|---|---|---|---|---|
 | 0 | Repo & accounts setup | M1 | done | 2026-10-22 | `scripts/check_setup.py`: all 10 required + 3 optional checks OK |
 | 1 | Feasibility spikes | M1 | done | 2026-10-22 | `spikes/*.py`; numbers in decisions.md |
-| 2 | Tool contracts | M1 | not started | | |
+| 2 | Tool contracts | M1 | done | 2026-10-22 | `pytest tests/contracts` (11 passed); tag `contracts-v1.0` |
 | 3 | Eval harness, test sets & baselines | M1 | not started | | |
 | 4 | Training dataset | M1 | not started | | |
 | 5 | SFT + export | M1 | not started | | |
@@ -28,3 +28,4 @@ Each phase gate adds one line to the log below. Full detail for each phase is in
 - 2026-10-22 · Phase 0 · passed · `uv run python scripts/check_setup.py` → all required checks OK (git, GitHub remote, uv, Ollama 0.40.8, HF write token, gated xLAM + FunctionGemma access, Kaggle API, Groq, Cerebras, 80 GB free); optional Gemini, Node, Claude Desktop OK. A bad key was confirmed to fail the check.
 - 2026-10-22 · Phase 1 · passed with an open issue · tool calling 4/4, teacher 10/10 valid on 3 candidates, embedder embeddinggemma, Kaggle 2× T4; warm TTFT 20.9 s with 25 schemas (> 8 s rule → compact schemas required in Phase 2; latency fix pending owner decision)
 - 2026-10-22 · Phase 1 latency · resolved (pending serving decision) · Ollama reprocesses the whole prompt per request (no prefix reuse for Qwen3.5); llama-server reuses 1,886 cached tokens → warm TTFT 2.1 s; saved prefix restores in ~125 ms → first request after restart 1.6–1.9 s
+- 2026-10-22 · Phase 2 · passed · `uv run pytest tests/contracts` → 11 passed (25 names = spec, flags = spec, tools.json current, schemas meta-valid, deterministic date-only prompt, 2,279 prompt tokens); live llama-server check OK; tag `contracts-v1.0`
