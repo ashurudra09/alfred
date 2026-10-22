@@ -5,7 +5,7 @@ An offline laptop butler for Windows. A small open model (Qwen3.5-2B), fine-tune
 The research question: can a small fine-tuned model match a large cloud model on tool calling for a fixed tool set, at a fraction of the size and cost, fully offline?
 
 ## Status
-Phases 0–1 done (Phase 1 left CPU latency as an open issue); next is Phase 2 (tool contracts). See [docs/PROGRESS.md](docs/PROGRESS.md).
+Phases 0–1 done (warm CPU latency 2.1 s with llama-server); next is Phase 2 (tool contracts). See [docs/PROGRESS.md](docs/PROGRESS.md).
 
 ## Docs
 - [Requirements](docs/requirements.md): what is being built.

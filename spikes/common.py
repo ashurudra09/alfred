@@ -59,12 +59,12 @@ def post(path, body, timeout=600):
     return urllib.request.urlopen(req, timeout=timeout)
 
 
-def chat(user, tools=TOOLS, model=MODEL):
+def chat(user, tools=TOOLS, model=MODEL, **options):
     """Streamed /api/chat with think=false. Returns (tool_calls, content, stats) with ttft/total in seconds."""
     t0 = time.perf_counter()
     ttft, content, calls, final = None, "", [], {}
     body = {"model": model, "messages": [{"role": "system", "content": SYSTEM}, {"role": "user", "content": user}],
-            "tools": tools, "think": False, "stream": True, "options": {"temperature": 0}}
+            "tools": tools, "think": False, "stream": True, "options": {"temperature": 0, **options}}
     with post("/api/chat", body) as r:
         for line in r:
             chunk = json.loads(line)
@@ -77,7 +77,8 @@ def chat(user, tools=TOOLS, model=MODEL):
                 final = chunk
     stats = {"ttft": ttft, "total": time.perf_counter() - t0, "prompt_tokens": final.get("prompt_eval_count"),
              "load_s": final.get("load_duration", 0) / 1e9, "gen_tokens": final.get("eval_count"),
-             "tok_per_s": final.get("eval_count", 0) / max(final.get("eval_duration", 1), 1) * 1e9}
+             "tok_per_s": final.get("eval_count", 0) / max(final.get("eval_duration", 1), 1) * 1e9,
+             "prompt_s": final.get("prompt_eval_duration", 0) / 1e9}
     return calls, content, stats
 
 
