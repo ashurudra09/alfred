@@ -7,7 +7,7 @@ Each phase gate adds one line to the log below. Full detail for each phase is in
 | # | Phase | Milestone | Status | Gate passed | Evidence |
 |---|---|---|---|---|---|
 | 0 | Repo & accounts setup | M1 | done | 2026-10-22 | `scripts/check_setup.py`: all 10 required + 3 optional checks OK |
-| 1 | Feasibility spikes | M1 | not started | | |
+| 1 | Feasibility spikes | M1 | done (latency open) | 2026-10-22 | `spikes/*.py`; numbers in decisions.md |
 | 2 | Tool contracts | M1 | not started | | |
 | 3 | Eval harness, test sets & baselines | M1 | not started | | |
 | 4 | Training dataset | M1 | not started | | |
@@ -26,3 +26,4 @@ Each phase gate adds one line to the log below. Full detail for each phase is in
 ## Gate log
 <!-- One line per gate: YYYY-MM-DD · phase · result · evidence -->
 - 2026-10-22 · Phase 0 · passed · `uv run python scripts/check_setup.py` → all required checks OK (git, GitHub remote, uv, Ollama 0.40.8, HF write token, gated xLAM + FunctionGemma access, Kaggle API, Groq, Cerebras, 80 GB free); optional Gemini, Node, Claude Desktop OK. A bad key was confirmed to fail the check.
+- 2026-10-22 · Phase 1 · passed with an open issue · tool calling 4/4, teacher 10/10 valid on 3 candidates, embedder embeddinggemma, Kaggle 2× T4; warm TTFT 20.9 s with 25 schemas (> 8 s rule → compact schemas required in Phase 2; latency fix pending owner decision)

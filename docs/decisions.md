@@ -22,3 +22,12 @@ Each decision with its date and reason. Newest at the bottom.
 - **Kaggle uses the new `KGAT_` access token** stored in `%USERPROFILE%\.kaggle\access_token` (not the old `kaggle.json`). The Kaggle CLI is installed as a uv tool, not a project dependency.
 - **Dependencies are added in the phase that first uses them.** Phase 0 only needs `huggingface_hub` and `python-dotenv`.
 - **Backup teacher API: Cerebras.**
+
+## 2026-10-22: Phase 1 (feasibility spikes, `spikes/`)
+- **Laptop:** i7-1255U (10 cores / 12 threads), 15.7 GB RAM, Iris Xe (no CUDA). Ollama 0.40.8.
+- **Tool calling works:** `qwen3.5:2b`, `think=false`, returns structured `tool_calls` (`spikes/toolcall.py`: 4/4, incl. a direct answer with 25 tools loaded).
+- **Latency with 25 dummy schemas (~1,880 prompt tokens)** (`spikes/latency.py`, median of 5): cold TTFT 70.4 s (load ~7 s), **warm TTFT 20.9 s**, generation ~8–9 tok/s. Warm is over the ~8 s rule, so **compact tool descriptions are a Phase 2 requirement**. Most of the warm time is prompt processing, so the shared prefix does not appear to be reused between requests (unconfirmed; suspected cause: Qwen3.5's hybrid linear-attention layers limit llama.cpp prefix-cache reuse). **Open:** how to get under the 5 s target (cache investigation, `llama-server --cache-reuse`, top-k tool retrieval); owner to decide.
+- **Teacher:** all candidates returned 10/10 schema-valid JSON in 2–3 s (`spikes/teacher.py`). Primary **Groq `openai/gpt-oss-120b`** (Apache 2.0); backup Cerebras `gpt-oss-120b`; alternative Groq `qwen/qwen3.8-27b` (most casual phrasing). Teacher paths were inconsistent (`%USERNAME%`, one `AppData` path), so Phase 4 prompts must supply the known folders. The pilot gate in Phase 4 decides the final teacher.
+- **Cloud reference model:** Groq `openai/gpt-oss-120b` with the same tools (Gemini optional).
+- **Embedder: `embeddinggemma`** (768-d, 6/6 top-1 recall on the sanity set, 38 ms/query); `nomic-embed-text` also 6/6 but slower (43 ms).
+- **Kaggle GPU: 2× Tesla T4, 15 GB each** (`spikes/kaggle_gpu`, private kernel). Weekly quota is on the Kaggle settings page (not readable from the CLI).
