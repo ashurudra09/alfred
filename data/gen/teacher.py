@@ -39,6 +39,7 @@ CATEGORY = {"single": "tool_call", "ask": "ask", "declined": "confirm_declined",
             "parallel": "multi_step", "confusable": "tool_call", "direct": "direct", "cannot": "cannot",
             "refuse": "refuse", "injection": "injection"}
 _lock = threading.Lock()
+STOP = threading.Event()  # set when a provider's daily quota (or credit) is exhausted
 
 
 def cache_path(text: str) -> Path:
@@ -79,6 +80,10 @@ def generate(spec: dict, worker: tuple) -> dict:
         except Exception as e:  # bad JSON or an API error after the client's own retries
             with _lock:
                 print(f"  {spec['id']} attempt {attempt + 1} via {provider}: {type(e).__name__}: {str(e)[:150]}")
+            if "per day" in str(e) or "402" in str(e):  # daily quota or credit gone: stop this run, retry later
+                STOP.set()
+                print(f"  {provider}: daily limit or no credit, stopping this run")
+                break
             time.sleep(5 * (attempt + 1))
     return {"spec": spec, "provider": provider, "model": model, "conversations": [], "failed": True}
 
@@ -115,7 +120,7 @@ def main():
         todo = list({s["scenario"]: s for s in reversed(todo)}.values())
     todo = todo[: a.limit]
     names = a.providers.split(",")
-    workers = [(name, OpenAI(base_url=url, api_key=os.environ[key], max_retries=10, timeout=300), model, mt, extra)
+    workers = [(name, OpenAI(base_url=url, api_key=os.environ[key], max_retries=4, timeout=300), model, mt, extra)
                for name, url, key, model, mt, n, extra in PROVIDERS if name in names and os.getenv(key)
                for _ in range(n)]
     jobs, done = queue.Queue(), [0]
@@ -123,7 +128,7 @@ def main():
         jobs.put(s)
 
     def work(worker):
-        while True:
+        while not STOP.is_set():
             try:
                 spec = jobs.get_nowait()
             except queue.Empty:
