@@ -7,6 +7,7 @@ dependencies = [
     "huggingface-hub>=2.2.0",
     "jsonschema>=4.26.0",
     "mcp<2",
+    "openai>=3.36.1",
     "python-dotenv>=1.2.4",
 ]
 
@@ -19,3 +20,6 @@ dev = [
     "pytest>=9.1.1",
     "tokenizers>=0.23.3",
 ]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]

@@ -5,7 +5,7 @@ An offline laptop butler for Windows. A small open model (Qwen3.5-2B), fine-tune
 The research question: can a small fine-tuned model match a large cloud model on tool calling for a fixed tool set, at a fraction of the size and cost, fully offline?
 
 ## Status
-Phases 0–2 done (warm CPU latency 2.1 s with llama-server; tool contracts frozen at v1.0); next is Phase 3 (eval harness and baselines). See [docs/PROGRESS.md](docs/PROGRESS.md).
+Phases 0–2 done; Phase 3 (eval harness) built, test sets waiting on owner review. Provisional baseline: base Qwen3.5-2B 79.1% vs gpt-oss-120b 87.8% in-domain. See [docs/PROGRESS.md](docs/PROGRESS.md).
 
 ## Docs
 - [Requirements](docs/requirements.md): what is being built.
@@ -18,3 +18,11 @@ Phases 0–2 done (warm CPU latency 2.1 s with llama-server; tool contracts froz
 3. `uv sync`
 4. `uv run python scripts/check_setup.py`: every required item should show ✓.
 5. `uv run pytest`
+
+## Evaluate a model
+```
+uv run python -m alfred.agent.backends serve          # llama-server on the base model, port 8080
+uv run python -m eval.run --backend local --system base-2b-q8 --set indomain
+uv run python -m eval.run --backend groq --system cloud-gpt-oss-120b --set indomain
+uv run python -m eval.review indomain                 # owner review of test items
+```

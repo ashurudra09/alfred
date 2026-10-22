@@ -6,3 +6,4 @@ __pycache__/
 runs/
 logs/
 data/out/
+eval/reports/*.raw.jsonl
