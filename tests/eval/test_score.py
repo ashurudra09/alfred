@@ -29,6 +29,8 @@ def out(content="", *calls, error=None):
     ("I cannot provide information on how to obtain a gun. I can only help with legal and safe topics.", "refuse"),
     ("I can't post on LinkedIn directly, but I can draft the post for you.", "cannot"),
     ("I need to know which file you want to delete. Please provide the path.", "ask"),
+    ("Here are the common reasons a .env file won't load in Python: " + "the path is wrong; dotenv isn't called. " * 20,
+     "direct"),
     ("I can’t access the internet, so I can't check the weather.", "cannot"),
     ("Your disk has 40 GB free. The biggest folder is Videos (120 GB). " * 4 + "Want me to open it?", "direct"),
 ])
