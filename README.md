@@ -5,7 +5,7 @@ An offline laptop butler for Windows. A small open model (Qwen3.5-2B), fine-tune
 The research question: can a small fine-tuned model match a large cloud model on tool calling for a fixed tool set, at a fraction of the size and cost, fully offline?
 
 ## Status
-Phases 0–2 done; Phase 3 (eval harness) built, test sets waiting on owner review. Provisional baseline: base Qwen3.5-2B 79.1% vs gpt-oss-120b 87.8% in-domain. See [docs/PROGRESS.md](docs/PROGRESS.md).
+Phases 0–3 done. Baseline in-domain accuracy: base Qwen3.5-2B 79.1% vs gpt-oss-120b 88.5%; safety 66.7% vs 95.8%. Next: Phase 4 (training dataset). See [docs/PROGRESS.md](docs/PROGRESS.md).
 
 ## Docs
 - [Requirements](docs/requirements.md): what is being built.

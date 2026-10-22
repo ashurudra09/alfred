@@ -3,22 +3,22 @@
  "backend": "groq",
  "model": "openai/gpt-oss-120b",
  "set": "indomain",
- "date": "2026-10-22T17:48:56",
- "commit": "cf476f8",
- "unreviewed": 278,
+ "date": "2026-10-22T19:25:58",
+ "commit": "5d5f84d",
+ "unreviewed": 0,
  "metrics": {
   "n": 278,
-  "accuracy": 0.8777,
-  "valid_rate": 0.9892,
-  "decision_accuracy": 0.9496,
-  "tool_accuracy": 0.8957,
-  "args_score": 0.8687,
-  "decision_macro_f1": 0.8915,
+  "accuracy": 0.8849,
+  "valid_rate": 0.9964,
+  "decision_accuracy": 0.9568,
+  "tool_accuracy": 0.9029,
+  "args_score": 0.8778,
+  "decision_macro_f1": 0.8924,
   "per_decision": {
    "tool_call": {
     "precision": 0.9953,
-    "recall": 0.9591,
-    "f1": 0.9769,
+    "recall": 0.9682,
+    "f1": 0.9816,
     "support": 220
    },
    "direct": {
@@ -71,13 +71,13 @@
    "refuse": 0.875,
    "remember": 0.75,
    "rename_file": 1.0,
-   "search_file_contents": 0.7778,
+   "search_file_contents": 0.8889,
    "search_files": 1.0,
    "search_notes": 1.0,
    "set_reminder": 1.0,
    "system_info": 1.0,
    "top_processes": 1.0,
-   "zip_folder": 0.8889
+   "zip_folder": 1.0
   },
   "confusion": {
    "ask": {
@@ -171,8 +171,8 @@
     "rename_file": 8
    },
    "search_file_contents": {
-    "search_file_contents": 7,
-    "error": 2
+    "search_file_contents": 8,
+    "error": 1
    },
    "search_files": {
     "search_files": 10
@@ -190,8 +190,7 @@
     "top_processes": 8
    },
    "zip_folder": {
-    "zip_folder": 8,
-    "error": 1
+    "zip_folder": 9
    }
   }
  },
@@ -580,23 +579,32 @@
   },
   {
    "id": "search_file_contents-03",
-   "decision": "error",
-   "decision_ok": false,
-   "tool_ok": false,
-   "args_score": 0.0,
-   "valid": false,
-   "ok": false,
+   "decision": "tool_call",
+   "decision_ok": true,
+   "tool_ok": true,
+   "args_score": 1.0,
+   "valid": true,
+   "ok": true,
    "expected_label": "search_file_contents",
-   "label": "error",
+   "label": "search_file_contents",
    "tags": [],
-   "ttft": null,
-   "total": 1.089,
-   "prompt_tokens": null,
+   "ttft": 1.091267499999958,
+   "total": 1.124,
+   "prompt_tokens": 1412,
    "cached_tokens": null,
    "output": {
     "content": "",
-    "error": "APIError: Tool call validation failed: tool call validation failed: parameters for tool search_file_contents did not match schema: errors: [`/extension`: expected string, but got null]",
-    "tool_calls": []
+    "error": null,
+    "tool_calls": [
+     {
+      "name": "search_file_contents",
+      "arguments": {
+       "folder": "D:\\projects",
+       "text": "TODO"
+      },
+      "raw": "{\"folder\":\"D:\\\\projects\",\"text\":\"TODO\"}"
+     }
+    ]
    }
   },
   {
@@ -707,7 +715,7 @@
     "confusable"
    ],
    "ttft": null,
-   "total": 0.899,
+   "total": 0.792,
    "prompt_tokens": null,
    "cached_tokens": null,
    "output": {
@@ -2408,25 +2416,33 @@
   },
   {
    "id": "zip_folder-05",
-   "decision": "error",
-   "decision_ok": false,
-   "tool_ok": false,
-   "args_score": 0.0,
-   "valid": false,
-   "ok": false,
+   "decision": "tool_call",
+   "decision_ok": true,
+   "tool_ok": true,
+   "args_score": 1.0,
+   "valid": true,
+   "ok": true,
    "expected_label": "zip_folder",
-   "label": "error",
+   "label": "zip_folder",
    "tags": [
     "hinglish"
    ],
-   "ttft": null,
-   "total": 1.194,
-   "prompt_tokens": null,
+   "ttft": 0.8474214000016218,
+   "total": 0.849,
+   "prompt_tokens": 1410,
    "cached_tokens": null,
    "output": {
     "content": "",
-    "error": "APIError: Tool call validation failed: tool call validation failed: parameters for tool zip_folder did not match schema: errors: [`/destination`: expected string, but got null]",
-    "tool_calls": []
+    "error": null,
+    "tool_calls": [
+     {
+      "name": "zip_folder",
+      "arguments": {
+       "source": "C:\\Users\\neha\\Documents\\college"
+      },
+      "raw": "{\"source\":\"C:\\\\Users\\\\neha\\\\Documents\\\\college\"}"
+     }
+    ]
    }
   },
   {

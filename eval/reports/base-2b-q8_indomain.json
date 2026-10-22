@@ -3,9 +3,9 @@
  "backend": "local",
  "model": "local",
  "set": "indomain",
- "date": "2026-10-22T17:48:45",
- "commit": "cf476f8",
- "unreviewed": 278,
+ "date": "2026-10-22T19:25:52",
+ "commit": "5d5f84d",
+ "unreviewed": 0,
  "metrics": {
   "n": 278,
   "accuracy": 0.7914,

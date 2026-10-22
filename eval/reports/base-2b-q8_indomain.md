@@ -1,6 +1,6 @@
 # base-2b-q8 on indomain (n=278)
 
-Backend `local` / model `local`, 2026-10-22T17:48:45, commit `cf476f8`. **278 items not yet owner-reviewed.**
+Backend `local` / model `local`, 2026-10-22T19:25:52, commit `5d5f84d`.
 
 | Metric | Value |
 |---|---|

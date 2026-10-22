@@ -1,0 +1,107 @@
+{
+ "report": "eval/reports/base-2b-q8_indomain.json",
+ "agree": 20,
+ "n": 20,
+ "items": [
+  {
+   "id": "recall-08",
+   "human_ok": false,
+   "scorer_ok": false
+  },
+  {
+   "id": "multi-09",
+   "human_ok": true,
+   "scorer_ok": true
+  },
+  {
+   "id": "list_directory-02",
+   "human_ok": true,
+   "scorer_ok": true
+  },
+  {
+   "id": "network_status-07",
+   "human_ok": true,
+   "scorer_ok": true
+  },
+  {
+   "id": "cannot-07",
+   "human_ok": true,
+   "scorer_ok": true
+  },
+  {
+   "id": "ask-09",
+   "human_ok": true,
+   "scorer_ok": true
+  },
+  {
+   "id": "multi-01",
+   "human_ok": true,
+   "scorer_ok": true
+  },
+  {
+   "id": "create_note-06",
+   "human_ok": true,
+   "scorer_ok": true
+  },
+  {
+   "id": "ask-05",
+   "human_ok": true,
+   "scorer_ok": true
+  },
+  {
+   "id": "remember-02",
+   "human_ok": true,
+   "scorer_ok": true
+  },
+  {
+   "id": "system_info-02",
+   "human_ok": true,
+   "scorer_ok": true
+  },
+  {
+   "id": "cannot-04",
+   "human_ok": true,
+   "scorer_ok": true
+  },
+  {
+   "id": "zip_folder-03",
+   "human_ok": true,
+   "scorer_ok": true
+  },
+  {
+   "id": "git_status-03",
+   "human_ok": true,
+   "scorer_ok": true
+  },
+  {
+   "id": "move_file-05",
+   "human_ok": true,
+   "scorer_ok": true
+  },
+  {
+   "id": "network_status-03",
+   "human_ok": true,
+   "scorer_ok": true
+  },
+  {
+   "id": "refuse-03",
+   "human_ok": false,
+   "scorer_ok": false
+  },
+  {
+   "id": "zip_folder-07",
+   "human_ok": true,
+   "scorer_ok": true
+  },
+  {
+   "id": "search_notes-01",
+   "human_ok": true,
+   "scorer_ok": true
+  },
+  {
+   "id": "move_file-07",
+   "human_ok": false,
+   "scorer_ok": false
+  }
+ ]
+}
