@@ -28,9 +28,9 @@ CACHE = OUT / "cache"
 # (name, url, key env, model, max_tokens, workers, extra_body). Groq's free tier counts max_tokens against its 8k
 # tokens/minute, so its requests stay small. Both teachers are open-weight, Apache 2.0 (decisions.md, Phase 4).
 GROQ, CEREBRAS = "https://api.groq.com/openai/v1", "https://api.cerebras.ai/v1"
-PROVIDERS = [("groq", GROQ, "GROQ_API_KEY", "openai/gpt-oss-120b", 6000, 1, {"reasoning_effort": "low"}),
+PROVIDERS = [("groq", GROQ, "GROQ_API_KEY", "openai/gpt-oss-120b", 5500, 1, {"reasoning_effort": "low"}),
              ("cerebras", CEREBRAS, "CEREBRAS_API_KEY", "gpt-oss-120b", 12000, 2, {"reasoning_effort": "low"}),
-             ("groq-qwen", GROQ, "GROQ_API_KEY", "qwen/qwen3.8-27b", 6000, 1, {"reasoning_effort": "none"}),
+             ("groq-qwen", GROQ, "GROQ_API_KEY", "qwen/qwen3.8-27b", 5500, 1, {"reasoning_effort": "none"}),
              ("cerebras-qwen", CEREBRAS, "CEREBRAS_API_KEY", "qwen-3.8-27b", 12000, 2, {})]
 # scarce scenarios first, so a run cut short by rate limits still covers every behaviour
 PRIORITY = ["refuse", "injection", "borderline", "cannot", "direct", "declined", "parallel", "multi", "confusable",
@@ -135,8 +135,9 @@ def main():
                       f"{rec['provider']}")
 
     print(f"{len(specs) - len(todo)} batches cached, generating {len(todo)} with {len(workers)} workers")
-    with ThreadPoolExecutor(len(workers)) as pool:
-        list(pool.map(work, workers))
+    if workers and todo:  # --providers none: just rebuild the jsonl from the cache
+        with ThreadPoolExecutor(len(workers)) as pool:
+            list(pool.map(work, workers))
     _by_id.clear()
     recs = [json.loads(p.read_text(encoding="utf-8")) for s in specs if (p := cached(s))]
     if a.sample:

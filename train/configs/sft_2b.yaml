@@ -1,0 +1,26 @@
+# SFT of Qwen3.5-2B on the Alfred dataset (Phase 5). Read by train/sft_kernel/sft.py on Kaggle.
+model: unsloth/Qwen3.5-2B
+load_in_4bit: false          # Unsloth advises 16-bit LoRA for Qwen3.5 (4-bit QLoRA loses more); ~5 GB VRAM for 2B
+max_seq_length: 4096         # longest example is 2,973 tokens
+lora:
+  r: 16
+  alpha: 32
+  dropout: 0.0
+  target_modules: [q_proj, k_proj, v_proj, o_proj, gate_proj, up_proj, down_proj]
+train:
+  # Probe on Kaggle T4 (2026-10-22): 33.5 s/step in float32 (no bf16 on T4; Unsloth refuses fp16 for Qwen3.5),
+  # one GPU used, 986 steps/epoch. 620 steps = ~5.8 h = ~0.63 epoch with a full cosine decay.
+  epochs: 1
+  max_steps: 620
+  lr: 2.0e-4
+  scheduler: cosine
+  warmup_ratio: 0.03
+  batch_size: 2
+  grad_accum: 4              # effective batch 8
+  weight_decay: 0.01
+  seed: 3407
+  eval_every: 155            # steps; best checkpoint by val loss
+  eval_subset: 60            # val examples per eval (~5 min each on a T4)
+  max_hours: 6.5             # safety stop; keeps the best checkpoint and leaves time for export (12 h session)
+probe_steps: 20              # PROBE=1: train this many steps, report seconds/step, skip export
+export: [q4_k_m, q8_0]

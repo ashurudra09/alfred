@@ -1,0 +1,13 @@
+{
+  "id": "ashurudra09/alfred-sft",
+  "title": "alfred-sft",
+  "code_file": "sft.py",
+  "language": "python",
+  "kernel_type": "script",
+  "is_private": true,
+  "enable_gpu": true,
+  "enable_internet": true,
+  "dataset_sources": ["ashurudra09/alfred-sft-data"],
+  "competition_sources": [],
+  "kernel_sources": []
+}

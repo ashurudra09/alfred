@@ -81,6 +81,11 @@ CONFUSABLE = [
     (["system_info", "top_processes"], "machine specs/battery/RAM totals vs which processes use resources"),
     (["move_file", "copy_file", "rename_file"], "move vs keep the original vs change the name in place"),
 ]
+# Extra single-tool batches for tools under 200 training examples after the first run (data/stats.md, 2026-10-22):
+# about (200 - count) / 10 valid examples per batch, plus one batch of margin.
+TOPUP = {"list_reminders": 9, "network_status": 7, "open_app": 6, "remember": 6, "organize_folder": 6,
+         "top_processes": 5, "port_in_use": 5, "disk_usage": 5, "rename_file": 5, "set_reminder": 4,
+         "git_status": 4, "create_note": 4, "calculate": 4, "system_info": 2}
 SCENARIOS = {  # name -> (number of batches, instructions)
     "direct": (30, "The user asks general questions, chit-chat, explanations, writing tasks (jokes, a haiku, a regex, "
                    "definitions, how-to steps) or about Alfred itself. Alfred answers directly and concisely WITHOUT "
@@ -164,6 +169,8 @@ def batches(seed: int = 3407) -> list[dict]:
         add("confusable", group, times=4, why=why)
     for scenario, (times, _) in SCENARIOS.items():
         add(scenario, times=times)
+    for name, times in TOPUP.items():  # appended last, so every earlier batch (and its cache entry) is unchanged
+        add("single", [name], times=times)
     return specs
 
 
