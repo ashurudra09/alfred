@@ -1,6 +1,6 @@
 # Alfred
 
-An offline laptop butler for Windows. A small open model (Qwen3.5-2B), fine-tuned to call 25 local tools (files, system info, developer helpers, notes, reminders, memory), runs fully on the laptop CPU through Ollama. Every change it makes can be undone.
+An offline laptop butler for Windows. A small open model (Qwen3.5-2B), fine-tuned to call 25 local tools (files, system info, developer helpers, notes, reminders, memory), runs fully on the laptop CPU through llama.cpp (`llama-server`). Every change it makes can be undone.
 
 The research question: can a small fine-tuned model match a large cloud model on tool calling for a fixed tool set, at a fraction of the size and cost, fully offline?
 
@@ -10,7 +10,8 @@ Phases 0–5 done. In-domain accuracy (278 reviewed test items): **Alfred SFT v2
 ## Docs
 - [Requirements](docs/requirements.md): what is being built.
 - [Implementation plan](docs/implementation-plan.md): phases, gates and how each is built.
-- [Progress](docs/PROGRESS.md) and [decisions](docs/decisions.md).
+- [Progress](docs/PROGRESS.md) (key numbers, open issues) and [decisions](docs/decisions.md).
+- [Training data card](data/card.md).
 
 ## Setup
 1. Install Git, [uv](https://docs.astral.sh/uv/), [Ollama](https://ollama.com) (embeddings) and llama.cpp (`winget install ggml.llamacpp`, serves the chat model).
@@ -19,10 +20,32 @@ Phases 0–5 done. In-domain accuracy (278 reviewed test items): **Alfred SFT v2
 4. `uv run python scripts/check_setup.py`: every required item should show ✓.
 5. `uv run pytest`
 
-## Evaluate a model
+## What runs today (M1)
+The fine-tuned model and the evaluation. The tool server, agent and UI come in Phases 6–8.
+
+**Serve a model** (port 8080; a `.gguf` path or an Ollama model name for the base):
 ```
-uv run python -m alfred.agent.backends serve          # llama-server on the base model, port 8080
-uv run python -m eval.run --backend local --system base-2b-q8 --set indomain
-uv run python -m eval.run --backend groq --system cloud-gpt-oss-120b --set indomain
-uv run python -m eval.review indomain                 # owner review of test items
+uv run python -m alfred.agent.backends serve runs/sft_2b_v2/alfred-2b-v2-q4.gguf
 ```
+The fine-tuned GGUFs are in the private Hugging Face repo `alfred-2b-sft` (`v2/alfred-2b-v2-q4.gguf`).
+
+**Evaluate it:**
+```
+uv run python -m eval.run --backend local --system alfred-2b-v2-q4 --set indomain
+uv run python -m eval.run --backend local --system alfred-2b-v2-q4 --set safety
+uv run python -m eval.run --backend groq --system cloud-gpt-oss-120b --set indomain   # cloud reference
+```
+Reports land in `eval/reports/` (JSON + a markdown summary).
+
+**Rebuild the training data** (teacher API keys in `.env`, Ollama running for the dedup embedder):
+```
+uv run python -m data.gen.teacher
+uv run python -m data.validate data/out/synthetic.jsonl
+uv run python -m data.mix
+uv run python -m data.dedup --check
+```
+
+**Train** on Kaggle: `uv run python -m train.package_data --upload`, then `kaggle kernels push -p train/sft_kernel` (settings in `train/configs/sft_2b.yaml`).
+
+## Learn the concepts
+Short notes on what each piece is, why it's here and questions to check your understanding: [docs/learning/](docs/learning/README.md).

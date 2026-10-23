@@ -12,7 +12,7 @@ Each phase gate adds one line to the log below. Full detail for each phase is in
 | 3 | Eval harness, test sets & baselines | M1 | done | 2026-10-22 | `pytest tests/eval` (24 passed); `eval/reports/base-2b-q8_*`, `cloud-gpt-oss-120b_*`, rescore 20/20 |
 | 4 | Training dataset | M1 | done | 2026-10-22 | `data/stats.md`; validate 96.8%, dedup --check 0 hits |
 | 5 | SFT + export | M1 | done | 2026-10-23 | `eval/reports/alfred-2b-v2-q{4,8}_*`; in-domain 95.3% (v2 Q4) vs base 79.1% |
-| D1 | Docs checkpoint 1: "the model works" | M1 (24 Oct) | not started | | |
+| D1 | Docs checkpoint 1: "the model works" | M1 (24 Oct) | done | 2026-10-23 | `docs/learning/` (4 notes); tag `checkpoint-D1` |
 | 6 | Tool server | M2 | not started | | |
 | 7 | Agent runtime + CLI | M2 | not started | | |
 | 8 | Minimal web UI | M2 | not started | | |
@@ -22,6 +22,33 @@ Each phase gate adds one line to the log below. Full detail for each phase is in
 | 11 | GRPO | M3 | not started | | |
 | D3 | Docs checkpoint 3: "training story complete" | M3 | not started | | |
 | 12 | Copilot comparison & release | M3 (Dec) | not started | | |
+
+## Key numbers (M1, 2026-10-23)
+Every number is from a report in `eval/reports/` (scorer v1.1). In-domain = 278 test items, safety = 48.
+
+| System | In-domain accuracy | Decision F1 | Ask recall | Safety accuracy | Median time to first token (laptop CPU) | Report |
+|---|---|---|---|---|---|---|
+| Base Qwen3.5-2B (Q8) | 79.1% | 72.4% | 60% | 66.7% | 1.9 s | [in-domain](../eval/reports/base-2b-q8_indomain.md), [safety](../eval/reports/base-2b-q8_safety.md) |
+| **Alfred SFT v2 (Q4, shipped)** | **95.3%** | **94.0%** | **93%** | **95.8%** | **1.0 s** | [in-domain](../eval/reports/alfred-2b-v2-q4_indomain.md), [safety](../eval/reports/alfred-2b-v2-q4_safety.md) |
+| Alfred SFT v2 (Q8) | 95.7% | 94.9% | 100% | 95.8% | 1.3 s | [in-domain](../eval/reports/alfred-2b-v2-q8_indomain.md), [safety](../eval/reports/alfred-2b-v2-q8_safety.md) |
+| Alfred SFT v1 (Q4) | 93.5% | 87.0% | 33% | 97.9% | 1.0 s | [in-domain](../eval/reports/alfred-2b-v1-q4_indomain.md), [safety](../eval/reports/alfred-2b-v1-q4_safety.md) |
+| Cloud reference gpt-oss-120b (Groq) | 88.5% | 89.2% | 100% | 95.8% | 0.9 s | [in-domain](../eval/reports/cloud-gpt-oss-120b_indomain.md), [safety](../eval/reports/cloud-gpt-oss-120b_safety.md) |
+
+- Fine-tuning gain: **+16.2 points** (v2 Q4 over base, in-domain); target was ≥ 15. Valid-call rate 100% for every local model.
+- Refusal recall on the safety set: base 59.3% → v2 96.3%; no over-refusals on the borderline items.
+- Training: 620 LoRA steps on one free Kaggle T4, 3.9 h; data 8,963 train examples ([data card](../data/card.md), [stats](../data/stats.md)); train summary [v2](../eval/reports/sft_2b_v2_train_summary.json), loss curve ![v2 loss](sft_2b_v2_loss.png)
+
+## Open issues
+- **Test sets are not independent of Claude:** Claude drafted all items and an AI agent reviewed the in-domain set (owner-approved deviation); the owner reviewed most of the safety set.
+- **Dataset top-up still running:** 28 of 584 generation batches remain (hourly Groq task `AlfredTopup`, deletes itself when done); 13 tools have 147–194 training examples instead of ≥ 200.
+- **Remaining v2 errors (13/278 in-domain):** `recall` vs `search_files`, name vs content search, missing `by_date`, some "can't do" requests mapped to `open_app`, a direct question answered with a tool.
+- **Scorer heuristics:** text replies are classified by keywords (checked against 20 hand-rescored items, all agreed; that sample had no refusal replies).
+- **Training budget:** each SFT run takes ~4 h of float32 on a T4 (vs the planned ≤ 2 GPU-hours) and covers ~0.6 of an epoch.
+
+## Next steps
+1. Phase 6: the MCP tool server (25 tools, guards, journal + undo, memory store).
+2. Phase 7: agent loop + CLI with the confirmation gate, untrusted tool output, chat history, timing.
+3. Phase 8–9: web UI; BFCL / When2Call / quantization benchmarks.
 
 ## Gate log
 <!-- One line per gate: YYYY-MM-DD · phase · result · evidence -->
@@ -34,3 +61,4 @@ Each phase gate adds one line to the log below. Full detail for each phase is in
 - 2026-10-22 · Phase 4 · passed (with shortfall) · pilot 93.9% auto / 48/50 manual (Claude-checked); 5,915 valid synthetic + 1,268 When2Call + 1,268 xLAM → train 7,889 / val 415; `data.dedup --check` 0 hits; 15 tools under 200 examples
 - 2026-10-23 · Phase 5 · passed with an open issue · SFT v1 620 steps (4.0 h T4), val loss 0.227; in-domain Q8 90.6% / Q4 92.4% vs base 79.1% vs gpt-oss-120b 88.5%; safety 97.9% vs base 66.7%; ask recall regressed to 7–33% (template render of earlier turns) → v2 fix
 - 2026-10-23 · Phase 5 · passed · SFT v2 (ask fix): in-domain Q8 95.7% / Q4 95.3% vs base 79.1% (+16.2–16.6) vs gpt-oss-120b 88.5%; ask recall 93–100%; safety 95.8% vs base 66.7%; scorer v1.1 (default-valued omitted args); v1 kept as `alfred-2b-v1-*`
+- 2026-10-23 · D1 · passed · PROGRESS key numbers (each linked to a report), open issues, next steps; README status + how-to-run; learning notes (chat templates, LoRA, synthetic data, eval metrics); relative-link check over docs: 0 broken
