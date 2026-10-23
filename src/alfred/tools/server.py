@@ -27,7 +27,7 @@ def bound(name: str):
 
 
 def build() -> FastMCP:
-    mcp = FastMCP("alfred")
+    mcp = FastMCP("alfred", log_level="WARNING")  # no per-request INFO lines in the CLI
     for name in REGISTRY:
         mcp.add_tool(bound(name), **tool_options(name))
     return mcp

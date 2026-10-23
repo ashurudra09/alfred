@@ -26,6 +26,7 @@ def git_status(repo_path):
     repo = resolve_safe(repo_path)
     try:
         r = subprocess.run(["git", "-C", str(repo), "status", "--porcelain=v2", "--branch"], capture_output=True,
+                           stdin=subprocess.DEVNULL,
                            text=True, timeout=20)
     except FileNotFoundError:
         raise ToolError("git is not installed.")

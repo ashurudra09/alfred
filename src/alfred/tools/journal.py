@@ -61,6 +61,7 @@ if (Test-Path -LiteralPath $want) {{ exit 0 }} else {{ exit 3 }}
 def restore_from_recycle_bin(path: Path) -> bool:
     script = RESTORE_PS.format(path=str(path).replace("'", "''"))
     r = subprocess.run(["powershell", "-NoProfile", "-NonInteractive", "-Command", script], capture_output=True,
+                       stdin=subprocess.DEVNULL,
                        timeout=60)
     return r.returncode == 0 and path.exists()
 

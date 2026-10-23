@@ -7,7 +7,7 @@ import pytest
 from mcp.server.fastmcp.exceptions import ToolError
 
 from alfred.tools import calc, dev, files, guards, journal, memory, productivity, system
-from tests.tools.conftest import snapshot
+from tests.conftest import snapshot
 
 
 # --- guards ------------------------------------------------------------------------------------------------------

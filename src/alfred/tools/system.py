@@ -1,6 +1,7 @@
 """System tools (contracts 13-16): open_app, system_info, top_processes, network_status."""
 
 import difflib
+import functools
 import os
 import platform
 import re
@@ -12,7 +13,7 @@ from pathlib import Path
 import psutil
 from mcp.server.fastmcp.exceptions import ToolError
 
-from alfred.tools.files import size
+from alfred.tools.files import launch, size
 
 START_MENUS = [Path(os.environ.get("PROGRAMDATA", r"C:\ProgramData")) / r"Microsoft\Windows\Start Menu\Programs",
                Path(os.environ.get("APPDATA", "")) / r"Microsoft\Windows\Start Menu\Programs"]
@@ -37,7 +38,7 @@ def open_app(name):
     apps = start_menu_apps()
     match = apps.get(want) or next((p for k, p in apps.items() if k.startswith(want) or want in k.split()), None)
     if match is None and want in BUILTIN:
-        os.startfile(BUILTIN[want])
+        launch(BUILTIN[want])
         return f"Launched {name.strip().title()}."
     if match is None:
         close = difflib.get_close_matches(want, list(apps), n=3, cutoff=0.6)
@@ -46,18 +47,24 @@ def open_app(name):
         else:
             hint = f" Did you mean: {', '.join(apps[c].stem for c in close)}?" if close else ""
             raise ToolError(f"No app called '{name}' in the Start Menu.{hint}")
-    os.startfile(str(match))
+    launch(str(match))
     return f"Launched {match.stem}."
 
 
-def system_info():
+@functools.cache
+def cpu_name() -> str:
     cpu = platform.processor() or "CPU"
     try:
-        out = subprocess.run(["powershell", "-NoProfile", "-Command", "(Get-CimInstance Win32_Processor).Name"],
+        out = subprocess.run(["powershell", "-NoProfile", "-Command", "(Get-CimInstance Win32_Processor).Name"], stdin=subprocess.DEVNULL,
                              capture_output=True, text=True, timeout=10).stdout.strip()
         cpu = out.splitlines()[0] if out else cpu
     except (OSError, subprocess.SubprocessError):
         pass
+    return cpu
+
+
+def system_info():
+    cpu = cpu_name()
     mem = psutil.virtual_memory()
     bat = psutil.sensors_battery()
     battery = f"Battery: {bat.percent:.0f}%, {'charging' if bat.power_plugged else 'not charging'}." if bat \
@@ -91,7 +98,8 @@ def top_processes(sort_by="cpu", n=5):
 
 def _wifi() -> tuple[str | None, str | None]:
     try:
-        out = subprocess.run(["netsh", "wlan", "show", "interfaces"], capture_output=True, text=True, timeout=10).stdout
+        out = subprocess.run(["netsh", "wlan", "show", "interfaces"], capture_output=True, text=True, timeout=10,
+                             stdin=subprocess.DEVNULL).stdout
     except (OSError, subprocess.SubprocessError):
         return None, None
     ssid = re.search(r"^\s*SSID\s*:\s*(.+)$", out, re.M)

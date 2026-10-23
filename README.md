@@ -21,7 +21,7 @@ Phases 0–5 done. In-domain accuracy (278 reviewed test items): **Alfred SFT v2
 5. `uv run pytest`
 
 ## What runs today (M1)
-The fine-tuned model, the evaluation and the tool server. The agent and UI come in Phases 7–8.
+The fine-tuned model, the evaluation, the tool server and the terminal assistant. The web UI comes in Phase 8.
 
 **Serve a model** (port 8080; a `.gguf` path or an Ollama model name for the base):
 ```
@@ -46,6 +46,16 @@ uv run python -m data.dedup --check
 ```
 
 **Train** on Kaggle: `uv run python -m train.package_data --upload`, then `kaggle kernels push -p train/sft_kernel` (settings in `train/configs/sft_2b.yaml`).
+
+## Talk to Alfred (terminal)
+```
+uv run alfred
+```
+It starts llama-server on the fine-tuned model if it isn't running, then answers in the terminal. Anything that
+changes files (move, rename, copy, zip, organize, delete) shows the exact plan and waits for `y`; `/undo` reverses
+the last change (`/actions` lists them). Other commands: `/new /chats /open <id> /delete <id> /memories /forget <id>`.
+
+**End-to-end tests** (needs the model served): `uv run python -m eval.e2e --system alfred-2b-v2-q4`.
 
 ## Run the tool server
 The 25 tools as a local MCP server over stdio (no network). They work only inside your known folders (Documents,

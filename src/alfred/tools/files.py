@@ -266,8 +266,14 @@ def open_path(path):
     p = resolve_safe(path)
     if p.is_file() and is_executable(p):
         raise ToolError(f"Refused: {p.name} is a program or script; Alfred doesn't run those.")
-    os.startfile(str(p))
+    launch(str(p))
     return f"Opened {p} in its default app."
+
+
+def launch(target: str):
+    """os.startfile, unless ALFRED_NO_LAUNCH is set (end-to-end tests must not open windows on the desktop)."""
+    if not os.environ.get("ALFRED_NO_LAUNCH"):
+        os.startfile(target)
 
 
 def preview(tool: str, args: dict) -> str:

@@ -127,7 +127,8 @@ def fire_due(now: datetime | None = None, notify=None) -> list[dict]:
     """Mark due reminders done and show a Windows toast for each. Returns the ones fired."""
     now = now or datetime.now()
     notify = notify or (lambda text: subprocess.run(
-        ["powershell", "-NoProfile", "-Command", TOAST_PS.format(text=text.replace("'", "''"))], timeout=30))
+        ["powershell", "-NoProfile", "-Command", TOAST_PS.format(text=text.replace("'", "''"))], timeout=30,
+        capture_output=True, stdin=subprocess.DEVNULL))  # never touch the server's stdio: it carries MCP
     with _lock:
         items, fired = _load(), []
         for r in items:
