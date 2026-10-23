@@ -5,7 +5,7 @@ An offline laptop butler for Windows. A small open model (Qwen3.5-2B), fine-tune
 The research question: can a small fine-tuned model match a large cloud model on tool calling for a fixed tool set, at a fraction of the size and cost, fully offline?
 
 ## Status
-Phases 0–4 done. Baseline in-domain accuracy: base Qwen3.5-2B 79.1% vs gpt-oss-120b 88.5%; safety 66.7% vs 95.8%. Training set: 7,889 examples ([data card](data/card.md)). Next: Phase 5 (SFT on Kaggle). See [docs/PROGRESS.md](docs/PROGRESS.md).
+Phases 0–5 done. In-domain accuracy: **Alfred SFT (Q4, laptop CPU) 92.4%** vs base Qwen3.5-2B 79.1% vs gpt-oss-120b 88.5%; safety 97.9% vs 66.7% (base). Known issue: the SFT model rarely asks clarifying questions (fix in SFT v2). See [docs/PROGRESS.md](docs/PROGRESS.md).
 
 ## Docs
 - [Requirements](docs/requirements.md): what is being built.

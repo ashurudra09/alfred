@@ -82,3 +82,20 @@ Each decision with its date and reason. Newest at the bottom.
 - **Result:** 6,110 generated → 5,915 valid (96.8%) → mixed with 1,268 When2Call + 1,268 xLAM → **train 7,889 / val 415**, median 2,662 tokens (max 2,973). Details in `data/stats.md`, `data/card.md`.
 - **Shortfall:** 15 tools have 122–197 training examples instead of ≥ 200 (generation stopped at the Cerebras credit). Accepted for SFT v1; top up with Groq's free tier later if per-tool eval shows weak tools.
 - **Phase 5 concern:** ~2.7k tokens/example × 7.9k examples ≈ 21M tokens per epoch, likely more than the 2 GPU-hour budget on one T4; measure throughput in the notebook before choosing epochs.
+
+## 2026-10-23: Phase 5 (SFT v1 + export)
+- **16-bit LoRA, not 4-bit QLoRA:** Unsloth advises against 4-bit for Qwen3.5. r=16, alpha=32, all attention + MLP projections (10.9M trainable params), seq 4,096, train on responses only.
+- **Kaggle T4 trains Qwen3.5 in float32** (no bf16; Unsloth refuses fp16 for this model) on one GPU. Probe: 33.5 s/step; the real run averaged 23 s/step. **620 steps (0.605 epoch of 8,197 examples), effective batch 8, lr 2e-4 cosine, 4.0 h** (over the 2 GPU-hour budget, inside the free 30 h/week; ₹0). Val loss (60-example subset): 0.274 → 0.246 → 0.233 → **0.227** (best = last). Curve: `docs/sft_2b_v1_loss.png`.
+- **Export:** Q4_K_M 1.31 GB, Q8_0 2.08 GB, served by llama-server. The server's rendered prompt is byte-identical to the training render (checked with `/apply-template`), so there is no template mismatch.
+- **Results (in-domain 278 / safety 48; `eval/reports/`):**
+
+| System | In-domain acc. | Decision F1 | Args | Safety acc. | Refuse recall (safety) | Median TTFT / total |
+|---|---|---|---|---|---|---|
+| base Qwen3.5-2B Q8 | 79.1% | 72.4% | 86.0% | 66.7% | 59.3% | 1.9 / 4.7 s |
+| **Alfred SFT v1 Q8** | **90.6%** | 78.7% | 95.7% | **97.9%** | 92.6% | 1.3 / 3.3 s |
+| **Alfred SFT v1 Q4** | **92.4%** | 87.0% | 96.3% | **97.9%** | 96.3% | 1.0 / 2.5 s |
+| gpt-oss-120b (cloud) | 88.5% | 89.2% | 87.8% | 95.8% | 88.9% | 0.9 / 0.9 s |
+
+  Gain over base: **+11.5 pts (Q8), +13.3 pts (Q4)**, below the ≥ 15-pt target (the base is strong). Q4 ≥ Q8 here is within noise (≈ 5 items).
+- **Regression: clarifying questions.** Ask recall fell from 60% (base) to 6.7% (Q8) / 33% (Q4): for "move the file" the model recycles an invented file. **Root cause:** Qwen's template strips the empty `<think></think>` block from earlier turns, so all 533 synthetic clarify-then-call examples rendered the question *without* the prefix that every inference-time reply starts with; the only prefixed asks were When2Call's (other system prompt, other tools). **Fix for SFT v2:** also train each clarify example truncated right after the question, so the question is the final turn.
+- **Hub:** adapter + GGUFs uploaded to the private HF repo `alfred-2b-sft`.

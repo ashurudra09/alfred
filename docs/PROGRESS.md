@@ -11,7 +11,7 @@ Each phase gate adds one line to the log below. Full detail for each phase is in
 | 2 | Tool contracts | M1 | done | 2026-10-22 | `pytest tests/contracts` (11 passed); tag `contracts-v1.0` |
 | 3 | Eval harness, test sets & baselines | M1 | done | 2026-10-22 | `pytest tests/eval` (24 passed); `eval/reports/base-2b-q8_*`, `cloud-gpt-oss-120b_*`, rescore 20/20 |
 | 4 | Training dataset | M1 | done | 2026-10-22 | `data/stats.md`; validate 96.8%, dedup --check 0 hits |
-| 5 | SFT + export | M1 | not started | | |
+| 5 | SFT + export | M1 | done (v2 pending for asks) | 2026-10-23 | `eval/reports/alfred-2b-q{4,8}_*`; in-domain 92.4% (Q4) vs base 79.1% |
 | D1 | Docs checkpoint 1: "the model works" | M1 (24 Oct) | not started | | |
 | 6 | Tool server | M2 | not started | | |
 | 7 | Agent runtime + CLI | M2 | not started | | |
@@ -32,3 +32,4 @@ Each phase gate adds one line to the log below. Full detail for each phase is in
 - 2026-10-22 · Phase 3 · harness done, gate pending · `uv run pytest` → 34 passed; provisional baselines in-domain 79.1% (base Q8) vs 87.8% (gpt-oss-120b), safety 68.0% vs 88.0%; waiting on owner review of 328 test items + 20-item hand rescoring
 - 2026-10-22 · Phase 3 · passed (with deviation) · safety 48 owner-reviewed (6 by agent), in-domain 278 agent-reviewed (owner-approved); rescore 20/20 (agent); baselines in-domain base 79.1% vs gpt-oss-120b 88.5%, safety 66.7% vs 95.8%; `uv run pytest` 35 passed
 - 2026-10-22 · Phase 4 · passed (with shortfall) · pilot 93.9% auto / 48/50 manual (Claude-checked); 5,915 valid synthetic + 1,268 When2Call + 1,268 xLAM → train 7,889 / val 415; `data.dedup --check` 0 hits; 15 tools under 200 examples
+- 2026-10-23 · Phase 5 · passed with an open issue · SFT v1 620 steps (4.0 h T4), val loss 0.227; in-domain Q8 90.6% / Q4 92.4% vs base 79.1% vs gpt-oss-120b 88.5%; safety 97.9% vs base 66.7%; ask recall regressed to 7–33% (template render of earlier turns) → v2 fix
