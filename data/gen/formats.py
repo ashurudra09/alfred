@@ -22,7 +22,7 @@ RESULTS = {
     "system_info": "CPU: Intel Core i5-1235U (10 cores), 23% busy. RAM: 7.1 of 15.7 GB used. "
                    "Battery: 64%, charging. Windows 11 Home 24H2.",
     "top_processes": "Top 5 by CPU:\nchrome.exe 18% CPU, 1.9 GB\nCode.exe 9% CPU, 820 MB\n...",
-    "network_status": "Online. Wi-Fi: HomeNet_5G (signal 82%). Local IP: 192.168.1.23.",
+    "network_status": "Online. Wi-Fi: HomeNet_5G (signal 82%). Local IP: 192.168.1.23.",  # wired: "Online. Wired: Ethernet. Local IP: ..."
     "port_in_use": "Port 3000: node.exe (PID 18244).",  # or "Nothing is listening on port 3000."
     "git_status": "Branch main, 2 ahead / 0 behind origin/main.\nChanged: M src/app.py, ?? notes.md",
     "create_note": "Saved note 'Groceries' (note 12).",

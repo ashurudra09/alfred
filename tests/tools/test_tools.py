@@ -167,7 +167,20 @@ def test_system_tools():
     assert re.search(r"RAM: [\d.]+ of [\d.]+ GB used", system.system_info())
     out = system.top_processes("memory", 3)
     assert out.startswith("Top 3 by memory:") and len(out.splitlines()) == 4
-    assert re.match(r"(Online|Offline)\. Wi-Fi: .*Local IP: ", system.network_status())
+    assert re.match(r"(Online|Offline)\. (Wi-Fi|Wired): .*Local IP: |(Online|Offline)\. Not connected",
+                    system.network_status())
+
+
+def test_network_wired_and_wifi(monkeypatch):
+    monkeypatch.setattr(system.socket, "create_connection", lambda *a, **k: type("C", (), {"close": lambda s: None})())
+    monkeypatch.setattr(system, "_wifi", lambda: (None, None))
+    monkeypatch.setattr(system, "active_interfaces", lambda: [("Ethernet 4", "10.1.36.221", False)])
+    assert system.network_status() == "Online. Wired: Ethernet 4. Local IP: 10.1.36.221."
+    monkeypatch.setattr(system, "_wifi", lambda: ("HomeNet_5G", "82%"))
+    monkeypatch.setattr(system, "active_interfaces", lambda: [("Wi-Fi", "192.168.1.23", True)])
+    assert system.network_status() == "Online. Wi-Fi: HomeNet_5G (signal 82%). Local IP: 192.168.1.23."
+    monkeypatch.setattr(system, "active_interfaces", lambda: [])
+    assert system.network_status() == "Online. Not connected to any network."
 
 
 def test_open_app(monkeypatch, tmp_path):

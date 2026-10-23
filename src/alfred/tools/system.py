@@ -99,14 +99,30 @@ def _wifi() -> tuple[str | None, str | None]:
     return ssid and ssid.group(1).strip(), signal and signal.group(1)
 
 
-def _local_ip() -> str | None:
+WIRELESS = re.compile(r"wi-?fi|wlan|wireless|802\.11", re.I)
+VIRTUAL = re.compile(r"loopback|vethernet|virtual|vmware|vbox|hyper-v|bluetooth|tailscale|wireguard|zerotier", re.I)
+
+
+def _route_ip() -> str | None:
+    """The local address the OS would use for internet traffic (a UDP connect sends no packets)."""
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+            s.connect(("1.1.1.1", 53))
+            return s.getsockname()[0]
+    except OSError:
+        return None
+
+
+def active_interfaces() -> list[tuple[str, str, bool]]:
+    """(interface name, IPv4, is_wireless) for interfaces that are up, the default-route one first."""
+    stats, route, out = psutil.net_if_stats(), _route_ip(), []
     for name, addrs in psutil.net_if_addrs().items():
-        stats = psutil.net_if_stats().get(name)
-        if stats and stats.isup and "loopback" not in name.lower() and "vethernet" not in name.lower():
-            for a in addrs:
-                if a.family == socket.AF_INET and not a.address.startswith(("127.", "169.254.")):
-                    return a.address
-    return None
+        if not (stats.get(name) and stats[name].isup) or VIRTUAL.search(name):
+            continue
+        for a in addrs:
+            if a.family == socket.AF_INET and not a.address.startswith(("127.", "169.254.")):
+                out.append((name, a.address, bool(WIRELESS.search(name))))
+    return sorted(out, key=lambda x: x[1] != route)
 
 
 def network_status():
@@ -115,7 +131,16 @@ def network_status():
         online = True
     except OSError:
         online = False
-    ssid, signal = _wifi()
-    wifi = f"Wi-Fi: {ssid}" + (f" (signal {signal})" if signal else "") if ssid else "Wi-Fi: not connected"
-    ip = _local_ip()
-    return f"{'Online' if online else 'Offline'}. {wifi}. Local IP: {ip or 'none'}."
+    ifaces = active_interfaces()
+    if not ifaces:
+        return f"{'Online' if online else 'Offline'}. Not connected to any network."
+    name, ip, wireless = ifaces[0]
+    if wireless:
+        ssid, signal = _wifi()
+        conn = f"Wi-Fi: {ssid or name}" + (f" (signal {signal})" if signal else "")
+    else:
+        conn = f"Wired: {name}"
+        wifi_ssid, signal = _wifi()
+        if wifi_ssid:
+            conn += f" (Wi-Fi {wifi_ssid} also connected)"
+    return f"{'Online' if online else 'Offline'}. {conn}. Local IP: {ip}."
