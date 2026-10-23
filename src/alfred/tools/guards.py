@@ -76,6 +76,11 @@ def allowed_roots() -> list[Path]:
 def expand(path: str) -> Path:
     """'Downloads\\old' -> <Downloads>\\old; env vars and ~ expanded; relative paths are not allowed."""
     p = os.path.expandvars(os.path.expanduser(str(path).strip().strip('"').strip("'"))).replace("/", "\\")
+    drive = re.fullmatch(r"(?:drive\s+)?([A-Za-z])(?::)?(?:\s+drive)?\\?", p, re.I)  # "C", "C drive", "drive C"
+    if drive:
+        p = drive.group(1).upper() + ":\\"
+    elif p in ("\\", ""):  # "/" means the Windows drive
+        p = os.environ.get("SystemDrive", "C:") + "\\"
     head, _, rest = p.partition("\\")
     for name, full in known_folders().items():
         if head.casefold() == name.casefold():

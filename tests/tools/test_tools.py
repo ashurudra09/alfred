@@ -12,6 +12,11 @@ from tests.conftest import snapshot
 
 # --- guards ------------------------------------------------------------------------------------------------------
 
+@pytest.mark.parametrize("spelling", ["C:\\", "C:", "C", "c", "C drive", "drive C", "c:/", "/", "C:\\\\"])
+def test_drive_spellings(sandbox, spelling):
+    assert str(guards.expand(spelling)) == "C:\\"
+
+
 def test_known_folder_names_expand(sandbox):
     assert guards.resolve_safe("Downloads\\notes.txt") == (sandbox["Downloads"] / "notes.txt").resolve()
     assert guards.resolve_safe("downloads/photos") == (sandbox["Downloads"] / "photos").resolve()
