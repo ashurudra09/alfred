@@ -63,11 +63,11 @@ Downloads, Desktop, Pictures, Music, Videos, plus any `extra_folders` in `%LOCAL
 ```
 uv run python -m alfred.tools.server
 ```
-**Use it from Claude Desktop:** add this to `%APPDATA%\Claude\claude_desktop_config.json`, restart Claude Desktop,
-and ask "what's my disk usage?":
-```json
-{"mcpServers": {"alfred": {"command": "uv", "args": ["--directory", "C:/work/alfred", "run", "python", "-m", "alfred.tools.server"]}}}
-```
+**Use it from Claude Desktop:** quit Claude Desktop completely (tray icon > Quit; it rewrites its config while
+running), then run `uv run python scripts/add_to_claude_desktop.py`. It finds the config (on this machine it lives in
+`%LOCALAPPDATA%\Claude-Data\<id>\claude_desktop_config.json`, not `%APPDATA%\Claude`), backs it up and adds the
+`alfred` server. Reopen Claude Desktop and ask "what's my disk usage?".
+
 **Inspect it:** `npx @modelcontextprotocol/inspector uv run python -m alfred.tools.server` (needs Node.js).
 
 ## Learn the concepts
