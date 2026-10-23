@@ -13,7 +13,7 @@ Each phase gate adds one line to the log below. Full detail for each phase is in
 | 4 | Training dataset | M1 | done | 2026-10-22 | `data/stats.md`; validate 96.8%, dedup --check 0 hits |
 | 5 | SFT + export | M1 | done | 2026-10-23 | `eval/reports/alfred-2b-v2-q{4,8}_*`; in-domain 95.3% (v2 Q4) vs base 79.1% |
 | D1 | Docs checkpoint 1: "the model works" | M1 (24 Oct) | done | 2026-10-23 | `docs/learning/` (4 notes); tag `checkpoint-D1` |
-| 6 | Tool server | M2 | done (Claude Desktop check pending) | 2026-10-23 | `pytest tests/tools` (35 passed incl. stdio server) |
+| 6 | Tool server | M2 | done (Inspector check optional) | 2026-10-23 | `pytest tests/tools` (35 passed incl. stdio server) |
 | 7 | Agent runtime + CLI | M2 | done (offline run pending) | 2026-10-23 | `pytest tests/agent` (12 passed); [e2e report](../eval/reports/e2e_alfred-2b-v2-q4.md) 47/50, invariants 0 |
 | 8 | Minimal web UI | M2 | not started | | |
 | 9 | Benchmarks, safety & ablations | M2 / M3 | not started | | |
@@ -63,3 +63,4 @@ Every number is from a report in `eval/reports/` (scorer v1.1). In-domain = 278 
 - 2026-10-23 · D1 · passed · PROGRESS key numbers (each linked to a report), open issues, next steps; README status + how-to-run; learning notes (chat templates, LoRA, synthetic data, eval metrics); relative-link check over docs: 0 broken
 - 2026-10-23 · Phase 6 · passed (owner checks pending) · 25 tools behind the frozen contracts; `uv run pytest` 70 passed: every guard (allow-list, sensitive paths, junction escape, executables, no overwrite), happy/error paths, undo round-trip for move/rename/copy/zip/organize/recycle (real Recycle Bin restore) + notes/reminders/memory; stdio MCP client: list_tools = tools.json; real-machine smoke OK. Pending: MCP Inspector + Claude Desktop (owner)
 - 2026-10-23 · Phase 7 · passed (owner offline check pending) · `uv run pytest` 83 passed; e2e 47/50 (94%) with SFT v2 Q4, injection 20/20, unconfirmed writes / overwrites / permanent deletes = 0 / 0 / 0; median turn 9 s; live CLI session OK
+- 2026-10-23 · Phase 6 · owner check passed · tool robustness pass (130 tests); owner ran the Claude Desktop test plan (docs/claude_desktop_tests.md): all tools work from Claude Desktop
