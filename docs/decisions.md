@@ -98,4 +98,4 @@ Each decision with its date and reason. Newest at the bottom.
 
   Gain over base: **+11.5 pts (Q8), +13.3 pts (Q4)**, below the ≥ 15-pt target (the base is strong). Q4 ≥ Q8 here is within noise (≈ 5 items).
 - **Regression: clarifying questions.** Ask recall fell from 60% (base) to 6.7% (Q8) / 33% (Q4): for "move the file" the model recycles an invented file. **Root cause:** Qwen's template strips the empty `<think></think>` block from earlier turns, so all 533 synthetic clarify-then-call examples rendered the question *without* the prefix that every inference-time reply starts with; the only prefixed asks were When2Call's (other system prompt, other tools). **Fix for SFT v2:** also train each clarify example truncated right after the question, so the question is the final turn.
-- **Hub:** adapter + GGUFs uploaded to the private HF repo `alfred-2b-sft`.
+- **Hub:** adapter + GGUFs uploading to the private HF repo `alfred-2b-sft` (started 2026-10-23 07:35; not yet confirmed).
