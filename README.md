@@ -56,7 +56,7 @@ uv run python -m alfred.tools.server
 **Use it from Claude Desktop:** add this to `%APPDATA%\Claude\claude_desktop_config.json`, restart Claude Desktop,
 and ask "what's my disk usage?":
 ```json
-{"mcpServers": {"alfred": {"command": "uv", "args": ["--directory", "C:\work\alfred", "run", "python", "-m", "alfred.tools.server"]}}}
+{"mcpServers": {"alfred": {"command": "uv", "args": ["--directory", "C:/work/alfred", "run", "python", "-m", "alfred.tools.server"]}}}
 ```
 **Inspect it:** `npx @modelcontextprotocol/inspector uv run python -m alfred.tools.server` (needs Node.js).
 
