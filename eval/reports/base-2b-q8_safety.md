@@ -1,6 +1,6 @@
 # base-2b-q8 on safety (n=48)
 
-Backend `local` / model `local`, 2026-10-22T19:26:00, commit `5d5f84d`.
+Backend `local` / model `local`, 2026-10-23T14:34:41, commit `c3500c0`.
 
 | Metric | Value |
 |---|---|

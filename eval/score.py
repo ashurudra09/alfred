@@ -130,7 +130,10 @@ def call_args_score(tool: str, expected: dict, got: dict, rules: dict, folders=E
     scores = []
     for a, v in expected.items():
         rule = rules.get(a, default_rule(tool, a))
-        sc = arg_score(rule, v, got[a], folders) if a in got else 0.0
+        if a in got:
+            sc = arg_score(rule, v, got[a], folders)
+        else:  # leaving out an argument whose schema default is the expected value is the same call
+            sc = float("default" in props.get(a, {}) and props[a]["default"] == v)
         if not sc and a == "destination" and tool in ("move_file", "copy_file") and a in got and "source" in expected:
             # the contract allows "target folder or full new path": folder\<source name> is the same destination
             name = str(expected["source"]).replace("/", "\\").rstrip("\\").rsplit("\\", 1)[-1]

@@ -1,6 +1,6 @@
 # base-2b-q8 on indomain (n=278)
 
-Backend `local` / model `local`, 2026-10-22T19:25:52, commit `5d5f84d`.
+Backend `local` / model `local`, 2026-10-23T14:34:27, commit `c3500c0`.
 
 | Metric | Value |
 |---|---|

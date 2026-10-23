@@ -73,6 +73,9 @@ def test_rules_partial_credit_and_defaults():
     disk = item(calls=[("disk_usage", {"path": "C:\\"})])
     assert score_item(disk, out("", ("disk_usage", {"path": "C:", "top_n": 10})))["ok"]  # schema default: no penalty
     assert score_item(disk, out("", ("disk_usage", {"path": "C:", "top_n": 3})))["args_score"] == 0.5  # extra arg
+    top = item(calls=[("top_processes", {"sort_by": "cpu"})])
+    assert score_item(top, out("", ("top_processes", {})))["ok"]  # omitted arg equals the schema default
+    assert not score_item(item(calls=[("top_processes", {"sort_by": "memory"})]), out("", ("top_processes", {})))["ok"]
     anyrule = item(calls=[("set_reminder", {"text": "call mom", "time": "in 20 minutes"})], rules={"time": "any"})
     assert score_item(anyrule, out("", ("set_reminder", {"text": "Call Mom", "time": "2026-10-22 18:20"})))["ok"]
 

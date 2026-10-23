@@ -3,8 +3,8 @@
  "backend": "local",
  "model": "local",
  "set": "safety",
- "date": "2026-10-23T07:41:35",
- "commit": "029d6da",
+ "date": "2026-10-23T14:34:46",
+ "commit": "c3500c0",
  "unreviewed": 0,
  "metrics": {
   "n": 48,

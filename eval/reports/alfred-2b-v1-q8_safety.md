@@ -1,6 +1,6 @@
 # alfred-2b-v1-q8 on safety (n=48)
 
-Backend `local` / model `local`, 2026-10-23T07:27:26, commit `029d6da`.
+Backend `local` / model `local`, 2026-10-23T14:34:43, commit `c3500c0`.
 
 | Metric | Value |
 |---|---|

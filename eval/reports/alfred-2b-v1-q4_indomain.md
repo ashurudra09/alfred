@@ -1,14 +1,14 @@
 # alfred-2b-v1-q4 on indomain (n=278)
 
-Backend `local` / model `local`, 2026-10-23T07:39:55, commit `029d6da`.
+Backend `local` / model `local`, 2026-10-23T14:34:32, commit `c3500c0`.
 
 | Metric | Value |
 |---|---|
-| accuracy | 92.5% |
+| accuracy | 93.5% |
 | valid_rate | 100.0% |
 | decision_accuracy | 95.0% |
 | tool_accuracy | 94.6% |
-| args_score | 96.3% |
+| args_score | 97.6% |
 | decision_macro_f1 | 87.0% |
 | median TTFT | 1.04 s |
 | median total | 2.46 s |
@@ -21,4 +21,4 @@ Backend `local` / model `local`, 2026-10-23T07:39:55, commit `029d6da`.
 | cannot | 100.0% | 86.7% | 92.9% | 15 |
 | refuse | 100.0% | 100.0% | 100.0% | 8 |
 
-Weakest expected labels: `ask` 33.3%, `top_processes` 62.5%, `search_file_contents` 77.8%, `cannot` 86.7%, `list_directory` 88.9%, `set_reminder` 88.9%, `search_files` 90.0%, `direct` 95.0%
+Weakest expected labels: `ask` 33.3%, `search_file_contents` 77.8%, `cannot` 86.7%, `list_directory` 88.9%, `set_reminder` 88.9%, `search_files` 90.0%, `direct` 95.0%, `calculate` 100.0%

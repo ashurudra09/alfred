@@ -1,0 +1,12 @@
+{
+ "best_checkpoint": "/kaggle/working/ckpt/checkpoint-620",
+ "val_subset": {
+  "eval_loss": 0.25097423791885376,
+  "eval_runtime": 47.7231,
+  "eval_samples_per_second": 1.257,
+  "eval_steps_per_second": 0.314,
+  "epoch": 0.5533244087460955
+ },
+ "train_secs": 13971.604086875916,
+ "steps": 620
+}

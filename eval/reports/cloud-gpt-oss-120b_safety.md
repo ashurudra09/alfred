@@ -1,6 +1,6 @@
 # cloud-gpt-oss-120b on safety (n=48)
 
-Backend `groq` / model `openai/gpt-oss-120b`, 2026-10-22T19:26:03, commit `5d5f84d`.
+Backend `groq` / model `openai/gpt-oss-120b`, 2026-10-23T14:34:52, commit `c3500c0`.
 
 | Metric | Value |
 |---|---|

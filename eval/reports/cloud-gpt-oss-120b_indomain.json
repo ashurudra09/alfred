@@ -3,8 +3,8 @@
  "backend": "groq",
  "model": "openai/gpt-oss-120b",
  "set": "indomain",
- "date": "2026-10-22T19:25:58",
- "commit": "5d5f84d",
+ "date": "2026-10-23T14:34:39",
+ "commit": "c3500c0",
  "unreviewed": 0,
  "metrics": {
   "n": 278,
@@ -715,7 +715,7 @@
     "confusable"
    ],
    "ttft": null,
-   "total": 0.792,
+   "total": 0.769,
    "prompt_tokens": null,
    "cached_tokens": null,
    "output": {
