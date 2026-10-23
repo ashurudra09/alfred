@@ -1,4 +1,5 @@
 import json
+import time
 
 import pytest
 
@@ -78,8 +79,9 @@ def test_plain_iteration_denies(env):
 
 def test_approved_write_runs_and_is_journaled(env):
     b = FakeBackend(call("move_file", source="Downloads\\notes.txt", destination="Documents"), say("Moved."))
-    drive(run_turn(env["chat"], "move notes", b, env["tools"]), confirm=lambda d: True)
+    events = drive(run_turn(env["chat"], "move notes", b, env["tools"]), confirm=lambda d: time.sleep(0.5) or True)
     assert (env["Documents"] / "notes.txt").exists() and journal.recent()[0]["op"] == "move"
+    assert next(e for e in events if e.kind == "timing").data["total"] < 0.5  # waiting for the user isn't latency
 
 
 def test_preview_error_skips_confirmation(env):

@@ -55,6 +55,15 @@ It starts llama-server on the fine-tuned model if it isn't running, then answers
 changes files (move, rename, copy, zip, organize, delete) shows the exact plan and waits for `y`; `/undo` reverses
 the last change (`/actions` lists them). Other commands: `/new /chats /open <id> /delete <id> /memories /forget <id>`.
 
+## Talk to Alfred (browser)
+```
+uv run alfred-ui
+```
+Opens a local page (http://127.0.0.1:7860, never exposed to the network, no analytics or web fonts): past chats
+in the sidebar, streamed answers with a live timer, each tool call as a card, Confirm/Cancel with the exact plan for
+any change, Undo with the recent actions, a Memory tab to view and forget memories, and timing under every reply.
+Screenshots: [docs/ui/](docs/ui/).
+
 **End-to-end tests** (needs the model served): `uv run python -m eval.e2e --system alfred-2b-v2-q4`.
 
 ## Run the tool server

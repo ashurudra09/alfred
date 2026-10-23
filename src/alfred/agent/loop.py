@@ -104,8 +104,10 @@ def run_turn(chat_id: int, user_text: str, backend, tools, max_calls: int = MAX_
                 except ToolError as e:
                     text, is_error = str(e), True
                 else:
+                    t_wait = time.perf_counter()
                     approved = bool((yield Event("confirm_required", {"name": call.name, "args": call.arguments,
                                                                      "preview": plan})))
+                    timer.t0 += time.perf_counter() - t_wait  # the user's thinking time isn't Alfred's latency
                     if not approved:
                         text = DECLINED
             if text is None:

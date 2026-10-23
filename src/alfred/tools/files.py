@@ -245,7 +245,7 @@ def move_file(source, destination):
     return f"Moved {src} to {dst}. Undo: /undo"
 
 
-def rename_file(path, new_name):
+def _rename_target(path, new_name) -> tuple[Path, Path]:
     new_name = new_name.strip().rstrip(". ")
     if any(c in new_name for c in '\\/:*?"<>|') or not new_name:
         raise ToolError("new_name must be a file name only, without a folder.")
@@ -256,6 +256,11 @@ def rename_file(path, new_name):
     if dst.exists() and not dst.samefile(src):  # the same file means only the letter case changes
         assert_no_overwrite(dst)
     resolve_safe(str(dst), must_exist=False)  # the new name may not be sensitive either
+    return src, dst
+
+
+def rename_file(path, new_name):
+    src, dst = _rename_target(path, new_name)
     _os(f"rename {src.name}", src.rename, dst)
     journal.record("rename_file", "rename", src, dst)
     return f"Renamed {src} to {dst.name}. Undo: /undo"
@@ -371,8 +376,8 @@ def preview(tool: str, args: dict) -> str:
         assert_no_overwrite(dst)
         return f"{'Move' if tool == 'move_file' else 'Copy'} {src} → {dst}"
     if tool == "rename_file":
-        src = resolve_safe(args["path"])
-        return f"Rename {src} → {args['new_name']}"
+        src, dst = _rename_target(args["path"], args["new_name"])
+        return f"Rename {src} → {dst.name}"
     if tool == "zip_folder":
         src = resolve_safe(args["source"])
         default = src.with_name((src.name if src.is_dir() else src.stem) + ".zip")

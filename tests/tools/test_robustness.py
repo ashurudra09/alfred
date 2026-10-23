@@ -60,6 +60,7 @@ def test_move_to_missing_folder_does_not_create_a_file(sandbox):
 
 
 def test_rename_keeps_extension_and_allows_case_change(sandbox):
+    assert files.preview("rename_file", {"path": "Downloads\\notes.txt", "new_name": "lora"}).endswith("→ lora.txt")
     files.rename_file("Downloads\\notes.txt", "lora")
     assert (sandbox["Downloads"] / "lora.txt").exists()
     files.rename_file("Downloads\\lora.txt", "LoRA.txt")

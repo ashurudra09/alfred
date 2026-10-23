@@ -15,7 +15,7 @@ Each phase gate adds one line to the log below. Full detail for each phase is in
 | D1 | Docs checkpoint 1: "the model works" | M1 (24 Oct) | done | 2026-10-23 | `docs/learning/` (4 notes); tag `checkpoint-D1` |
 | 6 | Tool server | M2 | done (Inspector check optional) | 2026-10-23 | `pytest tests/tools` (35 passed incl. stdio server) |
 | 7 | Agent runtime + CLI | M2 | done (offline run pending) | 2026-10-23 | `pytest tests/agent` (12 passed); [e2e report](../eval/reports/e2e_alfred-2b-v2-q4.md) 47/50, invariants 0 |
-| 8 | Minimal web UI | M2 | not started | | |
+| 8 | Minimal web UI | M2 | done | 2026-10-23 | `pytest tests/ui` (2 passed); manual checklist with [screenshots](ui/) |
 | 9 | Benchmarks, safety & ablations | M2 / M3 | not started | | |
 | D2 | Docs checkpoint 2: "the product works" | M2 (31 Oct) | not started | | |
 | 10 | DPO | M3 | not started | | |
@@ -46,8 +46,8 @@ Every number is from a report in `eval/reports/` (scorer v1.1). In-domain = 278 
 - **Training budget:** each SFT run takes ~4 h of float32 on a T4 (vs the planned ≤ 2 GPU-hours) and covers ~0.6 of an epoch.
 
 ## Next steps
-1. Phase 8: minimal web UI over the same event stream.
-2. Phase 9: web UI; BFCL / When2Call / quantization benchmarks.
+1. Phase 9: BFCL / When2Call / safety / quantization benchmarks and ablations.
+2. D2: docs checkpoint "the product works".
 
 ## Gate log
 <!-- One line per gate: YYYY-MM-DD · phase · result · evidence -->
@@ -64,3 +64,4 @@ Every number is from a report in `eval/reports/` (scorer v1.1). In-domain = 278 
 - 2026-10-23 · Phase 6 · passed (owner checks pending) · 25 tools behind the frozen contracts; `uv run pytest` 70 passed: every guard (allow-list, sensitive paths, junction escape, executables, no overwrite), happy/error paths, undo round-trip for move/rename/copy/zip/organize/recycle (real Recycle Bin restore) + notes/reminders/memory; stdio MCP client: list_tools = tools.json; real-machine smoke OK. Pending: MCP Inspector + Claude Desktop (owner)
 - 2026-10-23 · Phase 7 · passed (owner offline check pending) · `uv run pytest` 83 passed; e2e 47/50 (94%) with SFT v2 Q4, injection 20/20, unconfirmed writes / overwrites / permanent deletes = 0 / 0 / 0; median turn 9 s; live CLI session OK
 - 2026-10-23 · Phase 6 · owner check passed · tool robustness pass (130 tests); owner ran the Claude Desktop test plan (docs/claude_desktop_tests.md): all tools work from Claude Desktop
+- 2026-10-23 · Phase 8 · passed · `uv run alfred-ui` (Gradio 6.30, 127.0.0.1 only, page requests only localhost); `uv run pytest` 132 passed incl. `tests/ui/test_smoke.py` (fake model via gradio_client: reply + timing; cancel = no change, confirm moves, undo restores); manual checklist on the real model, screenshots in docs/ui/: live timer, tool card + timing footer, confirm, cancel = no change, undo, continue an old chat, delete a chat, memory forget

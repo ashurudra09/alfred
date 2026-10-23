@@ -157,3 +157,11 @@ Probing each tool with inputs a model plausibly sends found these failures; all 
 - **search_notes / recall:** `grocery` missed `Groceries`; "all" listed nothing; `wifi` missed `Wi-Fi`; recall's cosine cutoff 0.35 returned unrelated memories (unrelated queries score up to 0.47 with embeddinggemma, related 0.52–0.69) → stem matching, list-all, hyphen-insensitive keywords, cutoff 0.5.
 - **MCP server instructions:** clients like Claude Desktop never see Alfred's system prompt, so the server now sends the known folders, today's date and the path/undo conventions on connect (the frozen contracts are unchanged).
 - Manual test plan for all tools in Claude Desktop: `docs/claude_desktop_tests.md` (`scripts/make_test_folder.py` creates a throwaway `Documents\AlfredTest`).
+
+## 2026-10-23: Phase 8 (web UI)
+- **Gradio 6 Blocks, one file (`src/alfred/ui/app.py`)**, bound to 127.0.0.1, analytics off, system fonts (no Google Fonts), no share link; the page loads only from localhost (checked in the browser), so it works offline.
+- **Confirmation across clicks:** `run_turn` is a generator, so the UI keeps the paused generator and resumes it with `send(True/False)` from the Confirm/Cancel buttons. Opening another chat or starting a new one mid-confirmation counts as Cancel (nothing changes, the turn is saved). One in-process session: it's a local single-user app.
+- **Live timer:** a 0.1 s `gr.Timer` updates the elapsed time while a turn runs, because nothing streams during the model's prefill. It pauses at a confirmation: **the time the user takes to decide is no longer counted in the turn's total** (fixed in `loop.run_turn`, so the CLI and the logs also report Alfred's latency only).
+- **Tool calls as cards** (Chatbot `metadata` titles: ✓ done, ✗ error, – declined), the result inside the card; saved chats render the same way.
+- **Found while testing:** the rename preview showed `resume_2025` while the tool keeps the extension (`resume_2025.pdf`); the preview now uses the same code as the tool. Restarts no longer pile up empty "New chat" entries.
+- **Model behaviour seen in the UI (not fixed here):** "zip the Resume folder in Documents\AlfredTest" proposed zipping all of AlfredTest; the confirmation showed the wrong path and Cancel left everything unchanged. This is the case the confirmation step exists for.
