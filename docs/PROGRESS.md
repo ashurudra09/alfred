@@ -13,7 +13,7 @@ Each phase gate adds one line to the log below. Full detail for each phase is in
 | 4 | Training dataset | M1 | done | 2026-10-22 | `data/stats.md`; validate 96.8%, dedup --check 0 hits |
 | 5 | SFT + export | M1 | done | 2026-10-23 | `eval/reports/alfred-2b-v2-q{4,8}_*`; in-domain 95.3% (v2 Q4) vs base 79.1% |
 | D1 | Docs checkpoint 1: "the model works" | M1 (24 Oct) | done | 2026-10-23 | `docs/learning/` (4 notes); tag `checkpoint-D1` |
-| 6 | Tool server | M2 | not started | | |
+| 6 | Tool server | M2 | done (Claude Desktop check pending) | 2026-10-23 | `pytest tests/tools` (35 passed incl. stdio server) |
 | 7 | Agent runtime + CLI | M2 | not started | | |
 | 8 | Minimal web UI | M2 | not started | | |
 | 9 | Benchmarks, safety & ablations | M2 / M3 | not started | | |
@@ -46,8 +46,7 @@ Every number is from a report in `eval/reports/` (scorer v1.1). In-domain = 278 
 - **Training budget:** each SFT run takes ~4 h of float32 on a T4 (vs the planned ≤ 2 GPU-hours) and covers ~0.6 of an epoch.
 
 ## Next steps
-1. Phase 6: the MCP tool server (25 tools, guards, journal + undo, memory store).
-2. Phase 7: agent loop + CLI with the confirmation gate, untrusted tool output, chat history, timing.
+1. Phase 7: agent loop + CLI with the confirmation gate, untrusted tool output, chat history, timing.
 3. Phase 8–9: web UI; BFCL / When2Call / quantization benchmarks.
 
 ## Gate log
@@ -62,3 +61,4 @@ Every number is from a report in `eval/reports/` (scorer v1.1). In-domain = 278 
 - 2026-10-23 · Phase 5 · passed with an open issue · SFT v1 620 steps (4.0 h T4), val loss 0.227; in-domain Q8 90.6% / Q4 92.4% vs base 79.1% vs gpt-oss-120b 88.5%; safety 97.9% vs base 66.7%; ask recall regressed to 7–33% (template render of earlier turns) → v2 fix
 - 2026-10-23 · Phase 5 · passed · SFT v2 (ask fix): in-domain Q8 95.7% / Q4 95.3% vs base 79.1% (+16.2–16.6) vs gpt-oss-120b 88.5%; ask recall 93–100%; safety 95.8% vs base 66.7%; scorer v1.1 (default-valued omitted args); v1 kept as `alfred-2b-v1-*`
 - 2026-10-23 · D1 · passed · PROGRESS key numbers (each linked to a report), open issues, next steps; README status + how-to-run; learning notes (chat templates, LoRA, synthetic data, eval metrics); relative-link check over docs: 0 broken
+- 2026-10-23 · Phase 6 · passed (owner checks pending) · 25 tools behind the frozen contracts; `uv run pytest` 70 passed: every guard (allow-list, sensitive paths, junction escape, executables, no overwrite), happy/error paths, undo round-trip for move/rename/copy/zip/organize/recycle (real Recycle Bin restore) + notes/reminders/memory; stdio MCP client: list_tools = tools.json; real-machine smoke OK. Pending: MCP Inspector + Claude Desktop (owner)

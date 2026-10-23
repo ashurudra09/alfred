@@ -15,16 +15,19 @@ from alfred.contracts.tools import CONTRACTS_VERSION, REGISTRY
 TOOLS_JSON = Path(__file__).with_name("tools.json")
 
 
-def mcp_tool(name: str) -> Tool:
-    """The FastMCP Tool for a contract. The Phase 6 server passes the same arguments with the real body."""
+def tool_options(name: str) -> dict:
+    """Everything FastMCP needs besides the function; shared with the server (tools/server.py)."""
     r = REGISTRY[name]
-    return Tool.from_function(
-        r["fn"], name=name, description=r["fn"].__doc__,
-        annotations=ToolAnnotations(readOnlyHint=r["read_only"], destructiveHint=r["destructive"],
-                                    idempotentHint=r["read_only"], openWorldHint=False),
-        meta={"alfred/group": r["group"], "alfred/needs_confirmation": r["needs_confirmation"]},
-        structured_output=False,
-    )
+    return dict(name=name, description=r["fn"].__doc__,
+                annotations=ToolAnnotations(readOnlyHint=r["read_only"], destructiveHint=r["destructive"],
+                                            idempotentHint=r["read_only"], openWorldHint=False),
+                meta={"alfred/group": r["group"], "alfred/needs_confirmation": r["needs_confirmation"]},
+                structured_output=False)
+
+
+def mcp_tool(name: str) -> Tool:
+    """The FastMCP Tool for a contract; the server registers the real body with the same options."""
+    return Tool.from_function(REGISTRY[name]["fn"], **tool_options(name))
 
 
 def build() -> dict:

@@ -18,6 +18,18 @@ def _normalise(expr: str) -> str:
     return re.sub(r"(?<=\d),(?=\d{3}(?!\d))", "", expr)  # 34,999 -> 34999
 
 
+def calculate(expression):
+    """The `calculate` tool: the exact result as text, e.g. '6299.82'."""
+    from mcp.server.fastmcp.exceptions import ToolError
+    try:
+        v = evaluate(expression)
+    except ValueError as e:
+        raise ToolError(str(e)) from e
+    if isinstance(v, float) and v.is_integer() and abs(v) < 1e15:
+        v = int(v)
+    return f"{v:.10g}" if isinstance(v, float) else str(v)
+
+
 def evaluate(expression: str) -> int | float:
     """Raises ValueError for anything that isn't plain arithmetic."""
     try:

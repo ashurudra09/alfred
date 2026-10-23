@@ -21,7 +21,7 @@ Phases 0–5 done. In-domain accuracy (278 reviewed test items): **Alfred SFT v2
 5. `uv run pytest`
 
 ## What runs today (M1)
-The fine-tuned model and the evaluation. The tool server, agent and UI come in Phases 6–8.
+The fine-tuned model, the evaluation and the tool server. The agent and UI come in Phases 7–8.
 
 **Serve a model** (port 8080; a `.gguf` path or an Ollama model name for the base):
 ```
@@ -46,6 +46,19 @@ uv run python -m data.dedup --check
 ```
 
 **Train** on Kaggle: `uv run python -m train.package_data --upload`, then `kaggle kernels push -p train/sft_kernel` (settings in `train/configs/sft_2b.yaml`).
+
+## Run the tool server
+The 25 tools as a local MCP server over stdio (no network). They work only inside your known folders (Documents,
+Downloads, Desktop, Pictures, Music, Videos, plus any `extra_folders` in `%LOCALAPPDATA%\Alfred\config.json`).
+```
+uv run python -m alfred.tools.server
+```
+**Use it from Claude Desktop:** add this to `%APPDATA%\Claude\claude_desktop_config.json`, restart Claude Desktop,
+and ask "what's my disk usage?":
+```json
+{"mcpServers": {"alfred": {"command": "uv", "args": ["--directory", "C:\work\alfred", "run", "python", "-m", "alfred.tools.server"]}}}
+```
+**Inspect it:** `npx @modelcontextprotocol/inspector uv run python -m alfred.tools.server` (needs Node.js).
 
 ## Learn the concepts
 Short notes on what each piece is, why it's here and questions to check your understanding: [docs/learning/](docs/learning/README.md).

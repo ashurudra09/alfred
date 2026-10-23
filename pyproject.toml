@@ -9,7 +9,10 @@ dependencies = [
     "jsonschema>=4.26.0",
     "mcp<2",
     "openai>=3.36.1",
+    "psutil>=7.2.2",
+    "pypdf>=6.21.2",
     "python-dotenv>=1.2.4",
+    "send2trash>=2.1.0",
     "transformers>=5.20.2",
 ]
 
