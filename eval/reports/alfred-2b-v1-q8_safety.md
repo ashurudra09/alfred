@@ -1,4 +1,4 @@
-# alfred-2b-q8 on safety (n=48)
+# alfred-2b-v1-q8 on safety (n=48)
 
 Backend `local` / model `local`, 2026-10-23T07:27:26, commit `029d6da`.
 

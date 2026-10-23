@@ -1,4 +1,4 @@
-# alfred-2b-q8 on indomain (n=278)
+# alfred-2b-v1-q8 on indomain (n=278)
 
 Backend `local` / model `local`, 2026-10-23T07:25:16, commit `029d6da`.
 

@@ -30,6 +30,21 @@ def render(ex: Example, tok) -> str:
     return tok.apply_chat_template(msgs, tools=ex.tools, tokenize=False, enable_thinking=False)
 
 
+def ask_endings(examples: list[Example]) -> list[Example]:
+    """Each clarify-then-call example again, cut right after the clarifying question.
+
+    Qwen's template drops the empty <think></think> block from turns before the last user message, so in the full
+    conversation the question is rendered without the prefix every inference-time reply starts with. SFT v1 trained
+    on only those and almost stopped asking (decisions.md, Phase 5); here the question is the final turn."""
+    out = []
+    for e in examples:
+        if e.category != "ask":
+            continue
+        cut = next(i for i, m in enumerate(e.messages) if m.role == "assistant" and not m.tool_calls)
+        out.append(e.model_copy(update={"id": e.id + "-q", "messages": e.messages[:cut + 1]}))
+    return out
+
+
 def split(examples: list[Example], val_frac: float = 0.05) -> tuple[list[Example], list[Example]]:
     groups = defaultdict(list)
     for e in examples:
@@ -54,6 +69,7 @@ def main():
 
     synthetic = [Example.model_validate_json(line) for line in
                  (OUT / "synthetic.valid.jsonl").read_text(encoding="utf-8").splitlines()]
+    synthetic += ask_endings(synthetic)
     total = round(len(synthetic) / (1 - sum(SHARE.values())))
     external = when2call(round(total * SHARE["when2call"])) + xlam(round(total * SHARE["xlam"]))
     guard = Guard()

@@ -92,8 +92,8 @@ Each decision with its date and reason. Newest at the bottom.
 | System | In-domain acc. | Decision F1 | Args | Safety acc. | Refuse recall (safety) | Median TTFT / total |
 |---|---|---|---|---|---|---|
 | base Qwen3.5-2B Q8 | 79.1% | 72.4% | 86.0% | 66.7% | 59.3% | 1.9 / 4.7 s |
-| **Alfred SFT v1 Q8** | **90.6%** | 78.7% | 95.7% | **97.9%** | 92.6% | 1.3 / 3.3 s |
-| **Alfred SFT v1 Q4** | **92.4%** | 87.0% | 96.3% | **97.9%** | 96.3% | 1.0 / 2.5 s |
+| **Alfred SFT v1 Q8** (`alfred-2b-v1-q8_*`) | **90.6%** | 78.7% | 95.7% | **97.9%** | 92.6% | 1.3 / 3.3 s |
+| **Alfred SFT v1 Q4** (`alfred-2b-v1-q4_*`) | **92.4%** | 87.0% | 96.3% | **97.9%** | 96.3% | 1.0 / 2.5 s |
 | gpt-oss-120b (cloud) | 88.5% | 89.2% | 87.8% | 95.8% | 88.9% | 0.9 / 0.9 s |
 
   Gain over base: **+11.5 pts (Q8), +13.3 pts (Q4)**, below the ≥ 15-pt target (the base is strong). Q4 ≥ Q8 here is within noise (≈ 5 items).

@@ -11,7 +11,7 @@ Each phase gate adds one line to the log below. Full detail for each phase is in
 | 2 | Tool contracts | M1 | done | 2026-10-22 | `pytest tests/contracts` (11 passed); tag `contracts-v1.0` |
 | 3 | Eval harness, test sets & baselines | M1 | done | 2026-10-22 | `pytest tests/eval` (24 passed); `eval/reports/base-2b-q8_*`, `cloud-gpt-oss-120b_*`, rescore 20/20 |
 | 4 | Training dataset | M1 | done | 2026-10-22 | `data/stats.md`; validate 96.8%, dedup --check 0 hits |
-| 5 | SFT + export | M1 | done (v2 pending for asks) | 2026-10-23 | `eval/reports/alfred-2b-q{4,8}_*`; in-domain 92.4% (Q4) vs base 79.1% |
+| 5 | SFT + export | M1 | done (v2 pending for asks) | 2026-10-23 | `eval/reports/alfred-2b-v1-q{4,8}_*`; in-domain 92.4% (Q4) vs base 79.1% |
 | D1 | Docs checkpoint 1: "the model works" | M1 (24 Oct) | not started | | |
 | 6 | Tool server | M2 | not started | | |
 | 7 | Agent runtime + CLI | M2 | not started | | |
