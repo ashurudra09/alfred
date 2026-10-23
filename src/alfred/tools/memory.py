@@ -16,7 +16,7 @@ from alfred.tools import journal
 from alfred.tools.guards import home
 
 EMBED_URL, MODEL = "http://127.0.0.1:11434/api/embed", "embeddinggemma"
-MIN_SCORE = 0.35  # cosine below this isn't shown as a match
+MIN_SCORE = 0.5  # embeddinggemma: related 0.52-0.69, unrelated up to 0.47 (measured 2026-10-23)
 
 
 def _db():
@@ -63,8 +63,9 @@ def _cos(a, b):
 
 
 def _keyword(query: str, text: str) -> float:
-    q = {w for w in re.findall(r"\w+", query.casefold()) if len(w) > 2}
-    t = set(re.findall(r"\w+", text.casefold()))
+    """Share of the query's words found in the text ('wifi' matches 'Wi-Fi')."""
+    q = {w for w in re.findall(r"\w+", query.casefold().replace("-", "")) if len(w) > 2}
+    t = set(re.findall(r"\w+", text.casefold().replace("-", "")))
     return len(q & t) / len(q) if q else 0.0
 
 

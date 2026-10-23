@@ -2,7 +2,10 @@
 Every write goes through guards, never overwrites, and is recorded in the journal for /undo.
 """
 
+import ctypes
+import fnmatch
 import os
+import re
 import shutil
 import time
 import zipfile
@@ -16,6 +19,8 @@ from alfred.tools import journal
 from alfred.tools.guards import allowed_roots, assert_no_overwrite, is_executable, is_sensitive, resolve_safe
 
 MAX_RESULTS, MAX_SCAN = 50, 20000
+MAX_READ = 2_000_000  # bytes read from one text file
+SKIP_ORGANIZE = {".lnk", ".url", ".ini", ".sys", ".tmp", ".crdownload", ".part"}  # shortcuts, system, in-progress
 TEXT_EXT = {".txt", ".md", ".py", ".js", ".ts", ".json", ".csv", ".html", ".css", ".java", ".c", ".cpp", ".h", ".cs",
             ".go", ".rs", ".rb", ".sql", ".yaml", ".yml", ".toml", ".ini", ".log", ".xml", ".tex", ".ipynb", ".sh"}
 TYPES = {"PDFs": {".pdf"}, "Images": {".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp", ".heic", ".svg"},
@@ -55,13 +60,30 @@ def listing(header: str, lines: list[str], noun: str = "file") -> str:
     return f"{len(lines)} {noun}{'s' if len(lines) != 1 else ''}{header}:\n" + "\n".join(lines[:MAX_RESULTS]) + more
 
 
+def _ext(extension) -> str | None:
+    e = (extension or "").strip().lstrip("*").lstrip(".").lower()
+    return "." + e if e else None
+
+
+def name_matcher(query: str):
+    """Wildcards ('*.pdf') use glob rules; otherwise every word must appear in the name ('transformer paper'
+    matches transformer_paper.pdf). An empty query or '*' matches everything."""
+    q = query.strip().casefold()
+    if q in ("", "*", "*.*"):
+        return lambda name: True
+    if any(c in q for c in "*?"):
+        return lambda name: fnmatch.fnmatch(name.casefold(), q)
+    words = re.findall(r"[^\W_]+", q)
+    return lambda name: all(w in re.sub(r"[\W_]+", " ", name.casefold()) for w in words)
+
+
 def search_files(query, folder, extension=None, modified_within_days=None):
     root = resolve_safe(folder)
-    q, ext = query.casefold(), extension and "." + extension.lower().lstrip(".")
+    match, ext = name_matcher(query), _ext(extension)
     since = time.time() - modified_within_days * 86400 if modified_within_days else None
     hits = []
     for p in walk(root):
-        if q in p.name.casefold() and (not ext or p.suffix.lower() == ext):
+        if match(p.name) and (not ext or p.suffix.lower() == ext):
             st = p.stat()
             if since is None or st.st_mtime >= since:
                 hits.append((st.st_mtime, f"{p} ({size(st.st_size)}, modified "
@@ -75,17 +97,41 @@ def _pdf_text(p: Path, max_pages: int = 30) -> str:
     return "\n".join((page.extract_text() or "") for page in reader.pages[:max_pages])
 
 
+def _docx_text(p: Path) -> str:
+    with zipfile.ZipFile(p) as z:
+        xml = z.read("word/document.xml").decode("utf-8", errors="replace")
+    return re.sub(r"<[^>]+>", "", re.sub(r"</w:p>", "\n", xml)).strip()
+
+
 def _text(p: Path) -> str:
-    return _pdf_text(p) if p.suffix.lower() == ".pdf" else p.read_text(encoding="utf-8", errors="replace")
+    suf = p.suffix.lower()
+    if suf == ".pdf":
+        return _pdf_text(p)
+    if suf == ".docx":
+        return _docx_text(p)
+    with p.open("rb") as f:
+        raw = f.read(MAX_READ)
+    if raw.startswith((b"\xff\xfe", b"\xfe\xff")):
+        return raw.decode("utf-16", errors="replace")
+    return raw.decode("utf-8-sig", errors="replace")
+
+
+def is_text(p: Path) -> bool:
+    """Known text/document types, or any file whose first 8 KB has no NUL bytes (README, LICENSE, ...)."""
+    if p.suffix.lower() in TEXT_EXT | {".pdf", ".docx"}:
+        return True
+    with p.open("rb") as f:
+        head = f.read(8192)
+    return b"\x00" not in head or head.startswith((b"\xff\xfe", b"\xfe\xff"))
 
 
 def search_file_contents(text, folder, extension=None):
     root, needle = resolve_safe(folder), text.casefold()
-    ext = extension and "." + extension.lower().lstrip(".")
+    ext = _ext(extension)
     hits = []
     for p in walk(root):
         suf = p.suffix.lower()
-        if (ext and suf != ext) or (suf not in TEXT_EXT and suf != ".pdf") or p.stat().st_size > 5_000_000:
+        if (ext and suf != ext) or (suf not in TEXT_EXT | {".pdf", ".docx"}) or p.stat().st_size > 5_000_000:
             continue
         try:
             body = _text(p)
@@ -105,16 +151,23 @@ def list_directory(path):
     items = sorted(p.iterdir(), key=lambda x: (not x.is_dir(), x.name.casefold()))
     lines = [f"{x.name}\\ (folder)" if x.is_dir() else f"{x.name} ({size(x.stat().st_size)})"
              for x in items if not is_sensitive(x)]
-    return f"{p} ({len(lines)} items):\n" + ("\n".join(lines[:200]) or "(empty)")
+    more = f"\n... and {len(lines) - 200} more" if len(lines) > 200 else ""
+    return f"{p} ({len(lines)} items):\n" + ("\n".join(lines[:200]) or "(empty)") + more
 
 
 def read_file(path, max_chars=4000):
     p = resolve_safe(path)
     if not p.is_file():
         raise ToolError(f"Not a file: {p}")
-    if p.suffix.lower() not in TEXT_EXT | {".pdf"}:
-        raise ToolError(f"Can't read {p.suffix or 'this'} files; only text, markdown, code and PDF.")
-    body = _text(p)
+    if not is_text(p):
+        raise ToolError(f"Can't read {p.suffix or 'this'} files: only text, code, PDF and Word (.docx) files.")
+    try:
+        body = _text(p)
+    except Exception as e:
+        raise ToolError(f"Couldn't read {p.name}: {e}")
+    if not body.strip():
+        return f"{p}: no text found" + (" (it may be a scanned PDF with only images)." if p.suffix.lower() == ".pdf"
+                                        else ".")
     more = f"\n... ({len(body) - max_chars} more chars)" if len(body) > max_chars else ""
     return f"{p} ({len(body):,} chars):\n{body[:max_chars]}{more}"
 
@@ -163,9 +216,22 @@ def disk_usage(path, top_n=10):
 
 
 def _target(src: Path, destination: str) -> Path:
-    """A folder destination keeps the name; otherwise destination is the full new path."""
+    """A folder destination keeps the name; otherwise destination is the full new path. A missing destination
+    without an extension, for a file that has one, is a folder that doesn't exist (not a new file name)."""
     d = resolve_safe(destination, must_exist=False)
-    return d / src.name if d.is_dir() else d
+    if d.is_dir():
+        return d / src.name
+    if src.is_file() and src.suffix and not d.suffix:
+        raise ToolError(f"Folder not found: {d}. Create it first, or give the full new file name.")
+    return d
+
+
+def _os(action: str, fn, *args):
+    """Run a filesystem call; turn OS errors (file in use, access denied) into a clear tool error."""
+    try:
+        return fn(*args)
+    except OSError as e:
+        raise ToolError(f"Couldn't {action}: {e.strerror or e}")
 
 
 def move_file(source, destination):
@@ -174,19 +240,23 @@ def move_file(source, destination):
     assert_no_overwrite(dst)
     if not dst.parent.exists():
         raise ToolError(f"Folder not found: {dst.parent}")
-    shutil.move(str(src), str(dst))
+    _os(f"move {src.name}", shutil.move, str(src), str(dst))
     journal.record("move_file", "move", src, dst)
     return f"Moved {src} to {dst}. Undo: /undo"
 
 
 def rename_file(path, new_name):
-    if any(c in new_name for c in '\\/:*?"<>|') or not new_name.strip():
+    new_name = new_name.strip().rstrip(". ")
+    if any(c in new_name for c in '\\/:*?"<>|') or not new_name:
         raise ToolError("new_name must be a file name only, without a folder.")
     src = resolve_safe(path)
-    dst = src.with_name(new_name.strip())
-    assert_no_overwrite(dst)
+    if src.is_file() and src.suffix and not Path(new_name).suffix:
+        new_name += src.suffix  # "rename report.docx to final" keeps .docx
+    dst = src.with_name(new_name)
+    if dst.exists() and not dst.samefile(src):  # the same file means only the letter case changes
+        assert_no_overwrite(dst)
     resolve_safe(str(dst), must_exist=False)  # the new name may not be sensitive either
-    src.rename(dst)
+    _os(f"rename {src.name}", src.rename, dst)
     journal.record("rename_file", "rename", src, dst)
     return f"Renamed {src} to {dst.name}. Undo: /undo"
 
@@ -197,25 +267,28 @@ def copy_file(source, destination):
     assert_no_overwrite(dst)
     if not dst.parent.exists():
         raise ToolError(f"Folder not found: {dst.parent}")
-    shutil.copytree(src, dst) if src.is_dir() else shutil.copy2(src, dst)
+    _os(f"copy {src.name}", shutil.copytree if src.is_dir() else shutil.copy2, src, dst)
     journal.record("copy_file", "create", src, dst)
     return f"Copied {src} to {dst}. Undo: /undo"
 
 
 def zip_folder(source, destination=None):
-    src = resolve_safe(source)
-    if not src.is_dir():
-        raise ToolError(f"Not a folder: {src}")
-    dst = resolve_safe(destination, must_exist=False) if destination else src.with_name(src.name + ".zip")
+    src = resolve_safe(source)  # a single file works too
+    dst = resolve_safe(destination, must_exist=False) if destination else src.with_name(
+        (src.name if src.is_dir() else src.stem) + ".zip")
     if dst.is_dir():
         dst = dst / (src.name + ".zip")
     if dst.suffix.lower() != ".zip":
         dst = dst.with_name(dst.name + ".zip")
     assert_no_overwrite(dst)
-    files = list(walk(src))
-    with zipfile.ZipFile(dst, "w", zipfile.ZIP_DEFLATED) as z:
-        for f in files:
-            z.write(f, f.relative_to(src.parent))
+    files = list(walk(src)) if src.is_dir() else [src]
+    try:
+        with zipfile.ZipFile(dst, "w", zipfile.ZIP_DEFLATED) as z:
+            for f in files:
+                z.write(f, f.relative_to(src.parent))
+    except OSError as e:
+        dst.unlink(missing_ok=True)  # never leave a half-written zip
+        raise ToolError(f"Couldn't zip {src.name}: {e.strerror or e}")
     journal.record("zip_folder", "create", src, dst)
     return f"Created {dst} ({len(files)} files, {size(dst.stat().st_size)}). Undo: /undo"
 
@@ -225,7 +298,8 @@ def _organize_plan(path, strategy):
     if not root.is_dir():
         raise ToolError(f"Not a folder: {root}")
     moves, skipped = [], []
-    for f in sorted(x for x in root.iterdir() if x.is_file() and not is_sensitive(x)):
+    for f in sorted(x for x in root.iterdir() if x.is_file() and not is_sensitive(x)
+                    and x.suffix.lower() not in SKIP_ORGANIZE and not x.name.startswith((".", "~$"))):
         if strategy == "by_date":
             sub = f"{datetime.fromtimestamp(f.stat().st_mtime):%Y-%m}"
         else:
@@ -240,16 +314,26 @@ def organize_folder(path, strategy="by_type"):
     if not moves:
         return f"Nothing to organize in {root}."
     created = sorted({str(d.parent) for _, d in moves if not d.parent.exists()})
+    done, failed = [], []
     for src, dst in moves:
-        dst.parent.mkdir(exist_ok=True)
-        shutil.move(str(src), str(dst))
-    journal.record("organize_folder", "organize", root, None,
-                   {"moves": [[str(s), str(d)] for s, d in moves], "created": created})
+        try:
+            dst.parent.mkdir(exist_ok=True)
+            shutil.move(str(src), str(dst))
+            done.append((src, dst))
+        except OSError:  # e.g. a file open in another app: skip it and keep going
+            failed.append(src.name)
+    if not done:
+        raise ToolError(f"Couldn't move any files in {root} (are they open in another app?)")
+    journal.record("organize_folder", "organize", root, None,  # only what really moved, so /undo is exact
+                   {"moves": [[str(s), str(d)] for s, d in done], "created": created})
+    moves = done
     counts = {}
     for _, d in moves:
         counts[d.parent.name] = counts.get(d.parent.name, 0) + 1
     parts = ", ".join(f"{n} to {k}\\" for k, n in sorted(counts.items(), key=lambda kv: -kv[1]))
     skip = f" Skipped {len(skipped)} (a file with that name is already in the target folder)." if skipped else ""
+    if failed:
+        skip += f" Couldn't move {len(failed)} (in use?): {', '.join(failed[:5])}."
     return f"Moved {len(moves)} files in {root}: {parts}.{skip} Undo: /undo"
 
 
@@ -257,7 +341,10 @@ def move_to_recycle_bin(path):
     p = resolve_safe(path)
     if p in allowed_roots():
         raise ToolError(f"Refused: {p} is one of your main folders.")
-    send2trash(str(p))
+    if ctypes.windll.kernel32.GetDriveTypeW(p.anchor) != 3:  # 3 = fixed disk; USB/network drives may delete for good
+        raise ToolError(f"Refused: {p.anchor} has no Recycle Bin (removable or network drive), so deleting would be "
+                        "permanent.")
+    _os(f"move {p.name} to the Recycle Bin", send2trash, str(p))
     journal.record("move_to_recycle_bin", "recycle", p)
     return f"Moved {p} to the Recycle Bin. Undo: /undo"
 
@@ -288,7 +375,8 @@ def preview(tool: str, args: dict) -> str:
         return f"Rename {src} → {args['new_name']}"
     if tool == "zip_folder":
         src = resolve_safe(args["source"])
-        return f"Zip {src} → {args.get('destination') or src.with_name(src.name + '.zip')}"
+        default = src.with_name((src.name if src.is_dir() else src.stem) + ".zip")
+        return f"Zip {src} → {args.get('destination') or default}"
     if tool == "move_to_recycle_bin":
         return f"Move {resolve_safe(args['path'])} to the Recycle Bin (restorable)"
     if tool == "organize_folder":

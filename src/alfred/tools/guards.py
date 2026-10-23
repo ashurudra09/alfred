@@ -73,19 +73,34 @@ def allowed_roots() -> list[Path]:
     return [Path(p).resolve() for p in known_folders().values()] + [home().resolve()]
 
 
+ALIASES = {"docs": "Documents", "document": "Documents", "download": "Downloads", "picture": "Pictures",
+           "photos": "Pictures", "photo": "Pictures", "video": "Videos", "movies": "Videos", "music": "Music"}
+
+
+def _folder_name(head: str) -> str | None:
+    """'My Documents', 'the downloads folder', 'download' -> the known folder's name, if any."""
+    h = re.sub(r"^(?:my|the)\s+|\s+(?:folder|directory|dir)$", "", head.strip(), flags=re.I).casefold()
+    names = {n.casefold(): n for n in known_folders()}
+    return names.get(h) or (ALIASES.get(h) if ALIASES.get(h, "").casefold() in names else None)
+
+
 def expand(path: str) -> Path:
     """'Downloads\\old' -> <Downloads>\\old; env vars and ~ expanded; relative paths are not allowed."""
-    p = os.path.expandvars(os.path.expanduser(str(path).strip().strip('"').strip("'"))).replace("/", "\\")
+    p = os.path.expandvars(os.path.expanduser(str(path).strip().strip("`\"' ").rstrip("."))).replace("/", "\\")
+    if any(c in p for c in "*?"):
+        raise ToolError("Wildcards aren't supported. Use search_files to find the files, then act on each one.")
     drive = re.fullmatch(r"(?:drive\s+)?([A-Za-z])(?::)?(?:\s+drive)?\\?", p, re.I)  # "C", "C drive", "drive C"
     if drive:
         p = drive.group(1).upper() + ":\\"
     elif p in ("\\", ""):  # "/" means the Windows drive
         p = os.environ.get("SystemDrive", "C:") + "\\"
     head, _, rest = p.partition("\\")
-    for name, full in known_folders().items():
-        if head.casefold() == name.casefold():
-            p = full + ("\\" + rest if rest else "")
-            break
+    if name := _folder_name(head):
+        p = known_folders()[name] + ("\\" + rest if rest else "")
+    else:  # C:\Users\<someone else>\Downloads\x -> this user's Downloads (models guess usernames)
+        m = re.match(r"[A-Za-z]:\\Users\\[^\\]+\\([^\\]+)(\\.*)?$", p)
+        if m and (name := _folder_name(m.group(1))) and not Path(p).exists():
+            p = known_folders()[name] + (m.group(2) or "")
     if re.fullmatch(r"[A-Za-z]:", p):
         p += "\\"
     path = Path(p)
@@ -107,8 +122,23 @@ def resolve_safe(path: str, must_exist: bool = True, any_location: bool = False)
     if not any_location and not any(p == r or r in p.parents for r in allowed_roots()):
         raise ToolError(f"Refused: {p} is outside the allowed folders ({', '.join(known_folders())}).")
     if must_exist and not p.exists():
-        raise ToolError(f"Not found: {p}")
+        p = _closest(p)
     return p
+
+
+def _closest(p: Path) -> Path:
+    """A missing path whose name differs only by the extension ('notes' -> notes.txt) resolves to the one match;
+    otherwise the error suggests similar names in that folder."""
+    import difflib
+    if not p.parent.is_dir():
+        raise ToolError(f"Not found: {p} (the folder {p.parent} doesn't exist either)")
+    siblings = [x for x in p.parent.iterdir() if not is_sensitive(x)]
+    same_stem = [x for x in siblings if x.stem.casefold() == p.name.casefold()]
+    if len(same_stem) == 1:
+        return same_stem[0]
+    close = difflib.get_close_matches(p.name.casefold(), [x.name.casefold() for x in siblings], n=5, cutoff=0.5)
+    names = [x.name for x in siblings if x.name.casefold() in close] or [x.name for x in same_stem]
+    raise ToolError(f"Not found: {p}" + (f". Similar names in {p.parent.name}: {', '.join(names)}" if names else ""))
 
 
 def assert_no_overwrite(dst: Path):

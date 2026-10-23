@@ -40,12 +40,20 @@ def all_notes() -> list[dict]:
     return out
 
 
+def _word_in(word: str, text: str) -> bool:
+    """'grocery' finds 'groceries', 'meetings' finds 'meeting': compare a stem for longer words."""
+    return word in text or (len(word) >= 5 and word[:max(4, len(word) - 2)] in text)
+
+
 def search_notes(query):
     words = [w for w in re.findall(r"\w+", query.casefold()) if len(w) > 1]
+    notes = all_notes()
+    if not words or query.strip().casefold() in ("all", "everything", "*", "all notes", "notes"):
+        words, notes = [], notes[-10:][::-1]  # list the latest notes
     scored = []
-    for n in all_notes():
+    for n in notes:
         text = f"{n['title']} {n['body']}".casefold()
-        score = sum(w in text for w in words)
+        score = sum(_word_in(w, text) for w in words) if words else 1
         if score:
             scored.append((score, n))
     if not scored:
@@ -68,23 +76,43 @@ def _save(items: list[dict]):
     _store().write_text(json.dumps(items, indent=1, ensure_ascii=False), encoding="utf-8")
 
 
-UNITS = {"min": 1, "minute": 1, "minutes": 1, "mins": 1, "m": 1, "hour": 60, "hours": 60, "hr": 60, "hrs": 60,
-         "h": 60, "day": 1440, "days": 1440}
+UNITS = {"sec": 1 / 60, "secs": 1 / 60, "second": 1 / 60, "seconds": 1 / 60, "s": 1 / 60,
+         "min": 1, "minute": 1, "minutes": 1, "mins": 1, "m": 1, "hour": 60, "hours": 60, "hr": 60, "hrs": 60,
+         "h": 60, "day": 1440, "days": 1440, "week": 10080, "weeks": 10080}
+CLOCK = r"(\d{1,2})(?::(\d{2}))?\s*(am|pm|a\.m\.|p\.m\.)?"
+
+
+def _clock(hour: str, minute: str | None, ampm: str | None) -> tuple[int, int] | None:
+    h, mi, ap = int(hour), int(minute or 0), (ampm or "").replace(".", "")
+    if ap == "pm" and h < 12:
+        h += 12
+    if ap == "am" and h == 12:
+        h = 0
+    return (h, mi) if h < 24 and mi < 60 else None
 
 
 def parse_time(text: str, now: datetime | None = None) -> datetime:
+    """'in 20 minutes', 'YYYY-MM-DD HH:MM' (any ISO form, with T, seconds or a timezone), 'tomorrow at 9am',
+    'today 18:30', 'at 6pm', '18:30' (today, or tomorrow if that time has passed)."""
     now = now or datetime.now()
-    t = text.strip().casefold()
-    m = re.fullmatch(r"in\s+(an?|\d+(?:\.\d+)?)\s*([a-z]+)", t)
+    t = re.sub(r"\s+", " ", text.strip().casefold())
+    m = re.fullmatch(r"in (an?|\d+(?:\.\d+)?) ?([a-z]+)", t)
     if m and m.group(2) in UNITS:
         n = 1 if m.group(1) in ("a", "an") else float(m.group(1))
         return now + timedelta(minutes=n * UNITS[m.group(2)])
-    for fmt in ("%Y-%m-%d %H:%M", "%Y-%m-%dT%H:%M", "%Y-%m-%d %H:%M:%S"):
-        try:
-            return datetime.strptime(text.strip(), fmt)
-        except ValueError:
-            pass
-    raise ToolError(f"Can't read the time '{text}'. Use 'YYYY-MM-DD HH:MM' or 'in 20 minutes'.")
+    try:
+        when = datetime.fromisoformat(text.strip().replace("Z", "+00:00"))
+        return when.astimezone().replace(tzinfo=None) if when.tzinfo else when
+    except ValueError:
+        pass
+    m = re.fullmatch(rf"(today|tomorrow|tonight)?(?: at)? ?{CLOCK}(?: (today|tomorrow))?", t.removeprefix("at "))
+    if m and (hm := _clock(m.group(2), m.group(3), m.group(4))):
+        day = m.group(1) or m.group(5)
+        when = now.replace(hour=hm[0], minute=hm[1], second=0, microsecond=0)
+        if day == "tomorrow" or (day is None and when <= now):
+            when += timedelta(days=1)
+        return when
+    raise ToolError(f"Can't read the time '{text}'. Use 'YYYY-MM-DD HH:MM', 'in 20 minutes' or 'tomorrow at 9am'.")
 
 
 def set_reminder(text, time):

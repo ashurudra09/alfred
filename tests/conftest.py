@@ -17,7 +17,7 @@ def sandbox(tmp_path, monkeypatch):
     d = folders["Downloads"]
     (d / "attention_transformer.pdf").write_bytes(b"%PDF-1.4 fake")
     (d / "notes.txt").write_text("LoRA adds low-rank adapters. Try r=16.")
-    (d / "budget.xlsx").write_bytes(b"xlsx")
+    (d / "budget.xlsx").write_bytes(bytes([0x50, 0x4B, 3, 4, 20, 0, 0, 0]) + b" xlsx")  # a zip: binary
     (d / "photo.jpg").write_bytes(b"jpg")
     (d / "setup.exe").write_bytes(b"MZ")
     (d / "photos").mkdir()

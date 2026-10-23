@@ -20,35 +20,63 @@ START_MENUS = [Path(os.environ.get("PROGRAMDATA", r"C:\ProgramData")) / r"Micros
 BUILTIN = {"calculator": "calc", "notepad": "notepad", "paint": "mspaint", "settings": "ms-settings:",
            "file explorer": "explorer", "explorer": "explorer", "task manager": "taskmgr", "snipping tool": "snippingtool"}
 SKIP_LNK = re.compile(r"uninstall|readme|help|documentation|release notes|website", re.I)
+ALIASES = {"vs code": "visual studio code", "vscode": "visual studio code", "code": "visual studio code",
+           "chrome": "google chrome", "edge": "microsoft edge", "terminal": "windows terminal", "cmd": "command prompt",
+           "files": "file explorer", "teams": "microsoft teams", "store": "microsoft store", "camera": "camera"}
 
 
-def start_menu_apps() -> dict[str, Path]:
-    """App name (lowercase) -> its Start Menu shortcut. Only these (and a few Windows built-ins) can be launched."""
+@functools.lru_cache(maxsize=1)
+def _start_apps(_hour: int) -> dict[str, tuple[str, str]]:
+    """App name (lowercase) -> (display name, launch target): Get-StartApps (Store and Office apps too) plus the
+    Start Menu shortcuts. Cached per hour; only these and a few Windows built-ins can be launched."""
     apps = {}
+    try:
+        out = subprocess.run(["powershell", "-NoProfile", "-Command",
+                              "Get-StartApps | ForEach-Object { $_.Name + \"`t\" + $_.AppID }"],
+                             capture_output=True, text=True, timeout=30, stdin=subprocess.DEVNULL).stdout
+        for line in out.splitlines():
+            name, _, appid = line.partition("\t")
+            if name.strip() and appid.strip() and not SKIP_LNK.search(name):
+                apps.setdefault(name.strip().casefold(), (name.strip(), "shell:AppsFolder\\" + appid.strip()))
+    except (OSError, subprocess.SubprocessError):
+        pass
     for root in START_MENUS:
         if root.is_dir():
             for lnk in root.rglob("*.lnk"):
                 if not SKIP_LNK.search(lnk.stem):
-                    apps.setdefault(lnk.stem.casefold(), lnk)
+                    apps.setdefault(lnk.stem.casefold(), (lnk.stem, str(lnk)))
     return apps
 
 
+def start_menu_apps() -> dict[str, tuple[str, str]]:
+    return _start_apps(int(time.time() // 3600))
+
+
+def find_app(name: str, apps: dict) -> tuple[str, str] | None:
+    want = re.sub(r"\s+", " ", name.strip().casefold()).removesuffix(" app").removesuffix(".exe")
+    want = re.sub(r"^(?:the|ms|microsoft)\s+", "", want) if want not in apps else want
+    want = ALIASES.get(want, want)
+    if want in apps:
+        return apps[want]
+    for k, v in apps.items():  # "word" -> "Word", "photoshop" -> "Adobe Photoshop 2025"
+        if re.search(rf"\b{re.escape(want)}\b", k):
+            return v
+    return None
+
+
 def open_app(name):
-    want = name.strip().casefold().removesuffix(" app").removesuffix(".exe")
     apps = start_menu_apps()
-    match = apps.get(want) or next((p for k, p in apps.items() if k.startswith(want) or want in k.split()), None)
+    match = find_app(name, apps)
+    want = name.strip().casefold().removesuffix(" app")
     if match is None and want in BUILTIN:
         launch(BUILTIN[want])
         return f"Launched {name.strip().title()}."
-    if match is None:
-        close = difflib.get_close_matches(want, list(apps), n=3, cutoff=0.6)
-        if len(close) == 1:
-            match = apps[close[0]]
-        else:
-            hint = f" Did you mean: {', '.join(apps[c].stem for c in close)}?" if close else ""
-            raise ToolError(f"No app called '{name}' in the Start Menu.{hint}")
-    launch(str(match))
-    return f"Launched {match.stem}."
+    if match is None:  # never launch a guess: "Microsoft Word" must not open Microsoft Edge
+        close = difflib.get_close_matches(want, list(apps), n=3, cutoff=0.7)
+        hint = f" Similar installed apps: {', '.join(apps[c][0] for c in close)}." if close else ""
+        raise ToolError(f"No app called '{name}' is installed (Start Menu).{hint}")
+    launch(match[1])
+    return f"Launched {match[0]}."
 
 
 @functools.cache

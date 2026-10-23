@@ -10,7 +10,11 @@ from alfred.tools.guards import resolve_safe
 
 def port_in_use(port):
     found = []
-    for c in psutil.net_connections(kind="tcp"):
+    try:
+        conns = psutil.net_connections(kind="tcp")
+    except psutil.Error as e:
+        raise ToolError(f"Windows didn't allow reading the connection list: {e}")
+    for c in conns:
         if c.laddr and c.laddr.port == port and c.status == psutil.CONN_LISTEN:
             try:
                 name = psutil.Process(c.pid).name() if c.pid else "unknown"
@@ -23,7 +27,10 @@ def port_in_use(port):
 
 
 def git_status(repo_path):
-    repo = resolve_safe(repo_path)
+    # read-only and repos usually live outside Documents/Downloads (C:\work, D:\projects), so any location is fine
+    repo = resolve_safe(repo_path, any_location=True)
+    if not repo.is_dir():
+        raise ToolError(f"Not a folder: {repo}")
     try:
         r = subprocess.run(["git", "-C", str(repo), "status", "--porcelain=v2", "--branch"], capture_output=True,
                            stdin=subprocess.DEVNULL,
@@ -31,7 +38,10 @@ def git_status(repo_path):
     except FileNotFoundError:
         raise ToolError("git is not installed.")
     if r.returncode != 0:
-        raise ToolError(f"Not a git repository: {repo}")
+        err = (r.stderr.strip().splitlines() or ["unknown error"])[0]
+        if "not a git repository" in err.lower():
+            raise ToolError(f"Not a git repository: {repo}")
+        raise ToolError(f"git couldn't read {repo}: {err}")  # e.g. 'detected dubious ownership'
     head, upstream, ahead, behind, changed = "(detached)", None, 0, 0, []
     for line in r.stdout.splitlines():
         if line.startswith("# branch.head "):

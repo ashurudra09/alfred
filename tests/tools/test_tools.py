@@ -191,11 +191,19 @@ def test_network_wired_and_wifi(monkeypatch):
 def test_open_app(monkeypatch, tmp_path):
     opened = []
     monkeypatch.setattr("os.startfile", opened.append)
-    monkeypatch.setattr(system, "start_menu_apps", lambda: {"spotify": tmp_path / "Spotify.lnk"})
+    apps = {"spotify": ("Spotify", str(tmp_path / "Spotify.lnk")), "word": ("Word", "shell:AppsFolder\\Word"),
+            "microsoft edge": ("Microsoft Edge", "shell:AppsFolder\\Edge"),
+            "visual studio code": ("Visual Studio Code", "code.lnk")}
+    monkeypatch.setattr(system, "start_menu_apps", lambda: apps)
     assert system.open_app("spotify") == "Launched Spotify." and opened
+    assert system.open_app("Microsoft Word") == "Launched Word."  # not Microsoft Edge
+    assert system.open_app("VS Code") == "Launched Visual Studio Code."
+    assert system.open_app("edge") == "Launched Microsoft Edge."
     assert system.open_app("calculator") == "Launched Calculator."
     with pytest.raises(ToolError, match="No app"):
         system.open_app("photoshop")
+    with pytest.raises(ToolError, match="No app"):
+        system.open_app("Microsoft Excel")  # not installed here: must not launch something similar
 
 
 def test_port_in_use():

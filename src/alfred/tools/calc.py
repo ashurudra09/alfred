@@ -13,9 +13,16 @@ FUNCS = {"sqrt": math.sqrt, "round": round, "abs": abs, "min": min, "max": max, 
 CONSTS = {"pi": math.pi, "e": math.e}
 
 
+NUM = r"\d+(?:\.\d+)?"
+
+
 def _normalise(expr: str) -> str:
-    expr = expr.replace("×", "*").replace("÷", "/").replace("^", "**").replace("−", "-")
-    return re.sub(r"(?<=\d),(?=\d{3}(?!\d))", "", expr)  # 34,999 -> 34999
+    expr = expr.replace("×", "*").replace("÷", "/").replace("^", "**").replace("−", "-").replace("·", "*")
+    expr = re.sub(r"[₹$€£¥]|\b(?:rs|inr|usd|eur)\.?(?=\s*\d)", "", expr, flags=re.I)  # currency
+    expr = re.sub(r"(?<=\d),(?=(?:\d{2,3},)*\d{3}(?!\d))", "", expr)  # 34,999 and 1,00,000 -> plain numbers
+    expr = re.sub(rf"({NUM})\s*%\s*of\s*", r"(\1/100)*", expr, flags=re.I)  # 18% of 34999
+    expr = re.sub(rf"({NUM})\s*%(?=\s*(?:$|[)+\-*/]))", r"(\1/100)", expr)  # 34999 * 18%   (10 % 3 stays modulo)
+    return re.sub(rf"(?<=[\d)])\s*[xX]\s*(?=[\d(])", "*", expr)  # 3 x 4
 
 
 def calculate(expression):
