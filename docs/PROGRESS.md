@@ -16,7 +16,7 @@ Each phase gate adds one line to the log below. Full detail for each phase is in
 | 6 | Tool server | M2 | done (Inspector check optional) | 2026-10-23 | `pytest tests/tools` (35 passed incl. stdio server) |
 | 7 | Agent runtime + CLI | M2 | done (offline run pending) | 2026-10-23 | `pytest tests/agent` (12 passed); [e2e report](../eval/reports/e2e_alfred-2b-v2-q4.md) 47/50, invariants 0 |
 | 8 | Minimal web UI | M2 | done | 2026-10-23 | `pytest tests/ui` (2 passed); manual checklist with [screenshots](ui/) |
-| 9 | Benchmarks, safety & ablations | M2 / M3 | not started | | |
+| 9 | Benchmarks, safety & ablations | M2 / M3 | (a–d) done; (e–f) M3, not started | 2026-10-24 | [RESULTS.md](../RESULTS.md) (`python -m eval.results`, deterministic) |
 | D2 | Docs checkpoint 2: "the product works" | M2 (31 Oct) | not started | | |
 | 10 | DPO | M3 | not started | | |
 | 11 | GRPO | M3 | not started | | |
@@ -46,8 +46,8 @@ Every number is from a report in `eval/reports/` (scorer v1.1). In-domain = 278 
 - **Training budget:** each SFT run takes ~4 h of float32 on a T4 (vs the planned ≤ 2 GPU-hours) and covers ~0.6 of an epoch.
 
 ## Next steps
-1. Phase 9: BFCL / When2Call / safety / quantization benchmarks and ablations.
-2. D2: docs checkpoint "the product works".
+1. D2: docs checkpoint "the product works" (M2, 31 Oct).
+2. Phase 9 (e–f, M3): 0.8B and FunctionGemma-270M ablations; test set extended to ~400 items (needs owner review).
 
 ## Gate log
 <!-- One line per gate: YYYY-MM-DD · phase · result · evidence -->
@@ -65,3 +65,4 @@ Every number is from a report in `eval/reports/` (scorer v1.1). In-domain = 278 
 - 2026-10-23 · Phase 7 · passed (owner offline check pending) · `uv run pytest` 83 passed; e2e 47/50 (94%) with SFT v2 Q4, injection 20/20, unconfirmed writes / overwrites / permanent deletes = 0 / 0 / 0; median turn 9 s; live CLI session OK
 - 2026-10-23 · Phase 6 · owner check passed · tool robustness pass (130 tests); owner ran the Claude Desktop test plan (docs/claude_desktop_tests.md): all tools work from Claude Desktop
 - 2026-10-23 · Phase 8 · passed · `uv run alfred-ui` (Gradio 6.30, 127.0.0.1 only, page requests only localhost); `uv run pytest` 132 passed incl. `tests/ui/test_smoke.py` (fake model via gradio_client: reply + timing; cancel = no change, confirm moves, undo restores); manual checklist on the real model, screenshots in docs/ui/: live timer, tool card + timing footer, confirm, cancel = no change, undo, continue an old chat, delete a chat, memory forget
+- 2026-10-24 · Phase 9 (a–d) · passed · `RESULTS.md` regenerates byte-identically; When2Call MCQ (3,652, fp32 on Kaggle T4) base → SFT v2: acc 41.2% → 65.7%, macro-F1 0.228 → 0.480, tool hallucination 14.7% → 3.1%; BFCL v4 subset (Q8_0, llama.cpp CUDA on Kaggle, pinned bfcl-eval 2026.3.23 + Qwen3.5 handler) mean 72.1% → 77.2% (simple 74.8 → 83.8, multiple 84.0 → 87.0, parallel 50.5 → 85.5, irrelevance 57.5 → 73.8, live_relevance 93.8 → 56.2, n=16); quantization SFT v2 in-domain F16 95.7% = Q8_0 95.7% > Q4_K_M 95.3%; safety: harmful refused 26/27, benign over-refused 0/21, e2e injection 20/20; `uv run pytest` 133 passed

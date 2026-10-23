@@ -5,11 +5,12 @@ An offline laptop butler for Windows. A small open model (Qwen3.5-2B), fine-tune
 The research question: can a small fine-tuned model match a large cloud model on tool calling for a fixed tool set, at a fraction of the size and cost, fully offline?
 
 ## Status
-Phases 0–5 done. In-domain accuracy (278 reviewed test items): **Alfred SFT v2, Q4 on the laptop CPU: 95.3%** vs base Qwen3.5-2B 79.1% vs gpt-oss-120b 88.5%; safety 95.8% vs 66.7% (base); 1.0 s to first token. Details: [docs/decisions.md](docs/decisions.md). See [docs/PROGRESS.md](docs/PROGRESS.md).
+Phases 0–8 done, Phase 9 benchmarks (a–d) done; all numbers in **[RESULTS.md](RESULTS.md)**. In-domain accuracy (278 reviewed test items): **Alfred SFT v2, Q4 on the laptop CPU: 95.3%** vs base Qwen3.5-2B 79.1% vs gpt-oss-120b 88.5%; safety 95.8% vs 66.7% (base); 1.0 s to first token. Public benchmarks, base → SFT: When2Call accuracy 41.2% → 65.7% (tool hallucination 14.7% → 3.1%), BFCL v4 subset 72.1% → 77.2%. See [docs/PROGRESS.md](docs/PROGRESS.md).
 
 ## Docs
 - [Requirements](docs/requirements.md): what is being built.
 - [Implementation plan](docs/implementation-plan.md): phases, gates and how each is built.
+- [Results](RESULTS.md): every benchmark table (`uv run python -m eval.results` regenerates it).
 - [Progress](docs/PROGRESS.md) (key numbers, open issues) and [decisions](docs/decisions.md).
 - [Training data card](data/card.md).
 

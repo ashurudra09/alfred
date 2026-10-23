@@ -1,0 +1,13 @@
+{
+  "id": "ashurudra09/alfred-when2call",
+  "title": "alfred-when2call",
+  "code_file": "bench.py",
+  "language": "python",
+  "kernel_type": "script",
+  "is_private": true,
+  "enable_gpu": true,
+  "enable_internet": true,
+  "dataset_sources": ["ashurudra09/alfred-adapters"],
+  "competition_sources": [],
+  "kernel_sources": []
+}

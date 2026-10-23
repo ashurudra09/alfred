@@ -1,0 +1,13 @@
+{
+  "id": "ashurudra09/alfred-bfcl",
+  "title": "alfred-bfcl",
+  "code_file": "bfcl_kernel.py",
+  "language": "python",
+  "kernel_type": "script",
+  "is_private": true,
+  "enable_gpu": true,
+  "enable_internet": true,
+  "dataset_sources": ["ashurudra09/alfred-adapters", "ashurudra09/alfred-bfcl-kit"],
+  "competition_sources": [],
+  "kernel_sources": []
+}
