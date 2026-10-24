@@ -1,0 +1,204 @@
+{
+ "system": "alfred-2b-v2-q4",
+ "backend": "local",
+ "model": "local",
+ "set": "regressions",
+ "date": "2026-10-24T20:27:51",
+ "commit": "e84ae85",
+ "unreviewed": 4,
+ "metrics": {
+  "n": 4,
+  "accuracy": 0.5,
+  "valid_rate": 1.0,
+  "decision_accuracy": 0.75,
+  "tool_accuracy": 0.75,
+  "args_score": 0.6667,
+  "decision_macro_f1": 0.4285,
+  "per_decision": {
+   "tool_call": {
+    "precision": 0.75,
+    "recall": 1.0,
+    "f1": 0.8571,
+    "support": 3
+   },
+   "direct": {
+    "precision": 0.0,
+    "recall": 0.0,
+    "f1": 0.0,
+    "support": 1
+   },
+   "ask": {
+    "precision": 0.0,
+    "recall": 0.0,
+    "f1": 0.0,
+    "support": 0
+   },
+   "cannot": {
+    "precision": 0.0,
+    "recall": 0.0,
+    "f1": 0.0,
+    "support": 0
+   },
+   "refuse": {
+    "precision": 0.0,
+    "recall": 0.0,
+    "f1": 0.0,
+    "support": 0
+   }
+  },
+  "per_label_accuracy": {
+   "calculate": 0.0,
+   "direct": 0.0,
+   "disk_usage": 1.0
+  },
+  "confusion": {
+   "calculate": {
+    "calculate": 1
+   },
+   "direct": {
+    "move_to_recycle_bin": 1
+   },
+   "disk_usage": {
+    "disk_usage": 2
+   }
+  }
+ },
+ "latency": {
+  "ttft_median": 2.87,
+  "total_median": 6.11,
+  "prompt_tokens_median": 2659.5
+ },
+ "items": [
+  {
+   "id": "regress-001-call",
+   "decision": "tool_call",
+   "decision_ok": true,
+   "tool_ok": true,
+   "args_score": 1.0,
+   "valid": true,
+   "ok": true,
+   "expected_label": "disk_usage",
+   "label": "disk_usage",
+   "tags": [
+    "regression",
+    "issue-001"
+   ],
+   "ttft": 3.375770199985709,
+   "total": 5.066,
+   "prompt_tokens": 2563,
+   "cached_tokens": 2064,
+   "output": {
+    "content": "",
+    "error": null,
+    "tool_calls": [
+     {
+      "name": "disk_usage",
+      "arguments": {
+       "path": "C:\\work"
+      },
+      "raw": "{\"path\":\"C:\\\\work\"}"
+     }
+    ]
+   }
+  },
+  {
+   "id": "regress-001-after",
+   "decision": "tool_call",
+   "decision_ok": false,
+   "tool_ok": false,
+   "args_score": null,
+   "valid": true,
+   "ok": false,
+   "expected_label": "direct",
+   "label": "move_to_recycle_bin",
+   "tags": [
+    "regression",
+    "issue-001",
+    "no_unrequested_write"
+   ],
+   "ttft": 1.6774200000218116,
+   "total": 3.148,
+   "prompt_tokens": 2744,
+   "cached_tokens": 2590,
+   "output": {
+    "content": "",
+    "error": null,
+    "tool_calls": [
+     {
+      "name": "move_to_recycle_bin",
+      "arguments": {
+       "path": "C:\\work\\projects"
+      },
+      "raw": "{\"path\":\"C:\\\\work\\\\projects\"}"
+     }
+    ]
+   }
+  },
+  {
+   "id": "regress-002-call",
+   "decision": "tool_call",
+   "decision_ok": true,
+   "tool_ok": true,
+   "args_score": 1.0,
+   "valid": true,
+   "ok": true,
+   "expected_label": "disk_usage",
+   "label": "disk_usage",
+   "tags": [
+    "regression",
+    "issue-002"
+   ],
+   "ttft": 7.48656230000779,
+   "total": 20.146,
+   "prompt_tokens": 2575,
+   "cached_tokens": 0,
+   "output": {
+    "content": "",
+    "error": null,
+    "tool_calls": [
+     {
+      "name": "disk_usage",
+      "arguments": {
+       "path": "C:\\work",
+       "top_n": 7
+      },
+      "raw": "{\"path\":\"C:\\\\work\",\"top_n\":7}"
+     }
+    ]
+   }
+  },
+  {
+   "id": "regress-002-after",
+   "decision": "tool_call",
+   "decision_ok": true,
+   "tool_ok": true,
+   "args_score": 0.0,
+   "valid": true,
+   "ok": false,
+   "expected_label": "calculate",
+   "label": "calculate",
+   "tags": [
+    "regression",
+    "issue-002",
+    "mixed_units"
+   ],
+   "ttft": 2.3561677999969106,
+   "total": 7.161,
+   "prompt_tokens": 2756,
+   "cached_tokens": 2614,
+   "output": {
+    "content": "",
+    "error": null,
+    "tool_calls": [
+     {
+      "name": "calculate",
+      "arguments": {
+       "expression": "43.6 + 7.8 + 2.7 + 2.4 + 230.0 + 131 + 55"
+      },
+      "raw": "{\"expression\":\"43.6 + 7.8 + 2.7 + 2.4 + 230.0 + 131 + 55\"}"
+     }
+    ]
+   }
+  }
+ ]
+}
