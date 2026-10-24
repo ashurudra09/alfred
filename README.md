@@ -1,84 +1,122 @@
 # Alfred
 
-An offline laptop butler for Windows. A small open model (Qwen3.5-2B), fine-tuned to call 25 local tools (files, system info, developer helpers, notes, reminders, memory), runs fully on the laptop CPU through llama.cpp (`llama-server`). Every change it makes can be undone.
+**An offline AI assistant for Windows, built on a 2B-parameter model I fine-tuned to call 25 local tools.**
+It runs entirely on a laptop CPU. No files leave the machine, it costs nothing per query, and every change it
+makes can be undone.
 
-The research question: can a small fine-tuned model match a large cloud model on tool calling for a fixed tool set, at a fraction of the size and cost, fully offline?
+The question behind it: *can a small fine-tuned model match a large cloud model on tool calling for a fixed tool
+set, at a fraction of the size and cost, fully offline?* On this tool set, yes:
 
-## Status
-Phases 0–8 done, Phase 9 benchmarks (a–d) done; all numbers in **[RESULTS.md](RESULTS.md)**. In-domain accuracy (278 reviewed test items): **Alfred SFT v2, Q4 on the laptop CPU: 95.3%** vs base Qwen3.5-2B 79.1% vs gpt-oss-120b 88.5%; safety 95.8% vs 66.7% (base); 1.0 s to first token. Public benchmarks, base → SFT: When2Call accuracy 41.2% → 65.7% (tool hallucination 14.7% → 3.1%), BFCL v4 subset 72.1% → 77.2%. See [docs/PROGRESS.md](docs/PROGRESS.md).
+| | Qwen3.5-2B base | **Alfred (fine-tuned 2B, Q4, laptop CPU)** | gpt-oss-120b (cloud) |
+|---|---|---|---|
+| In-domain accuracy (278 reviewed test items) | 79.1% | **95.3%** | 88.5% |
+| Safety (48 items: harmful refused, benign answered) | 66.7% | **95.8%** | 95.8% |
+| When2Call: call / ask / answer / can't (3,652 public test items) | 41.2% | **65.7%** | – |
+| Tool hallucination on When2Call (lower is better) | 14.7% | **3.1%** | – |
+| BFCL v4 subset (general function calling, 1,056 items) | 72.1% | **77.2%** | – |
+| Time to first token | 1.9 s | **1.0 s** | network |
+
+End to end through the real tools: 47/50 tasks, 20/20 prompt-injection attacks resisted, and 0 unconfirmed
+writes, overwrites or permanent deletes. Every number comes from a committed report: see **[RESULTS.md](RESULTS.md)**.
+
+<p align="center"><img src="docs/ui/3_confirm.jpg" width="720" alt="Alfred's web UI asking for confirmation before a change"></p>
+<p align="center"><sub>The web UI: a tool call shown as a card, and the exact change waiting for Confirm/Cancel.</sub></p>
+
+## What it does
+- **25 tools** for everyday laptop chores: find, read, move, rename, copy, zip and organize files; disk, CPU,
+  battery, network and process info; ports and git status; notes, reminders, long-term memory; a calculator.
+- **Safe by construction:** tools only touch your known folders (Documents, Downloads, Desktop, …), never read
+  secrets (`.env`, SSH keys, browser profiles), never overwrite, never delete permanently (Recycle Bin only) and
+  never run executables. Every write shows its exact plan and waits for your confirmation, and every write is
+  journaled so `/undo` reverses it.
+- **Treats tool output as untrusted:** file contents are wrapped as data, and the model was trained to ignore
+  instructions hidden inside them.
+- **Knows when not to act:** it asks when a request is ambiguous, says so when it can't do something, and refuses
+  harmful requests.
+- **Two front ends** over one agent loop: a terminal app and a local web UI with chat history, a live timer, tool-call
+  cards, Undo and a memory panel. The tools are also a standard **MCP server**, so Claude Desktop can use them too.
+
+## How it works
+```mermaid
+flowchart LR
+    U[You] --> UI[CLI / web UI]
+    UI --> L[Agent loop<br/>validate · confirm · retry]
+    L <--> M[Fine-tuned Qwen3.5-2B<br/>GGUF Q4 on llama.cpp, CPU]
+    L <--> S[MCP tool server<br/>25 tools · guards · journal]
+    S --> W[(Your files, apps,<br/>notes, memory)]
+```
+
+**The model.** Qwen3.5-2B fine-tuned with LoRA (r=16) on ~9,000 conversations:
+- synthetic data from an open-weight teacher (gpt-oss-120b), checked by the same scorer used for evaluation;
+- NVIDIA When2Call, so it learns when *not* to call;
+- Salesforce xLAM, so it keeps general tool-calling skill.
+
+Trained on a free Kaggle T4, quantized to GGUF and served by `llama-server` with prompt caching (1 s to first
+token on a laptop CPU).
+
+**The evaluation.**
+- A 278-item in-domain test set and a 48-item safety set, scored on decision (call / ask / answer / can't / refuse),
+  tool choice and arguments.
+- An end-to-end suite that runs real tasks and prompt-injection files through the real tools.
+- Two public benchmarks: When2Call and a BFCL v4 subset (with a Qwen3.5 handler written for the pinned
+  `bfcl-eval`).
+
+## Quickstart (Windows)
+Needs [uv](https://docs.astral.sh/uv/), llama.cpp (`winget install ggml.llamacpp`) and
+[Ollama](https://ollama.com) (for memory embeddings: `ollama pull embeddinggemma`).
+```
+uv sync
+uv run pytest                 # 133 tests, no model needed
+uv run alfred                 # terminal assistant
+uv run alfred-ui              # web UI on http://127.0.0.1:7860
+```
+Both start `llama-server` on the fine-tuned model (`runs/sft_2b_v2/alfred-2b-v2-q4.gguf`, or pass `--model`).
+The fine-tuned weights aren't published yet. Until they are, the same app runs on the base model:
+`ollama pull qwen3.5:2b`, then `uv run alfred --model qwen3.5:2b`.
+
+**Use the tools from Claude Desktop:** quit Claude Desktop, run `uv run python scripts/add_to_claude_desktop.py`,
+reopen it and ask "what's using space on my C drive?".
+[docs/claude_desktop_tests.md](docs/claude_desktop_tests.md) is a 35-step manual test plan.
+
+## Reproduce
+| Step | Command |
+|---|---|
+| Training data | `uv run python -m data.gen.teacher` → `data.validate` → `data.mix` → `data.dedup --check` (teacher keys in `.env`) |
+| Train (Kaggle T4) | `uv run python -m train.package_data --upload`, then `kaggle kernels push -p train/sft_kernel` |
+| In-domain / safety eval | `uv run python -m eval.run --backend local --system alfred-2b-v2-q4 --set indomain` |
+| End-to-end + injection | `uv run python -m eval.e2e --system alfred-2b-v2-q4` |
+| When2Call | `kaggle kernels push -p eval/when2call` |
+| BFCL v4 subset | `kaggle kernels push -p eval/bfcl/kernel` (or `eval/bfcl/run.py` locally) |
+| Results tables | `uv run python -m eval.results` → `RESULTS.md` |
+
+## Repository layout
+```
+src/alfred/contracts/   the 25 frozen tool contracts, JSON schemas, the system prompt
+src/alfred/tools/       the MCP server: tools, guards, undo journal, memory
+src/alfred/agent/       agent loop, model backends, chat store, timing, CLI
+src/alfred/ui/          Gradio web UI
+data/                   synthetic data generation, validation, mixing, dedup (+ dataset card)
+train/                  Kaggle SFT kernel and config
+eval/                   scorer, test sets, runners, e2e suite, When2Call, BFCL, reports
+tests/                  unit and integration tests (fake model backend, sandboxed folders)
+spikes/                 Phase 1 feasibility experiments (latency, caching, teachers)
+```
 
 ## Docs
-- [Requirements](docs/requirements.md): what is being built.
-- [Implementation plan](docs/implementation-plan.md): phases, gates and how each is built.
-- [Results](RESULTS.md): every benchmark table (`uv run python -m eval.results` regenerates it).
-- [Progress](docs/PROGRESS.md) (key numbers, open issues) and [decisions](docs/decisions.md).
-- [Training data card](data/card.md).
+- [RESULTS.md](RESULTS.md): every results table, regenerated from the reports.
+- [Requirements](docs/requirements.md) and the [implementation plan](docs/implementation-plan.md).
+- [Progress](docs/PROGRESS.md): phase gates and evidence. [Decisions](docs/decisions.md): what was decided, and why.
+- [Dataset card](data/card.md).
+- [Learning notes](docs/learning/README.md): chat templates, LoRA, synthetic data, evaluation metrics.
 
-## Setup
-1. Install Git, [uv](https://docs.astral.sh/uv/), [Ollama](https://ollama.com) (embeddings) and llama.cpp (`winget install ggml.llamacpp`, serves the chat model).
-2. `copy .env.example .env` and fill in the keys. Save your Kaggle API token to `%USERPROFILE%\.kaggle\access_token`.
-3. `uv sync`
-4. `uv run python scripts/check_setup.py`: every required item should show ✓.
-5. `uv run pytest`
+## Status and roadmap
+Done: data, SFT, evaluation, tool server, agent and CLI, web UI, public benchmarks and quantization.
+Next:
+- DPO and GRPO on top of SFT;
+- 0.8B and FunctionGemma-270M ablations;
+- a larger test set;
+- a comparison with Windows Copilot;
+- public model and dataset cards.
 
-## What runs today (M1)
-The fine-tuned model, the evaluation, the tool server and the terminal assistant. The web UI comes in Phase 8.
-
-**Serve a model** (port 8080; a `.gguf` path or an Ollama model name for the base):
-```
-uv run python -m alfred.agent.backends serve runs/sft_2b_v2/alfred-2b-v2-q4.gguf
-```
-The fine-tuned GGUFs are in the private Hugging Face repo `alfred-2b-sft` (`v2/alfred-2b-v2-q4.gguf`).
-
-**Evaluate it:**
-```
-uv run python -m eval.run --backend local --system alfred-2b-v2-q4 --set indomain
-uv run python -m eval.run --backend local --system alfred-2b-v2-q4 --set safety
-uv run python -m eval.run --backend groq --system cloud-gpt-oss-120b --set indomain   # cloud reference
-```
-Reports land in `eval/reports/` (JSON + a markdown summary).
-
-**Rebuild the training data** (teacher API keys in `.env`, Ollama running for the dedup embedder):
-```
-uv run python -m data.gen.teacher
-uv run python -m data.validate data/out/synthetic.jsonl
-uv run python -m data.mix
-uv run python -m data.dedup --check
-```
-
-**Train** on Kaggle: `uv run python -m train.package_data --upload`, then `kaggle kernels push -p train/sft_kernel` (settings in `train/configs/sft_2b.yaml`).
-
-## Talk to Alfred (terminal)
-```
-uv run alfred
-```
-It starts llama-server on the fine-tuned model if it isn't running, then answers in the terminal. Anything that
-changes files (move, rename, copy, zip, organize, delete) shows the exact plan and waits for `y`; `/undo` reverses
-the last change (`/actions` lists them). Other commands: `/new /chats /open <id> /delete <id> /memories /forget <id>`.
-
-## Talk to Alfred (browser)
-```
-uv run alfred-ui
-```
-Opens a local page (http://127.0.0.1:7860, never exposed to the network, no analytics or web fonts): past chats
-in the sidebar, streamed answers with a live timer, each tool call as a card, Confirm/Cancel with the exact plan for
-any change, Undo with the recent actions, a Memory tab to view and forget memories, and timing under every reply.
-Screenshots: [docs/ui/](docs/ui/).
-
-**End-to-end tests** (needs the model served): `uv run python -m eval.e2e --system alfred-2b-v2-q4`.
-
-## Run the tool server
-The 25 tools as a local MCP server over stdio (no network). They work only inside your known folders (Documents,
-Downloads, Desktop, Pictures, Music, Videos, plus any `extra_folders` in `%LOCALAPPDATA%\Alfred\config.json`).
-```
-uv run python -m alfred.tools.server
-```
-**Use it from Claude Desktop:** quit Claude Desktop completely (tray icon > Quit; it rewrites its config while
-running), then run `uv run python scripts/add_to_claude_desktop.py`. It finds the config (on this machine it lives in
-`%LOCALAPPDATA%\Claude-Data\<id>\claude_desktop_config.json`, not `%APPDATA%\Claude`), backs it up and adds the
-`alfred` server. Reopen Claude Desktop and ask "what's my disk usage?".
-
-**Inspect it:** `npx @modelcontextprotocol/inspector uv run python -m alfred.tools.server` (needs Node.js).
-
-## Learn the concepts
-Short notes on what each piece is, why it's here and questions to check your understanding: [docs/learning/](docs/learning/README.md).
+## License
+Code: [MIT](LICENSE). Model: Qwen3.5-2B (Apache 2.0). Training data includes When2Call and xLAM (CC-BY-4.0).
