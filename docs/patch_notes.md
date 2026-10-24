@@ -11,11 +11,22 @@ ids and regression items: [data/to_fix.md](../data/to_fix.md).
 |---|---|---|
 | 001 | Asked which folder is biggest, then proposed moving it to the Recycle Bin unasked (19 bad training examples) | validator rule "writes only when the user asked", drop the 19, counter-examples, system-prompt rule |
 | 002 | Added sizes without converting units (230 MB counted as 230 GB) | `disk_usage` → `calculate` chains with mixed units; realistic size formats in the generator |
+| 003 | "make a folder … name it temp" proposed `organize_folder` on all of Documents (no tool makes empty folders) | `cannot` examples for file actions with no tool; option: a `create_folder` tool |
+| 004 | "move all the pdfs" moved the whole Downloads folder; "except"/"every" requests act on the whole folder | search-then-act-per-file examples; "except" → list or `cannot` |
+| 005 | Date-only searches put junk in `query` and report "none" | `query="*"` date searches |
+| 006 | Date math wrong ("days until christmas" = 341) | day counts built from today's date |
+| 007 | "X, and what % of Y" answered only X | `top_processes`/`system_info` → `calculate` chains |
+| 008 | "Which folder has more files" compared free space | count with `list_directory` |
+| 009 | Invented `extension`/date filters, assumed a folder | filters only when asked; search first |
+
+Code fixes found in the same testing (no retraining needed; see the end of to_fix.md): main folders can be moved or
+renamed, the 3-call limit blocks bulk actions, `set_reminder` can't parse "in 3 hours 45 minutes", and hidden/system
+files (e.g. `desktop.ini`) show up in listings.
 
 Also in the same run: the completed data top-up (finished 2026-10-24; the set grew from 8,963 to 10,037 train and
 471 to 529 val examples; every tool except `list_reminders` (199) now has ≥ 200).
 **Gate for v3:** the regression set passes, and in-domain, safety, e2e, When2Call and BFCL don't regress.
-v2 on the regression set: 2/4.
+v2 on the regression set: 2/12.
 
 ## v2 (shipped, 2026-10-23)
 - **Fix: clarifying questions.** v1 almost stopped asking ("move the file" → it recycled an invented file; ask recall
