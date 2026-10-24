@@ -104,10 +104,12 @@ spikes/                 Phase 1 feasibility experiments (latency, caching, teach
 
 ## Docs
 - [RESULTS.md](RESULTS.md): every results table, regenerated from the reports.
+- [Architecture](docs/architecture.md): components, one turn with a confirmation, the training pipeline.
 - [Requirements](docs/requirements.md) and the [implementation plan](docs/implementation-plan.md).
 - [Progress](docs/PROGRESS.md): phase gates and evidence. [Decisions](docs/decisions.md): what was decided, and why.
 - [Dataset card](data/card.md).
-- [Learning notes](docs/learning/README.md): chat templates, LoRA, synthetic data, evaluation metrics.
+- [Learning notes](docs/learning/README.md): chat templates, LoRA, synthetic data, evaluation metrics, MCP, agent
+  loops, prompt injection, quantization, public benchmarks.
 
 ## Status and roadmap
 Done: data, SFT, evaluation, tool server, agent and CLI, web UI, public benchmarks and quantization.
