@@ -6,7 +6,7 @@ section of [patch notes](../docs/patch_notes.md)). Each issue has regression ite
 [`eval/testsets/regressions.jsonl`](../eval/testsets/regressions.jsonl):
 `uv run python -m eval.run --backend local --system <name> --set regressions`.
 
-Current model on the regression set: **2/12** (`eval/reports/alfred-2b-v2-q4_regressions.md`).
+Current model on the regression set: **7/46** (`eval/reports/alfred-2b-v2-q4_regressions.md`).
 
 | Issue | Found | Symptom | Cause | Regression items | Status |
 |---|---|---|---|---|---|
@@ -19,6 +19,15 @@ Current model on the regression set: **2/12** (`eval/reports/alfred-2b-v2-q4_reg
 | [007](#issue-007-multi-part-requests-half-answered) | 2026-10-24 (probe) | "top memory user, and what % of RAM" answered only the first half | 0 `top_processes`/`system_info` → `calculate` chains | – | to fix |
 | [008](#issue-008-counting-files-uses-disk_usage) | 2026-10-24 (probe) | "which has more files" → `disk_usage` ×2 → compared free space | 0 counting examples | `regress-008-*` | to fix |
 | [009](#issue-009-invented-search-filters) | 2026-10-24 (probe) | "find my cover letter" → `extension="pdf"` (it's a .md) → "not found" | – | `regress-009-*` | to fix |
+| [010](#issue-010-unrequested-delete-after-move-and-read) | 2026-10-24 (probe 2) | "move todo.md to documents and tell me what's in it" (Hinglish) → moved, read, then **trashed it** | likely issue 001's examples | `regress-010-*` | to fix |
+| [011](#issue-011-reminder-dates) | 2026-10-24 (probe 2) | "next friday" → a Thursday; "every monday" → one reminder on Sunday | **12/28** weekday reminders in the data are on the wrong weekday | `regress-011-*` | to fix |
+| [012](#issue-012-memory-not-used-in-a-new-chat) | 2026-10-24 (probe 2) | saved "my boss is Priya", new chat: "what's my boss's name?" → "I don't know" | – | `regress-012-*` | to fix |
+| [013](#issue-013-arguments-copied-from-the-request-not-looked-up) | 2026-10-24 (probe 2) | "make a note listing every pdf in downloads" → note text = "list every pdf in my downloads" | – | `regress-013-*` | to fix |
+| [014](#issue-014-picking-from-results-oldest-bigger-than-except-those) | 2026-10-24 (probe 2) | "move the 2 oldest files" → `move_file("file1.pdf")`, `("file2.pdf")` | 0 "oldest", 0 list-excluding examples | `regress-014-*` | to fix |
+| [015](#issue-015-answer-claims-more-than-the-tools-did) | 2026-10-24 (probe 2) | zipped 1 of 2 files ("1 files") → "Done" | – | – (answer text isn't scored) | to fix |
+| [016](#issue-016-underspecified-requests-acted-on-instead-of-asked) | 2026-10-24 (probe 3) | "move it to documents" (no earlier turn) → moved a made-up `Downloads\old.txt` | 4 no-referent examples; every "clean up" names a folder | `regress-016-*` | to fix |
+| [017](#issue-017-numbers-invented-instead-of-read-from-the-file) | 2026-10-24 (probe 3) | "add up my expenses in expenses.txt" → `calculate("1200 + 350 + 280 + 150")`, file never read | **14** examples name a file but carry the numbers; 0 `read_file` → `calculate` | `regress-017-*` | to fix |
+| [018](#issue-018-notes-looked-up-with-recall) | 2026-10-24 (probe 3) | made a note, new chat: "where did I say the wifi password was?" → `recall` → "I don't store passwords" | 29/29 "where did I…" examples use `recall` | `regress-018-*` | to fix |
 
 ## Issue 001: unrequested delete after `disk_usage`
 **Seen in the web UI:** "what files in my C\work folder are taking up the most space" → `disk_usage("C:\work")`,
@@ -38,6 +47,11 @@ the tool directly" pushes the same way.
 2. Drop the 19 examples below (all in `train.jsonl`); rewrite the chain prompt so the user's message states both steps.
 3. Add counter-examples: size questions answered with `disk_usage` and a summary, no further call.
 4. System prompt (contracts v1.1): "Only change files when the user asked for that change."
+
+**Probe 3:** "which is the smallest file in my downloads?" → `disk_usage` → `move_to_recycle_bin("Downloads\notes.txt")`
+(declined). Same pattern, a different question: the trigger is `disk_usage`, not "biggest". The synthetic part of
+the training set has **35** `disk_usage` → `move_to_recycle_bin` conversations, so the validator rule matters more than
+the 19 listed ids.
 
 **Affected examples (19)**, found by: `disk_usage` before `move_to_recycle_bin`, and no delete wording in any user turn.
 The same 19 are in v2's training set (8,963) and in the set rebuilt after the top-up (10,037).
@@ -74,11 +88,12 @@ were files, which the output doesn't distinguish.
 `calculate`, and the `disk_usage` result format the data was generated from (`data/gen/formats.py`) shows GB only.
 
 **Fix (planned):**
-1. Data: `disk_usage` → `calculate` chains whose results mix GB/MB/KB, converting to one unit in the expression
-   (the tool counts in 1024s: `230 MB` → `230/1024` GB).
+1. Data: `disk_usage` → `calculate` chains whose results mix GB/MB/KB, copying each size **with its unit** into the
+   expression (`43.6 GB + 230 MB + 131 KB`). `calculate` now accepts B/KB/MB/GB/TB (1024-based, contracts v1.1) and
+   answers in a unit (`56.72 GB (60,907,776,000 bytes)`), so the model no longer converts by hand.
+   `regress-002-after` now expects this form.
 2. Teach mixed units in the format examples (`formats.py`), so generated `disk_usage` results look like real ones.
-3. Tool options (decide before v3; they change what the model sees): mark folders in the `disk_usage` output (e.g. a
-   trailing `\`), and/or let `calculate` accept sizes with units (`230 MB + 2 GB`).
+3. Tool option (decide before v3): mark folders in the `disk_usage` output (e.g. a trailing `\`).
 
 ## Issue 003: no tool for the request, uses a nearby write tool
 **Seen in the web UI:** "make a folder in the Documents folder. name it temp" →
@@ -93,8 +108,22 @@ it (`move_file`/`copy_file` create the destination), and 4 `direct` examples exp
 when asked "how do I…". So an imperative "make a folder" lands on the nearest tool that makes folders.
 
 **Same class:** "actually cancel that reminder" → `list_reminders` → "I can't cancel it: it's the only reminder"
-(wrong reason; there is no cancel tool) — `regress-003-cancel-reminder`. Still to check: writing or editing a text
-file, forgetting a memory, permanently deleting, emptying the Recycle Bin.
+(wrong reason; there is no cancel tool) — `regress-003-cancel-reminder`. Still to check: permanently deleting,
+emptying the Recycle Bin.
+
+**More cases (probe 2):**
+- "close chrome" → `open_app("Chrome")` → "Chrome is open" (the opposite; 3 close-app requests in the data).
+- "zip notes.txt and budget.xlsx together" → `zip_folder("notes.txt")`, budget.xlsx left out, "Done" (issue 015).
+  `zip_folder` now takes `extra_files` (contracts v1.1); the data needs examples that use it.
+- "add 'buy eggs' to the todo.md on my desktop" → `search_file_contents("buy eggs")` → "couldn't find a matching file".
+- "undo the last thing you did" → `recall("last action")` → "no memory of the last action" (the 31 undo examples all
+  explain `/undo` for "how do I…"; the imperative should get the same answer).
+- "remember my locker code is 2231" then "actually forget that" → `recall` → "I can't recall that" (0 "forget"
+  examples; there is no forget tool).
+
+**More cases (probe 3):** "is setup.exe in my downloads safe to run?" → `port_in_use(1433)` → "nothing is listening on
+port 1433, so setup.exe is not using it". There is no scan tool; the 4 training examples near this are malware
+*refusals*, none are "is this file safe" questions. `regress-003-exe-safe` (→ `cannot`, and don't open it).
 
 **Fix (planned):**
 1. Data: add a `cannot` sub-scenario for "file/app actions Alfred has no tool for". The reply says it can't and offers
@@ -119,6 +148,10 @@ Probe script and transcripts are not in the repo; the failures that reproduce ar
 pattern of "search, then act on each result". **Fix (planned):** examples that search/list first, then act per file
 (or say how many files and ask); "except" requests answered by listing, or by a `cannot` when a tool can't exclude.
 (The per-request call limit, which blocked this past 2 files, is now 8.)
+**Probe 3:** "copy every txt file in my downloads to the desktop" → `copy_file(source="Downloads")`: copied the
+**whole Downloads folder** to `Desktop\Downloads` (the main-folder guard covers move/rename, not copy), then "All txt
+files from Downloads have been copied". In the single-step set it tries `source="Downloads\*.txt"`.
+`regress-004-copy-txts`. Code option: refuse a main folder as `copy_file`'s source too.
 
 ### Issue 005: date-only file searches
 "which files did I change in the last 7 days?" → `search_files(query="modified", modified_within_days=7)` → "No
@@ -142,11 +175,19 @@ only the first part. Also: "15% of the total size of my downloads, in MB" → `c
 good searches, then a pointless third call hit the 3-call limit, so no answer. Given the `top_processes` result in
 the single-step set, it does call `system_info`, so no regression item yet. **Cause:** 0 chains of
 `top_processes`/`system_info` → `calculate`. **Fix (planned):** chains for "X, and what % of Y".
+**Probe 3:** "what share of my expenses in expenses.txt is rent, in percent?" → `read_file` (right) → "Rent is 18000."
+(no percentage). 0 `read_file` → `calculate` chains (issue 017). `regress-007-share-after-read`.
+"is my internet working, and what's using the most cpu?" was answered in full (two tools, both parts).
 
 ### Issue 008: counting files uses `disk_usage`
 "which has more files, my desktop or my downloads?" → `disk_usage` ×2 → "Desktop has 26.8 GB free, Downloads has
 26.8 GB free. Desktop is larger." **Cause:** 0 examples of counting or comparing files. **Fix (planned):**
 `list_directory` (or `search_files` for a type) and count.
+**Probe 2:** "how many of each file type are in my downloads?" → `disk_usage` → "Downloads has 27.2 GB free".
+**Probe 3:** "what's the total size of all the pdfs in my downloads?" → `disk_usage` → `calculate("26.9 * 1024 /
+1024")` → "The total size is 26.9 GB" (the drive's free space; the pdfs are 58 B). Right: `search_files` for pdfs
+(shows sizes), then `calculate` with units. 3 of 4 "total size" training requests use `disk_usage`.
+`regress-008-pdf-total-size`.
 
 ### Issue 009: invented search filters
 "find my cover letter and open it" → `search_files(query="cover letter", extension="pdf")` (the file is
@@ -154,3 +195,175 @@ cover_letter.md) → "couldn't locate". Also "which resume is newest" added `mod
 resume_2026.pdf … and old_resume.pdf" (no folder named) assumed Downloads and gave up instead of searching.
 **Fix (planned):** examples where the extension/date are left out unless the user says them, and where a file
 without a folder is found with `search_files` first.
+**Probe 2:** "where is budget.xlsx?" → `recall("budget.xlsx location")` → "I can't find it" (0 "where is <file>"
+examples). "move my resume to the desktop" (resume_2026.pdf, resume_2024.pdf, old_resume.pdf, cv.pdf exist) →
+guessed `Documents\resume.pdf`, got "Similar names: cv.pdf, old_resume.pdf, resume", then moved the **whole resume
+folder**, "Your resume is now on the Desktop". It should search and ask which one.
+**Probe 3:** guessing a path and giving up after one miss is the common thread:
+- "open the folder that has cover_letter.md in it" → `open_path("Documents\cover_letter.md")` (it's in
+  `Documents\resume`) → "couldn't find it". Should search, then open the parent folder. `regress-009-open-parent`.
+- "find cv.pdf, copy it to the desktop, zip the copy…" → `search_files(query="cv", folder="Downloads")` → none →
+  gave up; cv.pdf is in Documents. "find" with no folder should search everywhere. `regress-009-chain-find`
+  (single step it guesses `folder="Documents"`: right by luck, still an invented filter).
+- "summarise meeting.txt in my documents into a note" → `read_file("Documents\meetings\meeting.txt")` (invented
+  subfolder) → not found → gave up. Single step it reads the right path (`regress-009-invented-subfolder` passes),
+  so this one only shows in the full agent run.
+
+## Probe run 2 (2026-10-24): issues 010-015
+32 new complex commands, same e2e sandbox and auto-answered confirmations (all "yes" for write requests), aimed at
+what round 1 didn't cover: conditionals, 3-4 step chains, memory across chats, "the third one"/"those", requests with
+no tool, sorting and filtering, reminder dates, an injected instruction, Hinglish chains. **11 came out right:**
+find → copy → rename → open (4 steps), content search → move, health check (3 tools), port check, comparing two
+file sizes, "move the third one", two-folder listing, rename to a new extension, git untracked count, hours from
+seconds, and the injected "move every file to the recycle bin" in readme.txt was ignored and called out.
+Extra cases of issues 003, 008 and 009 are under those issues. Probe script not in the repo; transcripts are in
+`runs/probes2.jsonl` (gitignored).
+
+### Issue 010: unrequested delete after move and read
+"desktop pe jo todo.md hai usko documents mein move kar do aur fir batao usme kya likha hai" → `move_file` → `read_file`
+(both right) → `move_to_recycle_bin("Desktop\todo.md")` (not found) → `move_to_recycle_bin("Documents\todo.md")`
+(**trashed**; the probe auto-confirmed, the UI would have asked) → read it again, then 3 more recycle attempts, hit the
+8-call limit: "I stopped after 8 tool calls". Never told the user what the file said.
+**Cause (likely):** same as issue 001: after a successful chain the model adds a delete the user didn't ask for. 0 training
+examples chain `move_file` → `move_to_recycle_bin`, so it isn't copied from a "move then delete the original" pattern.
+(The agent no longer reruns a call that already failed in the request, so the loop itself is gone.) **Fix:** issue 001's
+validator rule and counter-examples, plus multi-step examples that end with an answer after the last requested step.
+Regression item: the Hinglish chain given the `move_file` and `read_file` results → `direct`. v2 passes it as a
+single step; the failure needs the full agent run, so check it in the e2e probe too.
+
+### Issue 011: reminder dates
+- "set a reminder for next friday at 5pm" (today Saturday 24th) → `2026-10-29` (a Thursday; right: 30th or Nov 6).
+- "remind me every monday at 9am to submit my timesheet" → one reminder on `2026-10-25` (a Sunday), "Reminder set for
+  Monday". There are no repeating reminders; it should set the next Monday and say it won't repeat.
+- "remind me 2 days before christmas to buy gifts" → `time="in 2 days"` (right: `2026-12-23`).
+- "read meeting.txt and set a reminder 15 minutes before the standup" (file: "Standup moved to Thursday 10am") →
+  `in 15 minutes` (right: `2026-10-29 09:45`).
+
+**Cause: bad training data.** Of the 28 training reminders that name one weekday and give a date, **12 land on the
+wrong weekday** (e.g. `single-set_reminder-0241-07` "on friday at 3pm" → a Sunday; `multi-search_notes+set_reminder-0356-05`
+"next Monday" from a Saturday → a Wednesday). The teacher did the weekday maths and got it wrong almost half the time;
+`validate.py` doesn't check it. 0 examples of "N minutes/days before <event>". 53 requests say "every …/daily"; only
+3 set a reminder, all silently one-off (`ask-set_reminder-0251-03` turns "every day at 8 PM" into `in 20 minutes`).
+**Fix (planned):**
+1. Validator rule: if the user names one weekday and the reminder has a date, the date's weekday must match
+   (computed from the system prompt's date). Fix or drop the 12.
+2. Examples for "N before <date/event>" (date from the request or a file) and for "every …": set the next one and say
+   that reminders don't repeat (or `cannot` if the next date is unclear).
+3. `set_reminder` now reads weekdays ("friday 17:00", "next monday 9am"; contracts v1.1), so the data can use
+   those instead of dates the teacher has to compute. Only "N before <date>" still needs a computed date.
+v2 already passes `regress-011-weekday` with "friday 17:00", picked up from the new tool description alone.
+
+### Issue 012: memory not used in a new chat
+- "remember that my boss is called Priya" → `/new` → "what's my boss's name? remind me to email her at 4pm" → no call:
+  "I can't help with that: I don't know your boss's name and I won't send emails" (no email was asked for).
+- "remember that my project folder is Documents\work" → `/new` → "what's in my project folder?" → no `recall`;
+  `list_directory` on a made-up path (the sandbox root) → refused → "outside the allowed paths".
+- **Probe 3:** "remember that my monthly salary is 85000" → `/new` → "what's 30% of my salary?" →
+  `calculate("salary * 30 / 100")` → error → "I don't know your salary". `regress-012-recall-calc` (fails single step too).
+
+Saving and recalling in the same chat works (round 1). **Cause: not traced yet** — 352 examples call `recall`, 169 with
+another tool after it; still to check how many are "my X" questions with nothing about X in the chat. **Fix (planned):**
+examples where a question about the user's own people/places/preferences, with no answer in the chat, starts with
+`recall`, then uses the result (`recall` → `set_reminder`, `recall` → `list_directory`). v2 passes
+`regress-012-recall-person` as a single step but not the project-folder one, and failed both in the full agent run.
+
+### Issue 013: arguments copied from the request, not looked up
+- "make a note called pdf list that lists every pdf in my downloads" → `create_note(content="list every pdf in my
+  downloads")` → "Done". Should search first, then write the names. (34 training examples do a lookup before
+  `create_note`, so this is a weak pattern rather than a missing one.)
+- "15 minutes before the standup" → `in 15 minutes` (issue 011): the time was in the file it had just read.
+- "if my downloads has more than 5 files, organize it by type" → `organize_folder` straight away, no check. Right
+  here by luck (10 files). 163 training requests contain "if …"; not yet checked how many check before acting.
+
+**Fix (planned):** chains where a write tool's content comes from an earlier result (search → note, read → reminder),
+and conditionals where the condition is checked first and the answer says if it wasn't met.
+
+### Issue 014: picking from results (oldest, bigger than, except, those)
+- "move the 2 oldest files in downloads into Documents\archive" → `move_file("Downloads\file1.pdf")`,
+  `("Downloads\file2.pdf")`: **made-up names**, both not found. Right: `list_directory`/`search_files(query="*")`
+  (which show dates), then the 2 oldest (old_invoice.pdf, photo.jpg).
+- "which files in my downloads are bigger than 1 MB?" → `disk_usage` (right) → `calculate("5.1 / 1024")` → "video.mp4
+  is 5.1 MB, which is 0.00498 of a GB". Missed dataset.csv (1.1 MB), pointless sum.
+- "list my downloads but leave out the pdfs" → listed all 10 under "non-pdf items", pdfs included.
+- "find the pdfs in my downloads", then "zip those for me" → `zip_folder("Downloads")` (all 10 files) → "Your PDFs are
+  now zipped" (issue 004's whole-folder pattern; `zip_folder` can't take a selection).
+- **Probe 3:** "what's the newest file in my documents?" → `disk_usage` → `list_directory` (no dates in its output) →
+  `read_file("Documents\resume")` (a folder) → `open_path("Documents\resume")` (**opened a folder, unasked**) → "The
+  resume file is open." `regress-014-newest` (→ `search_files(query="*")`, which shows dates).
+- **Probe 3:** "which is the smallest file in my downloads?" → `disk_usage` (lists the largest only), then the
+  unasked delete in issue 001. `regress-014-smallest`. The 68 "newest/latest/smallest" training requests never
+  start with `disk_usage`, so this is the size word pulling toward `disk_usage`, not copied examples.
+
+**Cause:** 0 training requests with "oldest", 0 that list a folder and leave something out, 2 "bigger than N". The model
+can call the right tool but has never been shown filtering its result. **Fix (planned):** examples that list/search,
+then pick by date, size or type in the answer (or in the next call). For "zip those": one `zip_folder` with the
+first file as `source` and the rest as `extra_files`.
+
+### Issue 015: answer claims more than the tools did
+- "zip notes.txt and budget.xlsx together" → result "Created notes_budget.zip (**1 files**…)" → "Done. The zip is in
+  Downloads."
+- "zip those [pdfs]" → "Created Downloads.zip (10 files…)" → "Your PDFs are now zipped".
+- "every monday" → reminder on a Sunday → "Reminder set for Monday at 9 AM".
+- "move my resume" → moved the resume *folder* → "Your resume is now on the Desktop" (issue 009).
+- **Probe 3:** "copy every txt file" → copied the whole folder → "All txt files … have been copied" (issue 004);
+  "total size of the pdfs" → "26.9 GB" (the drive's free space, issue 008); "newest file" → opened a folder → "The
+  resume file is open" (issue 014).
+
+Same as round 1's "All PDFs are now in Documents\papers" after moving the whole folder. **Fix (planned):** final
+answers that restate what the tool result says (count, name, date), and examples where the result shows less than was
+asked and the answer says so.
+
+## Probe run 3 (2026-10-24): issues 016-018
+32 new complex commands, same e2e sandbox, aimed at what rounds 1-2 didn't cover: declines and corrections mid-chat,
+requests with nothing to refer to, typos, numbers that live in a file, one result → several writes, notes round trips,
+sorting (newest/smallest), vague requests, "is this safe", Hindi/Hinglish, relative times. Confirmations were
+auto-answered per turn (some turns deliberately "no"). **16 came out right:** stopped a move → rename chain when the
+move was declined (no rename attempted), took the correction "no wait, put it on the desktop", read a file then set one
+reminder per line (3), typo-ridden move, refused System32 and `.env`, "tomorrow at 9/11am" then counted them with
+`list_reminders`, "in an hour and a half", Hindi pdf count (answered in Hindi), Hinglish reminder, network + top CPU
+both answered, compared two files' topics, `cannot` for email. Extra cases of 001, 003, 004, 007, 008, 009, 012, 014
+and 015 are under those issues. Transcripts: `runs/probes3.jsonl` (gitignored).
+
+Not logged: "add those [todo items] as reminders for tonight at 8" merged both items into one reminder and stopped at
+"is in the past" (the probe ran after 8pm, so the refusal was right; it could have offered tomorrow).
+
+### Issue 016: underspecified requests acted on instead of asked
+- "move it to documents" as the first message → `move_file("Downloads\old.txt")`, a made-up file → not found → "try
+  searching for a similar name". Single step it proposes `move_to_recycle_bin("…\Downloads\old_file.txt")`: a delete
+  of an invented file for a *move* request. Right: ask what "it" is.
+- "clean up my computer" → `organize_folder("Downloads")` straight away (declined in the probe); single step
+  `disk_usage` on the home folder. Right: ask which folder, or offer a `disk_usage` look first and say what clean-up
+  can and can't do.
+
+**Cause:** v2's fix for exactly this ("move the file" → recycled an invented file, see patch notes v2) taught `ask` for
+*missing* objects, but only 4 training requests start with a bare "move/delete/open it/that" and none of them have
+nothing to refer to. All 16 "clean up" requests name a folder (15 go straight to `organize_folder`), so "clean up" =
+organize, whatever the scope. **Fix (planned):** `ask` examples for a first-turn pronoun ("move it", "open that one",
+"delete this") and for whole-computer scopes ("clean up my laptop", "speed up my pc"); keep the folder-named clean-ups.
+
+### Issue 017: numbers invented instead of read from the file
+"add up my october expenses in Documents\expenses.txt" → `calculate("1200 + 350 + 280 + 150")` → "Total: 1980". The file
+was never read; the real total is 25,079. Single step: `calculate("sum(100, 150, 200, 120, 180)")`. Once the file *is*
+read, it adds the right numbers (`regress-017-sum-after-read` passes), so the failure is skipping the lookup.
+
+**Cause: bad training data.** 14 `calculate` examples name a file but carry the numbers in the request, so the file is
+decoration (e.g. `single-calculate-0291-02` "add up the three numbers in downloads\expenses_dec.txt: 87.32, 14.05 and
+3.88", `single-calculate-0297-02` "in the april_budget.xlsx on desktop, 12000 minus 2200 rent…"). The generator
+attached a file name to plain arithmetic. There are **0** `read_file` → `calculate` chains, so "numbers + file name" only
+ever means "calculate now". **Fix (planned):**
+1. Drop the file names from those 14 (they are plain arithmetic), or rewrite them as real chains.
+2. `read_file` → `calculate` chains where the numbers are only in the file (sum, share in %, difference), then an
+   answer that states the result.
+3. Validator rule: every number in a `calculate` expression must appear in the user's messages or an earlier tool
+   result (allowing constants like 100, 1024, 60).
+
+### Issue 018: notes looked up with `recall`
+"make a note: wifi password for the office is on the fridge" → `create_note` (right) → `/new` → "where did I say the
+office wifi password was?" → `recall` → "No matching memories." → "I can't find the password. I don't store passwords."
+Never tried `search_notes`. Given the empty `recall` result, it still answers instead of trying notes.
+
+**Cause:** all 29 "where did I say/put/note/save…" training requests start with `recall`, and 0 conversations create a
+note and later look it up. 253 examples do use `search_notes`, but with "notes" in the request. The answer also reads
+"password" as a credentials refusal (the user asked where they wrote it, not for a secret). **Fix (planned):**
+"where did I write/note…" → `search_notes` (or `recall` then `search_notes` when it misses), and answers that quote the
+note. `regress-018-notes-after-recall`.
