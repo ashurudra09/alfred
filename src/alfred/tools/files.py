@@ -16,7 +16,8 @@ from mcp.server.fastmcp.exceptions import ToolError
 from send2trash import send2trash
 
 from alfred.tools import journal
-from alfred.tools.guards import allowed_roots, assert_no_overwrite, is_executable, is_sensitive, resolve_safe
+from alfred.tools.guards import (assert_no_overwrite, is_executable, is_hidden, is_sensitive,
+                                 resolve_movable, resolve_safe)
 
 MAX_RESULTS, MAX_SCAN = 50, 20000
 MAX_READ = 2_000_000  # bytes read from one text file
@@ -42,10 +43,11 @@ def walk(root: Path):
     """Files under root, skipping sensitive and hidden folders, at most MAX_SCAN."""
     n = 0
     for d, dirs, files in os.walk(root):
-        dirs[:] = [x for x in dirs if not x.startswith((".", "$")) and not is_sensitive(Path(x))]
+        dirs[:] = [x for x in dirs if not x.startswith((".", "$")) and not is_sensitive(Path(x))
+                   and not is_hidden(Path(d) / x)]
         for f in files:
             p = Path(d) / f
-            if is_sensitive(p):
+            if is_sensitive(p) or is_hidden(p):
                 continue
             n += 1
             if n > MAX_SCAN:
@@ -150,7 +152,7 @@ def list_directory(path):
         raise ToolError(f"Not a folder: {p}")
     items = sorted(p.iterdir(), key=lambda x: (not x.is_dir(), x.name.casefold()))
     lines = [f"{x.name}\\ (folder)" if x.is_dir() else f"{x.name} ({size(x.stat().st_size)})"
-             for x in items if not is_sensitive(x)]
+             for x in items if not is_sensitive(x) and not is_hidden(x)]
     more = f"\n... and {len(lines) - 200} more" if len(lines) > 200 else ""
     return f"{p} ({len(lines)} items):\n" + ("\n".join(lines[:200]) or "(empty)") + more
 
@@ -204,8 +206,8 @@ def disk_usage(path, top_n=10):
         return f"{head}\n{p} is {size(p.stat().st_size)}."
     deadline, sizes = time.monotonic() + 20, []
     for e in sorted(p.iterdir(), key=lambda x: x.name.casefold()):
-        if is_sensitive(e) or e.name.startswith("$"):
-            continue
+        if is_sensitive(e) or e.name.startswith("$") or e.is_junction() or e.is_symlink():
+            continue  # links ('My Music' -> Music) would count a folder twice; hidden files still take space
         try:
             n, exact = _tree_size(e, deadline) if e.is_dir() else (e.stat().st_size, True)
         except OSError:
@@ -235,7 +237,7 @@ def _os(action: str, fn, *args):
 
 
 def move_file(source, destination):
-    src = resolve_safe(source)
+    src = resolve_movable(source)
     dst = _target(src, destination)
     assert_no_overwrite(dst)
     if not dst.parent.exists():
@@ -249,7 +251,7 @@ def _rename_target(path, new_name) -> tuple[Path, Path]:
     new_name = new_name.strip().rstrip(". ")
     if any(c in new_name for c in '\\/:*?"<>|') or not new_name:
         raise ToolError("new_name must be a file name only, without a folder.")
-    src = resolve_safe(path)
+    src = resolve_movable(path)
     if src.is_file() and src.suffix and not Path(new_name).suffix:
         new_name += src.suffix  # "rename report.docx to final" keeps .docx
     dst = src.with_name(new_name)
@@ -343,9 +345,7 @@ def organize_folder(path, strategy="by_type"):
 
 
 def move_to_recycle_bin(path):
-    p = resolve_safe(path)
-    if p in allowed_roots():
-        raise ToolError(f"Refused: {p} is one of your main folders.")
+    p = resolve_movable(path)
     if ctypes.windll.kernel32.GetDriveTypeW(p.anchor) != 3:  # 3 = fixed disk; USB/network drives may delete for good
         raise ToolError(f"Refused: {p.anchor} has no Recycle Bin (removable or network drive), so deleting would be "
                         "permanent.")
@@ -371,7 +371,7 @@ def launch(target: str):
 def preview(tool: str, args: dict) -> str:
     """What a confirm-tool would do, for the confirmation prompt (agent, Phase 7). Raises ToolError if it can't."""
     if tool in ("move_file", "copy_file"):
-        src = resolve_safe(args["source"])
+        src = (resolve_movable if tool == "move_file" else resolve_safe)(args["source"])
         dst = _target(src, args["destination"])
         assert_no_overwrite(dst)
         return f"{'Move' if tool == 'move_file' else 'Copy'} {src} → {dst}"
@@ -383,7 +383,7 @@ def preview(tool: str, args: dict) -> str:
         default = src.with_name((src.name if src.is_dir() else src.stem) + ".zip")
         return f"Zip {src} → {args.get('destination') or default}"
     if tool == "move_to_recycle_bin":
-        return f"Move {resolve_safe(args['path'])} to the Recycle Bin (restorable)"
+        return f"Move {resolve_movable(args['path'])} to the Recycle Bin (restorable)"
     if tool == "organize_folder":
         root, moves, skipped = _organize_plan(args["path"], args.get("strategy", "by_type"))
         lines = [f"  {s.name} → {d.parent.name}\\" for s, d in moves]

@@ -14,7 +14,7 @@ logic.
 | Rule | How |
 |---|---|
 | Validate before running | arguments checked against the tool's JSON Schema; unknown tool / bad JSON / invalid args go back to the model as a tool error, **one retry**, then the turn ends with "could you rephrase?" |
-| Bounded | at most **3 tool calls** per user turn |
+| Bounded | at most **8 tool calls** per user turn (was 3) |
 | Confirm writes | for a tool flagged `needs_confirmation`, the loop computes the exact plan (`files.preview`, e.g. organize's full move list) and **yields** `confirm_required`; the caller answers with `gen.send(True/False)` |
 | Safe default | a caller that just iterates sends `None`, which counts as **no** |
 | Declines are explicit | the model gets "The user declined this change. Nothing was changed." (the exact training text) |

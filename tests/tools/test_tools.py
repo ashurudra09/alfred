@@ -45,6 +45,14 @@ def test_sensitive_files_hidden_from_listing_and_search(sandbox):
     assert "No matching" in files.search_file_contents("API_KEY", "Documents")
 
 
+def test_hidden_files_left_out(sandbox):
+    ini = sandbox["Documents"] / "desktop.ini"
+    ini.write_text("[.ShellClassInfo]")
+    subprocess.run(["attrib", "+h", "+s", str(ini)], check=True)
+    assert "desktop.ini" not in files.list_directory("Documents")
+    assert "No matching" in files.search_files("desktop", "Documents")
+
+
 def test_executables_refused(sandbox, monkeypatch):
     monkeypatch.setattr("os.startfile", lambda p: pytest.fail("must not open"))
     with pytest.raises(ToolError, match="program or script"):
@@ -156,8 +164,11 @@ def test_write_guards(sandbox):
         files.move_file("Downloads\\notes.txt", str(sandbox["root"] / "outside"))
     with pytest.raises(ToolError):
         files.rename_file("Downloads\\notes.txt", "..\\x.txt")
-    with pytest.raises(ToolError, match="main folders"):
-        files.move_to_recycle_bin("Downloads")
+    for call in (lambda: files.move_to_recycle_bin("Downloads"), lambda: files.move_file("Downloads", "Documents"),
+                 lambda: files.rename_file("Downloads", "old"), lambda: files.preview("move_file",
+                 {"source": "Downloads", "destination": "Documents"})):
+        with pytest.raises(ToolError, match="main folders"):
+            call()
     with pytest.raises(ToolError):
         files.copy_file("Documents\\.env", "Desktop")
 
@@ -260,6 +271,8 @@ def test_parse_time():
     now = datetime(2026, 10, 22, 10, 0)
     assert productivity.parse_time("in 2 hours", now) == datetime(2026, 10, 22, 12, 0)
     assert productivity.parse_time("in an hour", now) == datetime(2026, 10, 22, 11, 0)
+    assert productivity.parse_time("in 3 hours 45 minutes", now) == datetime(2026, 10, 22, 13, 45)
+    assert productivity.parse_time("in 1 hour and 30 min", now) == datetime(2026, 10, 22, 11, 30)
     assert productivity.parse_time("2026-10-23 09:00", now) == datetime(2026, 10, 23, 9, 0)
 
 

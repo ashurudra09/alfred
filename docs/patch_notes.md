@@ -19,9 +19,15 @@ ids and regression items: [data/to_fix.md](../data/to_fix.md).
 | 008 | "Which folder has more files" compared free space | count with `list_directory` |
 | 009 | Invented `extension`/date filters, assumed a folder | filters only when asked; search first |
 
-Code fixes found in the same testing (no retraining needed; see the end of to_fix.md): main folders can be moved or
-renamed, the 3-call limit blocks bulk actions, `set_reminder` can't parse "in 3 hours 45 minutes", and hidden/system
-files (e.g. `desktop.ini`) show up in listings.
+**Code fixes found in the same testing (done 2026-10-24; they need no retraining):**
+- `move_file`, `rename_file` and their confirmation previews refuse a main folder as the source. In a probe,
+  "move all the pdfs" had moved the whole Downloads folder. `move_to_recycle_bin` now refuses it before asking,
+  not after.
+- Tool calls per request raised from 3 to 8 (FR4); 3 made acting on more than 2 files impossible.
+- `set_reminder` reads compound durations ("in 3 hours 45 minutes", "in 1 hour and 30 min", "in 2h30m").
+- `list_directory` and file search skip Windows Hidden/System items (`desktop.ini`, the `My Music` junctions),
+  matching Explorer. `disk_usage` skips links, which counted a folder twice, but keeps hidden files because they take
+  real space (e.g. `pagefile.sys`).
 
 Also in the same run: the completed data top-up (finished 2026-10-24; the set grew from 8,963 to 10,037 train and
 471 to 529 val examples; every tool except `list_reminders` (199) now has ≥ 200).

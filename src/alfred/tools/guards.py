@@ -113,6 +113,22 @@ def is_sensitive(path: Path) -> bool:
     return any(SENSITIVE.match(part) for part in path.parts)
 
 
+def is_hidden(path: Path) -> bool:
+    """Windows Hidden or System attribute (desktop.ini, the 'My Music' junctions): Explorer and `ls` hide these."""
+    try:
+        return bool(path.lstat().st_file_attributes & 0x6)  # FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_SYSTEM
+    except OSError:
+        return False
+
+
+def resolve_movable(path: str) -> Path:
+    """resolve_safe for moves, renames and deletes: a main folder itself (Downloads, not Downloads\\x) is refused."""
+    p = resolve_safe(path)
+    if p in allowed_roots():
+        raise ToolError(f"Refused: {p} is one of your main folders.")
+    return p
+
+
 def resolve_safe(path: str, must_exist: bool = True, any_location: bool = False) -> Path:
     """The real (junction-resolved) path, if it's allowed. `any_location` lifts the allow-list for read-only size
     checks (disk_usage on C:\\); the sensitive-path block always applies."""

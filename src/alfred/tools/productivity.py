@@ -96,10 +96,10 @@ def parse_time(text: str, now: datetime | None = None) -> datetime:
     'today 18:30', 'at 6pm', '18:30' (today, or tomorrow if that time has passed)."""
     now = now or datetime.now()
     t = re.sub(r"\s+", " ", text.strip().casefold())
-    m = re.fullmatch(r"in (an?|\d+(?:\.\d+)?) ?([a-z]+)", t)
-    if m and m.group(2) in UNITS:
-        n = 1 if m.group(1) in ("a", "an") else float(m.group(1))
-        return now + timedelta(minutes=n * UNITS[m.group(2)])
+    m = re.fullmatch(r"in ((?:(?:an?|\d+(?:\.\d+)?) ?[a-z]+ ?)+)", re.sub(r",? and |, ", " ", t))
+    parts = re.findall(r"(an?|\d+(?:\.\d+)?) ?([a-z]+)", m.group(1)) if m else []
+    if parts and all(u in UNITS for _, u in parts):  # also "in 3 hours 45 minutes", "in 1h30m"
+        return now + timedelta(minutes=sum((1 if n in ("a", "an") else float(n)) * UNITS[u] for n, u in parts))
     try:
         when = datetime.fromisoformat(text.strip().replace("Z", "+00:00"))
         return when.astimezone().replace(tzinfo=None) if when.tzinfo else when

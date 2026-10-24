@@ -5,7 +5,7 @@ import pytest
 
 from alfred.agent import chats, loop, timing
 from alfred.agent.backends import RawCall, Result
-from alfred.agent.loop import DECLINED, drive, run_turn
+from alfred.agent.loop import DECLINED, MAX_CALLS, drive, run_turn
 from alfred.agent.mcp_client import LocalTools
 from alfred.tools import journal, memory
 from tests.conftest import snapshot
@@ -106,11 +106,11 @@ def test_second_invalid_call_gives_up(env):
     assert not any(e.kind == "tool_result" for e in events)
 
 
-def test_three_call_cap(env):
-    b = FakeBackend(*[call("system_info") for _ in range(4)], say("unused"))
+def test_call_cap(env):
+    b = FakeBackend(*[call("system_info") for _ in range(MAX_CALLS + 1)], say("unused"))
     events = drive(run_turn(env["chat"], "loop forever", b, env["tools"]))
-    assert sum(e.kind == "tool_result" for e in events) == 3
-    assert "stopped after 3 tool calls" in events[-1].data["text"]
+    assert sum(e.kind == "tool_result" for e in events) == MAX_CALLS
+    assert f"stopped after {MAX_CALLS} tool calls" in events[-1].data["text"]
 
 
 def test_backend_error_is_reported(env):

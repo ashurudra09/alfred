@@ -118,7 +118,7 @@ Probe script and transcripts are not in the repo; the failures that reproduce ar
 **Cause:** 3 training examples ask for a write on "all/every" files and 7 contain "except/but not"; the model has no
 pattern of "search, then act on each result". **Fix (planned):** examples that search/list first, then act per file
 (or say how many files and ask); "except" requests answered by listing, or by a `cannot` when a tool can't exclude.
-Depends on the call limit (code note below).
+(The per-request call limit, which blocked this past 2 files, is now 8.)
 
 ### Issue 005: date-only file searches
 "which files did I change in the last 7 days?" → `search_files(query="modified", modified_within_days=7)` → "No
@@ -154,13 +154,3 @@ cover_letter.md) → "couldn't locate". Also "which resume is newest" added `mod
 resume_2026.pdf … and old_resume.pdf" (no folder named) assumed Downloads and gave up instead of searching.
 **Fix (planned):** examples where the extension/date are left out unless the user says them, and where a file
 without a folder is found with `search_files` first.
-
-## Found alongside: code, not data (not fixed)
-- **`move_file`/`rename_file` accept a main folder** as the source (issue 004 moved all of Downloads).
-  `move_to_recycle_bin` already refuses this ("is one of your main folders").
-- **3 tool calls per request** (`MAX_CALLS`, FR4) makes "act on every file" impossible beyond 2 files.
-- **`set_reminder` can't parse "in 3 hours 45 minutes"**; the model then told the user to say exactly that.
-- **Hidden/system files are listed.** `list_directory` showed `desktop.ini` and the hidden `My Music`/`My
-  Pictures`/`My Videos` junctions in Documents, which Explorer and PowerShell `ls` hide. The listing only skips
-  names starting with "."; it never checks the Windows Hidden/System attributes (`disk_usage` and the file
-  walk are the same). `organize_folder` already skips `.ini`.

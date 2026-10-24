@@ -56,7 +56,7 @@ Fine-tune a small open model (Qwen3.5-2B) so it calls a fixed set of 25 laptop t
 6. A **training dataset**: synthetic examples for our tools (open-weight teacher) + public data (When2Call, xLAM-60k) + refusal/safety examples.
 7. **Training: SFT → DPO → GRPO.** All three required, each compared in the results table.
 8. **Quantized export** (GGUF) and local serving via **Ollama** on CPU.
-9. An **agent client** connecting the local model to the MCP server, up to 3 tool calls per request.
+9. An **agent client** connecting the local model to the MCP server, up to 8 tool calls per request (raised from 3, 2026-10-24: 3 blocked acting on more than 2 files).
 10. A **CLI** and a **minimal local web chat UI** (e.g. Gradio).
 11. An **evaluation harness** (Section 8), including the **Copilot comparison** (Section 8.5).
 12. A public repo, model and dataset on the Hugging Face Hub, a README with results, and a short demo video.
@@ -115,7 +115,7 @@ Notes:
 | FR1 | Given a request and the tool schemas, the model outputs a tool call (name + JSON args), a direct answer, a clarifying question, a "can't do that", or a refusal. | P0 |
 | FR2 | Tool calls are validated against the JSON schema before running; an invalid call is rejected and the model gets one retry with the error. | P0 |
 | FR3 | Tool results go back to the model, which writes the final answer in plain language. | P0 |
-| FR4 | Multi-step requests (e.g. recall → zip, search → read → summarise) are supported up to 3 tool calls per request. | P1 |
+| FR4 | Multi-step requests (e.g. recall → zip, search → read → summarise) are supported up to 8 tool calls per request (raised from 3, 2026-10-24: 3 blocked acting on more than 2 files). | P1 |
 | FR5 | Every request, tool call, argument, result and timing is logged to a local JSONL file. | P1 |
 | FR6 | The model backend is swappable via config (fine-tuned local / base local / cloud API), all through an OpenAI-compatible endpoint, so one harness compares them all. | P0 |
 

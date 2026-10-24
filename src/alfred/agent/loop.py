@@ -21,7 +21,7 @@ from alfred.contracts.prompt import render_system_prompt
 from alfred.contracts.schemas import Message, ToolCall
 from alfred.tools.guards import known_folders
 
-MAX_CALLS = 3  # per user turn (FR4)
+MAX_CALLS = 8  # per user turn (FR4); 3 blocked "do X to every file" past 2 files
 DECLINED = "The user declined this change. Nothing was changed."  # the exact text the model was trained on
 
 
