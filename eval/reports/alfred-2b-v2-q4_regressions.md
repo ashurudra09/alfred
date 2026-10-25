@@ -1,6 +1,6 @@
 # alfred-2b-v2-q4 on regressions (n=46)
 
-Backend `local` / model `local`, 2026-10-24T22:15:23, commit `42a7574`. **46 items not yet owner-reviewed.**
+Backend `local` / model `local`, 2026-10-25T23:46:10, commit `379a664`. **46 items not yet owner-reviewed.**
 
 | Metric | Value |
 |---|---|
@@ -8,7 +8,7 @@ Backend `local` / model `local`, 2026-10-24T22:15:23, commit `42a7574`. **46 ite
 | valid_rate | 100.0% |
 | decision_accuracy | 71.7% |
 | tool_accuracy | 39.1% |
-| args_score | 26.7% |
+| args_score | 26.2% |
 | decision_macro_f1 | 29.4% |
 | median TTFT | 1.14 s |
 | median total | 3.49 s |

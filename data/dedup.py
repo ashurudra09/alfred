@@ -42,7 +42,7 @@ def ngrams(text: str) -> set[tuple]:
 
 class Guard:
     def __init__(self):
-        self.tests = sorted({m.content for s in ("indomain", "safety") for it in load_set(s)
+        self.tests = sorted({m.content for s in ("indomain", "safety", "regressions") for it in load_set(s)
                              for m in it.messages if m.role == "user"})
         self.vecs = embed(self.tests)
         self.grams = set().union(*map(ngrams, self.tests))

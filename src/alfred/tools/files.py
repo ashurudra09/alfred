@@ -16,7 +16,7 @@ from mcp.server.fastmcp.exceptions import ToolError
 from send2trash import send2trash
 
 from alfred.tools import journal
-from alfred.tools.guards import (assert_no_overwrite, is_executable, is_hidden, is_sensitive,
+from alfred.tools.guards import (assert_no_overwrite, config, is_executable, is_hidden, is_sensitive, known_folders,
                                  resolve_movable, resolve_safe)
 
 MAX_RESULTS, MAX_SCAN = 50, 20000
@@ -50,7 +50,7 @@ def walk(root: Path):
             if is_sensitive(p) or is_hidden(p):
                 continue
             n += 1
-            if n > MAX_SCAN:
+            if n > config().get("max_scan", MAX_SCAN):
                 return
             yield p
 
@@ -58,8 +58,9 @@ def walk(root: Path):
 def listing(header: str, lines: list[str], noun: str = "file") -> str:
     if not lines:
         return f"No matching {noun}s found."
-    more = f"\n... and {len(lines) - MAX_RESULTS} more" if len(lines) > MAX_RESULTS else ""
-    return f"{len(lines)} {noun}{'s' if len(lines) != 1 else ''}{header}:\n" + "\n".join(lines[:MAX_RESULTS]) + more
+    cap = config().get("max_results", MAX_RESULTS)
+    more = f"\n... and {len(lines) - cap} more" if len(lines) > cap else ""
+    return f"{len(lines)} {noun}{'s' if len(lines) != 1 else ''}{header}:\n" + "\n".join(lines[:cap]) + more
 
 
 def _ext(extension) -> str | None:
@@ -79,18 +80,32 @@ def name_matcher(query: str):
     return lambda name: all(w in re.sub(r"[\W_]+", " ", name.casefold()) for w in words)
 
 
-def search_files(query, folder, extension=None, modified_within_days=None):
-    root = resolve_safe(folder)
+def _search_roots(folder) -> list[Path]:
+    """The folder asked for, or every known folder (not Alfred's home) when none is given; a root inside another
+    one is left out, so no file is listed twice."""
+    if folder:
+        return [resolve_safe(folder)]
+    roots = [Path(p).resolve() for p in known_folders().values()]
+    return [r for r in roots if r.is_dir() and not any(o != r and o in r.parents for o in roots)]
+
+
+def search_files(query, folder=None, extension=None, modified_within_days=None):
     match, ext = name_matcher(query), _ext(extension)
     since = time.time() - modified_within_days * 86400 if modified_within_days else None
-    hits = []
-    for p in walk(root):
-        if match(p.name) and (not ext or p.suffix.lower() == ext):
-            st = p.stat()
-            if since is None or st.st_mtime >= since:
-                hits.append((st.st_mtime, f"{p} ({size(st.st_size)}, modified "
-                                          f"{datetime.fromtimestamp(st.st_mtime):%Y-%m-%d})"))
-    return listing("", [h for _, h in sorted(hits, reverse=True)])
+    hits, left = {}, config().get("max_scan", MAX_SCAN)
+    for root in _search_roots(folder):  # ponytail: one scan budget for all roots; a budget per root if hits come back thin
+        for p in walk(root):
+            left -= 1
+            if match(p.name) and (not ext or p.suffix.lower() == ext):
+                st = p.stat()
+                if since is None or st.st_mtime >= since:
+                    hits[p] = (st.st_mtime, f"{p} ({size(st.st_size)}, modified "
+                                            f"{datetime.fromtimestamp(st.st_mtime):%Y-%m-%d})")
+            if left <= 0:
+                break
+        if left <= 0:
+            break
+    return listing("", [h for _, h in sorted(hits.values(), reverse=True)])
 
 
 def _pdf_text(p: Path, max_pages: int = 30) -> str:
@@ -112,7 +127,7 @@ def _text(p: Path) -> str:
     if suf == ".docx":
         return _docx_text(p)
     with p.open("rb") as f:
-        raw = f.read(MAX_READ)
+        raw = f.read(config().get("max_read", MAX_READ))
     if raw.startswith((b"\xff\xfe", b"\xfe\xff")):
         return raw.decode("utf-16", errors="replace")
     return raw.decode("utf-8-sig", errors="replace")
@@ -279,20 +294,28 @@ def copy_file(source, destination):
     return f"Copied {src} to {dst}. Undo: /undo"
 
 
-def zip_folder(source, destination=None):
-    src = resolve_safe(source)  # a single file works too
+def _zip_plan(source, destination, extra_files=None):
+    """(sources, .zip path). The default .zip sits next to `source`."""
+    srcs = [resolve_safe(s) for s in [source, *(extra_files or [])]]
+    src = srcs[0]
     dst = resolve_safe(destination, must_exist=False) if destination else src.with_name(
         (src.name if src.is_dir() else src.stem) + ".zip")
     if dst.is_dir():
         dst = dst / (src.name + ".zip")
     if dst.suffix.lower() != ".zip":
         dst = dst.with_name(dst.name + ".zip")
+    return srcs, dst
+
+
+def zip_folder(source, destination=None, extra_files=None):
+    srcs, dst = _zip_plan(source, destination, extra_files)
+    src = srcs[0]
     assert_no_overwrite(dst)
-    files = list(walk(src)) if src.is_dir() else [src]
+    files = [(f, f.relative_to(s.parent)) for s in srcs for f in (walk(s) if s.is_dir() else [s])]
     try:
         with zipfile.ZipFile(dst, "w", zipfile.ZIP_DEFLATED) as z:
-            for f in files:
-                z.write(f, f.relative_to(src.parent))
+            for f, arc in files:
+                z.write(f, arc)
     except OSError as e:
         dst.unlink(missing_ok=True)  # never leave a half-written zip
         raise ToolError(f"Couldn't zip {src.name}: {e.strerror or e}")
@@ -379,9 +402,8 @@ def preview(tool: str, args: dict) -> str:
         src, dst = _rename_target(args["path"], args["new_name"])
         return f"Rename {src} → {dst.name}"
     if tool == "zip_folder":
-        src = resolve_safe(args["source"])
-        default = src.with_name((src.name if src.is_dir() else src.stem) + ".zip")
-        return f"Zip {src} → {args.get('destination') or default}"
+        srcs, dst = _zip_plan(args["source"], args.get("destination"), args.get("extra_files"))
+        return f"Zip {', '.join(map(str, srcs))} → {dst}"
     if tool == "move_to_recycle_bin":
         return f"Move {resolve_movable(args['path'])} to the Recycle Bin (restorable)"
     if tool == "organize_folder":

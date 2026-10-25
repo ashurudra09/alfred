@@ -1,10 +1,11 @@
 {
  "system": "alfred-2b-v2-q4",
+ "prompt": "1.1",
  "backend": "local",
  "model": "local",
  "set": "regressions",
- "date": "2026-10-24T22:15:23",
- "commit": "42a7574",
+ "date": "2026-10-25T23:46:10",
+ "commit": "379a664",
  "unreviewed": 46,
  "metrics": {
   "n": 46,
@@ -12,7 +13,7 @@
   "valid_rate": 1.0,
   "decision_accuracy": 0.7174,
   "tool_accuracy": 0.3913,
-  "args_score": 0.2674,
+  "args_score": 0.2625,
   "decision_macro_f1": 0.2939,
   "per_decision": {
    "tool_call": {
@@ -504,7 +505,7 @@
    "decision": "tool_call",
    "decision_ok": true,
    "tool_ok": true,
-   "args_score": 0.6666666666666666,
+   "args_score": 0.5,
    "valid": true,
    "ok": false,
    "expected_label": "search_files",
@@ -549,12 +550,12 @@
     "issue-010",
     "no_unrequested_write"
    ],
-   "ttft": 12.346068799990462,
-   "total": 13.5,
-   "prompt_tokens": 2800,
+   "ttft": 11.91674570000032,
+   "total": 13.117,
+   "prompt_tokens": 2839,
    "cached_tokens": 0,
    "output": {
-    "content": "Documents mein todo.md mein milk buy karna aur call mom ki list hai.",
+    "content": "Your todo list: buy milk and call mom.",
     "error": null,
     "tool_calls": []
    }

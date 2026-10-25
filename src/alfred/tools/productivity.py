@@ -80,6 +80,7 @@ UNITS = {"sec": 1 / 60, "secs": 1 / 60, "second": 1 / 60, "seconds": 1 / 60, "s"
          "min": 1, "minute": 1, "minutes": 1, "mins": 1, "m": 1, "hour": 60, "hours": 60, "hr": 60, "hrs": 60,
          "h": 60, "day": 1440, "days": 1440, "week": 10080, "weeks": 10080}
 CLOCK = r"(\d{1,2})(?::(\d{2}))?\s*(am|pm|a\.m\.|p\.m\.)?"
+DAYS = ("monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday")
 
 
 def _clock(hour: str, minute: str | None, ampm: str | None) -> tuple[int, int] | None:
@@ -93,7 +94,7 @@ def _clock(hour: str, minute: str | None, ampm: str | None) -> tuple[int, int] |
 
 def parse_time(text: str, now: datetime | None = None) -> datetime:
     """'in 20 minutes', 'YYYY-MM-DD HH:MM' (any ISO form, with T, seconds or a timezone), 'tomorrow at 9am',
-    'today 18:30', 'at 6pm', '18:30' (today, or tomorrow if that time has passed)."""
+    'today 18:30', 'at 6pm', '18:30' (today, or tomorrow if that time has passed), 'friday 17:00', 'next monday 9am'."""
     now = now or datetime.now()
     t = re.sub(r"\s+", " ", text.strip().casefold())
     m = re.fullmatch(r"in ((?:(?:an?|\d+(?:\.\d+)?) ?[a-z]+ ?)+)", re.sub(r",? and |, ", " ", t))
@@ -112,7 +113,15 @@ def parse_time(text: str, now: datetime | None = None) -> datetime:
         if day == "tomorrow" or (day is None and when <= now):
             when += timedelta(days=1)
         return when
-    raise ToolError(f"Can't read the time '{text}'. Use 'YYYY-MM-DD HH:MM', 'in 20 minutes' or 'tomorrow at 9am'.")
+    m = re.fullmatch(rf"(on |this |next )?({'|'.join(DAYS)})(?: at)? ?{CLOCK}", t)
+    if m and (hm := _clock(m.group(3), m.group(4), m.group(5))):  # the coming one; "next" on that day = in a week
+        ahead = (DAYS.index(m.group(2)) - now.weekday()) % 7
+        when = now.replace(hour=hm[0], minute=hm[1], second=0, microsecond=0) + timedelta(days=ahead)
+        if when <= now or (m.group(1) == "next " and ahead == 0):
+            when += timedelta(days=7)
+        return when
+    raise ToolError(f"Can't read the time '{text}'. Use 'YYYY-MM-DD HH:MM', 'friday 17:00', 'in 20 minutes' "
+                    "or 'tomorrow at 9am'.")
 
 
 def set_reminder(text, time):

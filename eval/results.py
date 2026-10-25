@@ -29,6 +29,7 @@ SYSTEMS = [  # (report name, description) in table order
     ("alfred-2b-v2-f16", "SFT v2, F16 (unquantized)"),
     ("alfred-2b-v2-q8", "SFT v2, Q8_0"),
     ("alfred-2b-v2-q4", "SFT v2, Q4_K_M (shipped)"),
+    ("alfred-2b-v3-q4", "SFT v3, Q4_K_M"),
     ("cloud-gpt-oss-120b", "gpt-oss-120b (cloud, Groq)"),
 ]
 
@@ -54,6 +55,17 @@ def indomain_table() -> list[str]:
         rows.append(f"| {desc} | {pct(m['accuracy'])} | {m['decision_macro_f1']:.3f} | "
                     f"{pct(m['per_decision']['ask']['recall'])} | {pct(m['tool_accuracy'])} | "
                     f"{m['args_score']:.3f} | {ttft} | [link](eval/reports/{name}_indomain.md) |")
+    return rows
+
+
+def regression_rows() -> list[str]:
+    rows = ["| System | Regression accuracy | Decision accuracy | Args score | Report |", "|---|---|---|---|---|"]
+    for name, desc in SYSTEMS:
+        r = report(name, "regressions")
+        if r:
+            m = r["metrics"]
+            rows.append(f"| {desc} | {pct(m['accuracy'])} | {pct(m['decision_accuracy'])} | {m['args_score']:.3f} | "
+                        f"[link](eval/reports/{name}_regressions.md) |")
     return rows
 
 
@@ -137,18 +149,23 @@ def main():
     lines += ["", "Quantization: compare the three **SFT v2** rows (F16 → Q8_0 → Q4_K_M).", "",
               f"![decision confusion matrix]({FIG.relative_to(ROOT).as_posix()})", "",
               "## Safety (48 items) and prompt injection", ""] + safety_rows()
-    e2e = json.loads((REPORTS / "e2e_alfred-2b-v2-q4.json").read_text(encoding="utf-8"))
-    lines += ["", f"End-to-end through the real tools (SFT v2 Q4): **{e2e['passed']}/{e2e['n']}** tasks, prompt-injection "
-              f"files resisted **{e2e['injection_resisted']}/{e2e['injection_n']}**, unconfirmed writes / overwrites / "
-              f"permanent deletes = {' / '.join(str(v) for v in e2e['invariants'].values())} "
-              "([report](eval/reports/e2e_alfred-2b-v2-q4.md)).", ""]
+    lines.append("")
+    for v in ("v2", "v3"):
+        e2e = json.loads((REPORTS / f"e2e_alfred-2b-{v}-q4.json").read_text(encoding="utf-8"))
+        lines += [f"End-to-end through the real tools (SFT {v} Q4): **{e2e['passed']}/{e2e['n']}** tasks, "
+                  f"prompt-injection files resisted **{e2e['injection_resisted']}/{e2e['injection_n']}**, unconfirmed "
+                  f"writes / overwrites / permanent deletes = {' / '.join(str(v) for v in e2e['invariants'].values())} "
+                  f"([report](eval/reports/e2e_alfred-2b-{v}-q4.md)).", ""]
+    lines += ["## Regression set (46 items from UI testing and probe runs, data/to_fix.md)", "",
+              "Each model is scored with the system prompt it was trained on (v2: 1.1, v3: 1.2).", ""]
+    lines += regression_rows() + [""]
 
-    w = {k: when2call(k) for k in ("base", "sft")}
+    w = {k: when2call(k) for k in ("base", "sft", "v3")}
     if all(w.values()):
         lines += ["## When2Call MCQ test (public benchmark: call / ask / answer / can't)", "",
                   "| Model (full precision) | n | Accuracy | Acc-norm | Macro-F1 | Tool hallucination ↓ |",
                   "|---|---|---|---|---|---|"]
-        for k, desc in (("base", "Qwen3.5-2B base"), ("sft", "SFT v2")):
+        for k, desc in (("base", "Qwen3.5-2B base"), ("sft", "SFT v2"), ("v3", "SFT v3")):
             m = w[k]
             lines.append(f"| {desc} | {m['n']} | {pct(m['acc'])} | {pct(m['acc_norm'])} | {m['macro_f1']:.3f} | "
                          f"{pct(m['hallucination'])} |")
@@ -156,15 +173,15 @@ def main():
                   "([eval/when2call/bench.py](eval/when2call/bench.py)). SFT used When2Call's *train* split; "
                   "this is the held-out *test* split.", ""]
 
-    b = {s: bfcl(s) for s in ("base-2b-q8", "alfred-2b-v2-q8")}
+    b = {s: bfcl(s) for s in ("base-2b-q8", "alfred-2b-v2-q8", "alfred-2b-v3-q8")}
     if all(b.values()):
         lines += ["## BFCL v4 subset (general function calling: did fine-tuning hurt it?)", "",
-                  "| Category | n | Base Q8_0 | SFT v2 Q8_0 |", "|---|---|---|---|"]
+                  "| Category | n | Base Q8_0 | SFT v2 Q8_0 | SFT v3 Q8_0 |", "|---|---|---|---|---|"]
         for cat, _ in BFCL_CATS:
-            (a0, n), (a1, _) = b["base-2b-q8"][cat], b["alfred-2b-v2-q8"][cat]
-            lines.append(f"| {cat} | {n} | {pct(a0)} | {pct(a1)} |")
-        mean = {s: sum(a for a, _ in v.values()) / len(v) for s, v in b.items()}
-        lines += [f"| **unweighted mean** | | **{pct(mean['base-2b-q8'])}** | **{pct(mean['alfred-2b-v2-q8'])}** |", "",
+            n = b["base-2b-q8"][cat][1]
+            lines.append(f"| {cat} | {n} | " + " | ".join(pct(v[cat][0]) for v in b.values()) + " |")
+        mean = [sum(a for a, _ in v.values()) / len(v) for v in b.values()]
+        lines += ["| **unweighted mean** | | " + " | ".join(f"**{pct(m)}**" for m in mean) + " |", "",
                   "Pinned `bfcl-eval==2026.3.23`, non-thinking mode, AST checker; Qwen3.5 handler in "
                   "[eval/bfcl/run.py](eval/bfcl/run.py). Not comparable to the vendor's 43.6 (full BFCL v4, "
                   "thinking mode).", ""]

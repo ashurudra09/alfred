@@ -10,16 +10,70 @@ import os
 os.environ.setdefault("GRADIO_ANALYTICS_ENABLED", "False")  # offline: no telemetry calls
 
 import time  # noqa: E402
+from pathlib import Path  # noqa: E402
 from types import SimpleNamespace  # noqa: E402
 
 import gradio as gr  # noqa: E402
 
 from alfred.agent import chats  # noqa: E402
-from alfred.agent.loop import drive, run_turn  # noqa: E402
+from alfred.agent.cli import current_model, list_models, listener_pid, restart_model  # noqa: E402
+from alfred.agent.loop import MAX_CALLS, drive, run_turn  # noqa: E402
 from alfred.agent.timing import format_timing  # noqa: E402
-from alfred.tools import journal, memory  # noqa: E402
+from alfred.contracts.export import load as load_contracts  # noqa: E402
+from alfred.tools import files, journal, memory  # noqa: E402
+from alfred.tools.guards import config, home, save_config  # noqa: E402
 
 THEME = gr.themes.Default(font=["system-ui", "sans-serif"], font_mono=["Consolas", "monospace"])  # no Google Fonts
+# ponytail: repo-root assets, so this needs the editable install `uv sync` gives; move under src/ if alfred is ever packaged
+ICONS = Path(__file__).resolve().parents[3] / "assets" / "icons"
+
+
+# What each tool can't do, for the Tools tab (UI text only: the frozen contracts stay as they are).
+# {max_results} / {max_scan} / {max_read} / {min_score} come from the Settings tab.
+LIMITS = {
+    "search_files": "allowed folders only; shows {max_results} results, scans up to {max_scan} files",
+    "search_file_contents": "txt, md, pdf, code; allowed folders; scans up to {max_scan} files, reads {max_read} bytes each",
+    "list_directory": "allowed folders; first 200 entries; hidden files left out",
+    "read_file": "txt, md, pdf, docx; up to 20,000 characters; reads {max_read} bytes of a text file",
+    "disk_usage": "any drive; stops after 20 s, so big folders may be estimates",
+    "move_file": "allowed folders; never overwrites; main folders refused",
+    "rename_file": "allowed folders; never overwrites; name only",
+    "copy_file": "files only; never overwrites",
+    "zip_folder": "never overwrites",
+    "organize_folder": "by type or month; shows the whole plan first; shortcuts and temp files skipped",
+    "move_to_recycle_bin": "never permanent; main folders refused",
+    "open_path": "refuses programs and scripts",
+    "open_app": "installed Start Menu apps and a few built-ins",
+    "system_info": "this laptop only",
+    "top_processes": "a snapshot, not a monitor",
+    "network_status": "checks 1.1.1.1; no speed test",
+    "port_in_use": "TCP listeners only",
+    "git_status": "read-only; no commit or push",
+    "create_note": "saved in Alfred's own notes folder",
+    "search_notes": "only notes made with create_note",
+    "set_reminder": "only fires while Alfred is running",
+    "list_reminders": "upcoming only",
+    "remember": "only what you ask it to remember",
+    "recall": "top 3 above similarity {min_score}; needs the Ollama embedder, else keyword match",
+    "calculate": "arithmetic only; + - * / % ** and sqrt, round, abs",
+}
+
+
+def tool_label(t: dict, cfg: dict) -> str:
+    vals = {"max_results": cfg.get("max_results", files.MAX_RESULTS), "max_scan": cfg.get("max_scan", files.MAX_SCAN),
+            "max_read": cfg.get("max_read", files.MAX_READ), "min_score": cfg.get("min_score", memory.MIN_SCORE)}
+    kind = "read-only" if t["annotations"].get("readOnlyHint") else \
+        "asks first, undoable" if t["_meta"]["alfred/needs_confirmation"] else "changes things"
+    return f"{t['name']} ({kind}): {t['description']} Limits: {LIMITS.get(t['name'], '-').format(**vals)}."
+
+
+def tool_groups(tools) -> dict[str, list[dict]]:
+    """Connected tools (what the MCP server reports) by group, with the contract's description and flags."""
+    out: dict[str, list[dict]] = {}
+    for t in load_contracts()["tools"]:
+        if t["name"] in tools.specs:
+            out.setdefault(t["_meta"]["alfred/group"], []).append(t)
+    return out
 
 
 def card_title(name: str, args: dict, mark: str = "🔧") -> str:
@@ -89,7 +143,9 @@ def memory_rows() -> list[list]:
     return [[m["id"], m["ts"][:10], m["text"]] for m in memory.all_memories()]
 
 
-def build(backend, tools) -> gr.Blocks:
+def build(backend, tools, server=None) -> gr.Blocks:
+    """`server` is a one-item list holding the llama-server Popen alfred-ui started (None if it's external)."""
+    server = server if server is not None else [None]
     # ponytail: one in-process session (a local single-user app); per-browser state if it ever serves more
     S = SimpleNamespace(chat_id=fresh_chat(), gen=None, msgs=[], t0=None, paused=0.0, label="", footer="")
 
@@ -113,7 +169,8 @@ def build(backend, tools) -> gr.Blocks:
         with gr.Tab("Chat"):
             with gr.Row():
                 with gr.Column(scale=3):
-                    bot = gr.Chatbot(S.msgs, label="Alfred", height="60vh", feedback_options=None, buttons=["copy"])
+                    bot = gr.Chatbot(S.msgs, label="Alfred", height="60vh", feedback_options=None, buttons=["copy"],
+                                     avatar_images=(None, str(ICONS / "alfred.png")))
                     status = gr.Markdown("")
                     with gr.Group(visible=False) as confirm_box:
                         preview = gr.Code(label="Alfred wants to make this change", language=None, interactive=False)
@@ -134,6 +191,48 @@ def build(backend, tools) -> gr.Blocks:
                 mem_id = gr.Number(label="Memory id", precision=0)
                 forget_btn = gr.Button("Forget", variant="stop")
             mem_out = gr.Markdown("")
+        groups = tool_groups(tools)
+        with gr.Tab("Tools") as tools_tab:
+            gr.Markdown("Untick a tool to stop Alfred using it (applies from your next message). The model was trained "
+                        "with all 25 tools, so turning some off can change which tool it picks.")
+            cfg0 = config()  # choices are refreshed on tab select (limits follow Settings); set here so values validate
+            tool_boxes = {g: gr.CheckboxGroup([(tool_label(t, cfg0), t["name"]) for t in ts], label=g, container=True,
+                                              value=[t["name"] for t in ts
+                                                     if t["name"] not in cfg0.get("disabled_tools", [])])
+                          for g, ts in groups.items()}
+            with gr.Row():
+                tools_save = gr.Button("Save", variant="primary")
+                tools_out = gr.Markdown("")
+        with gr.Tab("Settings") as set_tab:
+            gr.Markdown("#### Model server")
+            server_info = gr.Markdown("")
+            with gr.Row():
+                model_dd = gr.Dropdown(label="Model", allow_custom_value=True)
+                ctx_n = gr.Number(label="Context size (tokens)", precision=0, minimum=1024)
+                threads_n = gr.Number(label="CPU threads", precision=0, minimum=1)
+            apply_btn = gr.Button("Apply and restart server", variant="stop")
+            with gr.Group(visible=False) as restart_confirm:
+                restart_msg = gr.Markdown("")
+                with gr.Row():
+                    restart_yes = gr.Button("Restart", variant="stop", size="sm")
+                    restart_no = gr.Button("Keep", size="sm")
+            restart_out = gr.Markdown("")
+            gr.Markdown("#### Agent (applies from your next message)")
+            with gr.Row():
+                max_calls_n = gr.Number(label="Max tool calls per request", precision=0, minimum=1)
+                context_n = gr.Number(label="Chat history sent to the model (characters)", precision=0, minimum=1000)
+                temp_s = gr.Slider(0, 1, step=0.05, label="Temperature")
+            gr.Markdown("#### Tool limits")
+            with gr.Row():
+                results_n = gr.Number(label="Search results shown", precision=0, minimum=1)
+                scan_n = gr.Number(label="Max files scanned per search", precision=0, minimum=100)
+                read_n = gr.Number(label="Max bytes read from one file", precision=0, minimum=1000)
+                score_n = gr.Number(label="Memory match threshold (0-1)", minimum=0, maximum=1)
+            folders_df = gr.Dataframe(headers=["name", "path"], column_count=2, type="array", interactive=True,
+                                      label="Extra folders Alfred may use (name, full path)")
+            with gr.Row():
+                save_btn = gr.Button("Save", variant="primary")
+                save_out = gr.Markdown("")
         tick = gr.Timer(0.1, active=False)
 
         turn_outputs = [bot, status, confirm_box, preview, box, tick, actions, chat_list]
@@ -212,6 +311,67 @@ def build(backend, tools) -> gr.Blocks:
             ok = mid is not None and memory.forget(int(mid))
             return memory_rows(), "Forgotten." if ok else f"No memory {mid}."
 
+        def tool_updates():
+            cfg = config()
+            off = set(cfg.get("disabled_tools", []))
+            return {tool_boxes[g]: gr.CheckboxGroup([(tool_label(t, cfg), t["name"]) for t in ts],
+                                                     value=[t["name"] for t in ts if t["name"] not in off])
+                    for g, ts in groups.items()}
+
+        def save_tools(*enabled):
+            on = {n for chosen in enabled for n in chosen}
+            off = sorted(t["name"] for ts in groups.values() for t in ts if t["name"] not in on)
+            save_config({"disabled_tools": off})
+            return f"Saved. {len(off)} tool(s) off: {', '.join(off) or 'none'}."
+
+        settings_fields = [model_dd, ctx_n, threads_n, max_calls_n, context_n, temp_s, results_n, scan_n, read_n,
+                           score_n, folders_df]
+
+        def owner(pid) -> str:
+            return "started by alfred-ui" if server[0] and server[0].pid == pid else "started outside alfred-ui"
+
+        def server_status() -> str:
+            pid = listener_pid()
+            if not pid:
+                return f"llama-server: not running on :8080. Alfred home: `{home()}`."
+            return f"llama-server: running on :8080 (PID {pid}, {owner(pid)}). Alfred home: `{home()}`."
+
+        def load_settings():
+            cfg = config()
+            return (server_status(), gr.Dropdown([(Path(m).name, m) for m in list_models()], value=current_model()),
+                    cfg.get("ctx", 8192), cfg.get("threads", 4), cfg.get("max_calls", MAX_CALLS),
+                    cfg.get("context_chars", chats.CONTEXT_CHARS), cfg.get("temperature", 0.0),
+                    cfg.get("max_results", files.MAX_RESULTS), cfg.get("max_scan", files.MAX_SCAN),
+                    cfg.get("max_read", files.MAX_READ), cfg.get("min_score", memory.MIN_SCORE),
+                    [[n, pth] for n, pth in cfg.get("extra_folders", {}).items()] or [["", ""]])
+
+        def save_settings(max_calls, context_chars, temperature, max_results, max_scan, max_read, min_score, folders):
+            rows = [(str(n).strip(), str(pth).strip()) for n, pth in folders if str(n).strip() or str(pth).strip()]
+            bad = [pth for n, pth in rows if not n or not Path(pth).is_dir()]
+            if bad:
+                return f"Not saved: every extra folder needs a name and an existing folder ({bad[0] or 'empty path'})."
+            save_config({"max_calls": int(max_calls), "context_chars": int(context_chars), "temperature": temperature,
+                         "max_results": int(max_results), "max_scan": int(max_scan), "max_read": int(max_read),
+                         "min_score": min_score, "extra_folders": dict(rows)})
+            return "Saved. Applies from your next message."
+
+        def ask_restart(model, ctx, threads):
+            pid = listener_pid()
+            what = f"The llama-server on :8080 (PID {pid}, {owner(pid)}) will be stopped, and any other Alfred " \
+                   "window using it loses its model until it is back." if pid else "No llama-server is running."
+            return gr.Group(visible=True), (f"**Restart the model server?** {what} A new one starts on "
+                                            f"`{Path(model).name}` (context {int(ctx)}, {int(threads)} threads). "
+                                            "A request in progress is cancelled. This takes up to a minute.")
+
+        def do_restart(model, ctx, threads):
+            finish_pending()
+            save_config({"model": model, "ctx": int(ctx), "threads": int(threads)})
+            proc = restart_model(model)
+            if proc:
+                server[0] = proc
+            return gr.Group(visible=False), ("Restarted on " + Path(model).name if proc else
+                                             "llama-server didn't start. Is llama.cpp installed?"), server_status()
+
         box.submit(send, box, turn_outputs, api_name="send")
         yes_btn.click(answer(True), None, turn_outputs, api_name="confirm")
         no_btn.click(answer(False), None, turn_outputs, api_name="cancel")
@@ -224,6 +384,15 @@ def build(backend, tools) -> gr.Blocks:
         del_yes.click(delete_chat, None, turn_outputs + [del_confirm], api_name="delete_chat")
         undo_btn.click(undo, actions, [undo_out, actions], api_name="undo")
         mem_tab.select(memory_rows, None, mems)
+        tools_tab.select(tool_updates, None, list(tool_boxes.values()))
+        tools_save.click(save_tools, list(tool_boxes.values()), tools_out, api_name="save_tools")
+        set_tab.select(load_settings, None, [server_info] + settings_fields)
+        save_btn.click(save_settings, [max_calls_n, context_n, temp_s, results_n, scan_n, read_n, score_n, folders_df],
+                       save_out, api_name="save_settings")
+        apply_btn.click(ask_restart, [model_dd, ctx_n, threads_n], [restart_confirm, restart_msg])
+        restart_no.click(lambda: gr.Group(visible=False), None, restart_confirm)
+        restart_yes.click(do_restart, [model_dd, ctx_n, threads_n], [restart_confirm, restart_out, server_info],
+                          api_name="restart_server")
         forget_btn.click(forget, mem_id, [mems, mem_out], api_name="forget")
     return app
 
@@ -244,13 +413,14 @@ def main():
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")  # rich's spinner on a cp1252 console
     proc = ensure_model(a.model)
     tools = McpTools()
+    server = [proc]
     try:
-        build(Backend("local"), tools).launch(server_name="127.0.0.1", server_port=a.port, inbrowser=not a.no_browser,
-                                              ssr_mode=False, theme=THEME)
+        build(Backend("local"), tools, server).launch(server_name="127.0.0.1", server_port=a.port, inbrowser=not a.no_browser,
+                                              ssr_mode=False, theme=THEME, favicon_path=str(ICONS / "favicon.ico"))
     finally:
         tools.close()
-        if proc:
-            proc.terminate()
+        if server[0]:
+            server[0].terminate()
 
 
 if __name__ == "__main__":

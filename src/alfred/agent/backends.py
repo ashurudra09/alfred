@@ -19,7 +19,7 @@ from openai import OpenAI
 ROOT = Path(__file__).resolve().parents[3]
 load_dotenv(ROOT / ".env")
 
-LOCAL_URL = "http://127.0.0.1:8080/v1"
+LOCAL_URL = os.environ.get("ALFRED_LOCAL_URL", "http://127.0.0.1:8080/v1")  # evals use another port than the UI's
 NO_THINK = {"chat_template_kwargs": {"enable_thinking": False}}
 BACKENDS = {  # name -> (base_url, key env, model, extra_body, max requests/minute or None)
     "local": (LOCAL_URL, None, "local", NO_THINK, None),
@@ -161,11 +161,11 @@ def gguf_path(model: str) -> str:
     return next(line.split(" ", 1)[1].strip() for line in out.splitlines() if line.startswith("FROM "))
 
 
-def serve(model: str = "qwen3.5:2b", port: int = 8080) -> subprocess.Popen:
+def serve(model: str = "qwen3.5:2b", port: int = 8080, ctx: int = 8192, threads: int = 4) -> subprocess.Popen:
     """Start llama-server (winget ggml.llamacpp) with prefix-cache checkpoints; see decisions.md (Phase 1)."""
     slots = ROOT / "runs" / "slots"
     slots.mkdir(parents=True, exist_ok=True)
-    cmd = ["llama-server", "-m", gguf_path(model), "-c", "8192", "-t", "4", "--port", str(port),
+    cmd = ["llama-server", "-m", gguf_path(model), "-c", str(ctx), "-t", str(threads), "--port", str(port),
            "--slot-save-path", str(slots)]
     return subprocess.Popen(cmd)
 

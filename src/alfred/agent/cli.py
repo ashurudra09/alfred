@@ -2,11 +2,11 @@
 
 Commands: /new  /chats  /open <id>  /delete <id>  /undo [id]  /actions  /memories  /forget <id>  /help  /quit
 Starts llama-server on the fine-tuned model if it isn't already running (model: --model, ALFRED_MODEL, or the
-"model" key in %LOCALAPPDATA%\\Alfred\\config.json).
+"model" key in %LOCALAPPDATA%\\Alfred\\config.json),
+which the alfred-ui Settings tab edits (model, ctx, threads, max_calls, disabled_tools, ...).
 """
 
 import argparse
-import json
 import os
 import sys
 import threading
@@ -14,6 +14,7 @@ import time
 import urllib.request
 from pathlib import Path
 
+import psutil
 from rich.console import Console
 from rich.panel import Panel
 
@@ -23,7 +24,7 @@ from alfred.agent.loop import run_turn
 from alfred.agent.mcp_client import McpTools
 from alfred.agent.timing import format_timing
 from alfred.tools import journal, memory
-from alfred.tools.guards import home
+from alfred.tools.guards import config
 
 DEFAULT_MODEL = ROOT / "runs" / "sft_2b_v2" / "alfred-2b-v2-q4.gguf"
 HELP = ("/new  /chats  /open <id>  /delete <id>  /undo [id]  /actions  /memories  /forget <id>  /help  /quit\n"
@@ -39,22 +40,58 @@ def server_up(url="http://127.0.0.1:8080/health") -> bool:
         return False
 
 
-def ensure_model(model: str | None):
-    if server_up():
-        return None
-    cfg = home() / "config.json"
-    model = model or os.environ.get("ALFRED_MODEL") or \
-        (json.loads(cfg.read_text()).get("model") if cfg.exists() else None) or str(DEFAULT_MODEL)
+def current_model(model: str | None = None) -> str:
+    """--model, ALFRED_MODEL, the "model" key in config.json, or the default."""
+    return model or os.environ.get("ALFRED_MODEL") or config().get("model") or str(DEFAULT_MODEL)
+
+
+def list_models() -> list[str]:
+    """The fine-tuned GGUFs under runs/ (the hub/ copies and raw exports are skipped)."""
+    return sorted(str(p) for p in (ROOT / "runs").glob("*/alfred-*.gguf"))
+
+
+def listener_pid(port: int = 8080) -> int | None:
+    for c in psutil.net_connections(kind="tcp"):
+        if c.laddr and c.laddr.port == port and c.status == psutil.CONN_LISTEN:
+            return c.pid
+    return None
+
+
+def _start(model: str):
+    cfg = config()
     with console.status(f"Starting llama-server on {Path(model).name}..."):
-        proc = serve(model)
+        proc = serve(model, ctx=cfg.get("ctx", 8192), threads=cfg.get("threads", 4))
         for _ in range(240):
             if server_up():
                 return proc
             if proc.poll() is not None:
                 break
             time.sleep(0.5)
+    return None
+
+
+def ensure_model(model: str | None):
+    if server_up():
+        return None
+    proc = _start(current_model(model))
+    if proc:
+        return proc
     console.print("[red]llama-server didn't start.[/] Is llama.cpp installed (winget install ggml.llamacpp)?")
     sys.exit(1)
+
+
+def restart_model(model: str):
+    """Stop whatever listens on :8080 and start llama-server on `model`. Returns the new Popen, or None if it failed.
+    Callers must have asked the user first (the UI's confirm pop-up)."""
+    pid = listener_pid()
+    if pid:
+        p = psutil.Process(pid)
+        p.terminate()
+        try:
+            p.wait(10)
+        except psutil.TimeoutExpired:
+            p.kill()
+    return _start(model)
 
 
 class Spinner:

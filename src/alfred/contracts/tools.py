@@ -10,7 +10,7 @@ from typing import Annotated, Literal
 
 from pydantic import Field
 
-CONTRACTS_VERSION = "1.0"
+CONTRACTS_VERSION = "1.2"
 
 GROUPS = ("files", "open", "system", "developer", "productivity", "memory", "utility")
 REGISTRY: dict[str, dict] = {}
@@ -38,12 +38,12 @@ Ext = Annotated[str | None, Field(description="File extension without the dot, e
 
 @contract("files", read_only=True)
 def search_files(
-    query: Annotated[str, Field(description="Text the file NAME should contain")],
-    folder: Folder,
+    query: Annotated[str, Field(description="Text the file NAME should contain, or * for any name")],
+    folder: Annotated[str | None, Field(description="Leave out to search all known folders")] = None,
     extension: Ext = None,
     modified_within_days: Annotated[int | None, Field(ge=1, description="Only files changed in the last N days")] = None,
 ):
-    """Find files by their name. To search inside file text use search_file_contents; for notes use search_notes."""
+    """Find files by name, newest first. For text inside files use search_file_contents; for notes use search_notes."""
 
 
 @contract("files", read_only=True)
@@ -87,10 +87,11 @@ def copy_file(source: Path, destination: Annotated[str, Field(description="Targe
 
 @contract("files", confirm=True)
 def zip_folder(
-    source: Path,
-    destination: Annotated[str | None, Field(description="Path of the .zip; default: next to the folder")] = None,
+    source: Annotated[Path, Field(description="A folder or a file")],
+    destination: Annotated[str | None, Field(description="Path of the .zip; default: next to the source")] = None,
+    extra_files: Annotated[list[Path] | None, Field(description="More files or folders for the same .zip")] = None,
 ):
-    """Compress a folder into a .zip. Never overwrites."""
+    """Compress a folder, or one or more files, into one .zip. Never overwrites."""
 
 
 @contract("files", destructive=True, confirm=True)
@@ -159,7 +160,8 @@ def search_notes(query: str):
 @contract("productivity")
 def set_reminder(
     text: str,
-    time: Annotated[str, Field(description="'YYYY-MM-DD HH:MM' (24h, local) or relative like 'in 20 minutes'")],
+    time: Annotated[str, Field(description="'YYYY-MM-DD HH:MM' (24h, local), a weekday like 'friday 17:00', "
+                                           "or relative like 'in 20 minutes'")],
 ):
     """Show a Windows notification at a time (while Alfred is running)."""
 
@@ -184,5 +186,5 @@ def recall(query: str):
 # --- Utility ---------------------------------------------------------------------------------------------------
 
 @contract("utility", read_only=True)
-def calculate(expression: Annotated[str, Field(description="Arithmetic, e.g. '34999 * 18 / 100'")]):
-    """Evaluate an arithmetic expression exactly. Supports + - * / % ** ( ) and sqrt, round, abs."""
+def calculate(expression: Annotated[str, Field(description="Arithmetic, e.g. '34999 * 18 / 100' or '2.4 GB + 230 MB'")]):
+    """Evaluate arithmetic exactly: + - * / % ** ( ), sqrt, round, abs. Sizes in B/KB/MB/GB/TB (1024-based) keep units."""

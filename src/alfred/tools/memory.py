@@ -13,7 +13,7 @@ from datetime import datetime
 from mcp.server.fastmcp.exceptions import ToolError
 
 from alfred.tools import journal
-from alfred.tools.guards import home
+from alfred.tools.guards import config, home
 
 EMBED_URL, MODEL = "http://127.0.0.1:11434/api/embed", "embeddinggemma"
 MIN_SCORE = 0.5  # embeddinggemma: related 0.52-0.69, unrelated up to 0.47 (measured 2026-10-23)
@@ -80,7 +80,7 @@ def recall(query):
         if qv and m["embedding"]:
             s = max(s, _cos(qv, m["embedding"]))
         scored.append((s, m))
-    hits = [(s, m) for s, m in sorted(scored, key=lambda x: -x[0]) if s >= MIN_SCORE][:3]
+    hits = [(s, m) for s, m in sorted(scored, key=lambda x: -x[0]) if s >= config().get("min_score", MIN_SCORE)][:3]
     if not hits:
         return "No matching memories."
     return "\n".join(f"{i}. {m['text']} (saved {m['ts'][:10]})" for i, (_, m) in enumerate(hits, 1))

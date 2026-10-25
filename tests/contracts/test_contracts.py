@@ -88,7 +88,7 @@ def test_prompt_token_count():
     system = len(tok.encode(render_system_prompt(FOLDERS, date(2026, 10, 22))).ids)
     tools = len(tok.encode(json.dumps(openai_tools(), ensure_ascii=False)).ids)
     print(f"\nprompt tokens: system {system} + tools {tools} = {system + tools} (before chat-template wrapping)")
-    assert system + tools < 2400  # guard against growth; prefix is cached by llama-server
+    assert system + tools < 2450  # guard against growth (2400 before contracts 1.2); prefix is cached by llama-server
 
 
 def test_data_formats():

@@ -1,19 +1,28 @@
 {
-  "version": "1.0",
+  "version": "1.2",
   "tools": [
     {
       "name": "search_files",
-      "description": "Find files by their name. To search inside file text use search_file_contents; for notes use search_notes.",
+      "description": "Find files by name, newest first. For text inside files use search_file_contents; for notes use search_notes.",
       "inputSchema": {
         "properties": {
           "query": {
-            "description": "Text the file NAME should contain",
+            "description": "Text the file NAME should contain, or * for any name",
             "title": "Query",
             "type": "string"
           },
           "folder": {
-            "title": "Folder",
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Leave out to search all known folders",
+            "title": "Folder"
           },
           "extension": {
             "anyOf": [
@@ -44,8 +53,7 @@
           }
         },
         "required": [
-          "query",
-          "folder"
+          "query"
         ],
         "title": "search_filesArguments",
         "type": "object"
@@ -303,10 +311,11 @@
     },
     {
       "name": "zip_folder",
-      "description": "Compress a folder into a .zip. Never overwrites.",
+      "description": "Compress a folder, or one or more files, into one .zip. Never overwrites.",
       "inputSchema": {
         "properties": {
           "source": {
+            "description": "A folder or a file",
             "title": "Source",
             "type": "string"
           },
@@ -320,8 +329,24 @@
               }
             ],
             "default": null,
-            "description": "Path of the .zip; default: next to the folder",
+            "description": "Path of the .zip; default: next to the source",
             "title": "Destination"
+          },
+          "extra_files": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "More files or folders for the same .zip",
+            "title": "Extra Files"
           }
         },
         "required": [
@@ -658,7 +683,7 @@
             "type": "string"
           },
           "time": {
-            "description": "'YYYY-MM-DD HH:MM' (24h, local) or relative like 'in 20 minutes'",
+            "description": "'YYYY-MM-DD HH:MM' (24h, local), a weekday like 'friday 17:00', or relative like 'in 20 minutes'",
             "title": "Time",
             "type": "string"
           }
@@ -757,11 +782,11 @@
     },
     {
       "name": "calculate",
-      "description": "Evaluate an arithmetic expression exactly. Supports + - * / % ** ( ) and sqrt, round, abs.",
+      "description": "Evaluate arithmetic exactly: + - * / % ** ( ), sqrt, round, abs. Sizes in B/KB/MB/GB/TB (1024-based) keep units.",
       "inputSchema": {
         "properties": {
           "expression": {
-            "description": "Arithmetic, e.g. '34999 * 18 / 100'",
+            "description": "Arithmetic, e.g. '34999 * 18 / 100' or '2.4 GB + 230 MB'",
             "title": "Expression",
             "type": "string"
           }

@@ -16,10 +16,11 @@ class FakeBackend:
     model = "fake"
 
     def __init__(self, *script):
-        self.script, self.seen = list(script), []
+        self.script, self.seen, self.tool_names = list(script), [], []
 
     def stream(self, messages, tools=None, temperature=0.0):
         self.seen.append(messages)
+        self.tool_names.append([t["function"]["name"] for t in tools or []])
         res = self.script.pop(0)
         if res.content:
             yield "token", res.content
@@ -113,6 +114,14 @@ def test_call_cap(env):
     assert f"stopped after {MAX_CALLS} tool calls" in events[-1].data["text"]
 
 
+def test_failed_call_is_not_rerun(env):
+    gone = call("read_file", path="Downloads\\gone.txt")
+    b = FakeBackend(gone, gone, say("It isn't there."))
+    events = drive(run_turn(env["chat"], "read gone.txt", b, env["tools"]))
+    results = [e.data["text"] for e in events if e.kind == "tool_result"]
+    assert "Not found" in results[0] and results[1].startswith("Not run: this exact call already failed")
+
+
 def test_backend_error_is_reported(env):
     b = FakeBackend(Result(error="APIConnectionError: connection refused"))
     events = drive(run_turn(env["chat"], "hi", b, env["tools"]))
@@ -141,3 +150,21 @@ def test_context_budget_keeps_whole_recent_turns(env):
     assert ctx[0].role == "user" and ctx[-1].role == "assistant"
     assert 2 <= len(ctx) < 60 and ctx[-2].content.startswith("q29")
     assert len(chats.history(env["chat"])) == 60  # older turns stay in storage
+
+
+def test_settings_max_calls(env):
+    from alfred.tools.guards import save_config
+    save_config({"max_calls": 1})
+    b = FakeBackend(call("system_info"), call("system_info"), say("unused"))
+    events = drive(run_turn(env["chat"], "twice", b, env["tools"]))
+    assert sum(e.kind == "tool_result" for e in events) == 1
+    assert "stopped after 1 tool calls" in events[-1].data["text"]
+
+
+def test_disabled_tool_is_hidden_and_refused(env):
+    from alfred.tools.guards import save_config
+    save_config({"disabled_tools": ["list_directory"]})
+    b = FakeBackend(call("list_directory", path="Downloads"), say("I can't list folders."))
+    events = drive(run_turn(env["chat"], "what's in downloads?", b, env["tools"]))
+    assert "list_directory" not in b.tool_names[0] and "read_file" in b.tool_names[0]
+    assert kinds(events)[0] == "retry" and "disabled" in events[0].data["issues"][0]

@@ -1,6 +1,6 @@
 """Phase 9 on Kaggle (2x T4): the When2Call MCQ test for base vs. SFT, and an F16 GGUF of the SFT model.
 
-Pushed with: kaggle kernels push -p eval/when2call   (inputs: dataset alfred-adapters = the v2 LoRA adapter)
+Pushed with: kaggle kernels push -p eval/when2call   (inputs: dataset alfred-adapters = the SFT LoRA adapter, now v3)
 Scoring is the official When2Call MCQ rule (lm-eval-harness `multiple_choice`, target_delimiter ""): each answer's
 log-likelihood after the prompt; acc = argmax, acc_norm = argmax of loglik / len(answer in characters),
 macro-F1 over the 4 answer types, tool hallucination rate (tool call chosen when no tools were given).
@@ -98,7 +98,7 @@ if __name__ == "__main__":
         sys.exit()
     subprocess.run([sys.executable, "-m", "pip", "install", "-q", "unsloth"], check=True)
     procs = [subprocess.Popen([sys.executable, __file__, w], env={**os.environ, "CUDA_VISIBLE_DEVICES": str(g)})
-             for g, w in enumerate(("base", "sft"))]
+             for g, w in enumerate(("sft",))]  # base: scored in version 1, same prompts
     codes = [p.wait() for p in procs]
     subprocess.run("ls -laR /kaggle/working | head -40", shell=True)
     print("exit codes", codes, "total", round((time.time() - T0) / 60), "min", flush=True)

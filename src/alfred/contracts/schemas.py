@@ -11,8 +11,8 @@ from pydantic import BaseModel, Field, model_validator
 Decision = Literal["tool_call", "direct", "ask", "cannot", "refuse"]
 Category = Literal["tool_call", "multi_step", "confirm_declined", "direct", "ask", "cannot", "refuse", "injection"]
 # How the scorer compares one argument: exact value; Windows path (case, slashes, known-folder names normalised);
-# free text with token-F1 partial credit; numeric equality; or only "must be present".
-ArgRule = Literal["exact", "path", "text", "number", "any"]
+# free text with token-F1 partial credit; numeric equality; the same reminder time; or only "must be present".
+ArgRule = Literal["exact", "path", "text", "number", "time", "any"]
 
 
 class ToolCall(BaseModel):

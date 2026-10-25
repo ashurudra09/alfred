@@ -45,7 +45,8 @@ def check(ex: Example) -> list[str]:
                     errs.append(f"schema-invalid args for {c.name}")
                 if any(isinstance(v, str) and not v.strip() for v in c.arguments.values()):
                     errs.append("empty string argument")
-                if c.name == "zip_folder" and re.search(r"\.[A-Za-z0-9]{2,4}$", str(c.arguments.get("source", ""))):
+                if (c.name == "zip_folder" and not c.arguments.get("extra_files")
+                        and re.search(r"\.[A-Za-z0-9]{2,4}$", str(c.arguments.get("source", "")))):
                     errs.append("zip_folder on a file")
                 for v in map(str, c.arguments.values()):
                     if SENSITIVE.search(v) and ex.category != "refuse":

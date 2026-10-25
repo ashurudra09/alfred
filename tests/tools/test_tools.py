@@ -78,6 +78,14 @@ def test_search_files(sandbox):
         files.search_files("x", "C:\\Windows")
 
 
+def test_search_files_without_folder_searches_all_known_folders(sandbox):
+    (sandbox["Documents"] / "attention_summary.txt").write_text("x")
+    out = files.search_files("attention")
+    assert out.startswith("2 files:") and "Downloads" in out and "Documents" in out
+    assert files.search_files("*", extension="jpg").startswith("2 files:")
+    assert "No matching" in files.search_files("no_such_name")
+
+
 def test_search_file_contents(sandbox):
     out = files.search_file_contents("low-rank", "Downloads")
     assert "notes.txt" in out and "low-rank adapters" in out
@@ -130,6 +138,19 @@ def test_zip_undo(sandbox):
     def check():
         assert (sandbox["Documents"] / "resume.zip").exists()
     roundtrip(sandbox, lambda: files.zip_folder("Documents\\resume"), check)
+
+
+def test_zip_several_files(sandbox):
+    import zipfile
+    args = {"source": "Downloads\\notes.txt", "extra_files": ["Downloads\\photo.jpg"], "destination": "Desktop\\both"}
+    assert "notes.txt, " in files.preview("zip_folder", args)
+    assert "(2 files" in files.zip_folder(**args)
+    assert sorted(zipfile.ZipFile(sandbox["Desktop"] / "both.zip").namelist()) == ["notes.txt", "photo.jpg"]
+
+
+def test_not_found_hint_marks_folders(sandbox):
+    with pytest.raises(ToolError, match=r"resume\\"):
+        files.move_file("Documents\\resume.pdf", "Desktop")
 
 
 def test_organize_undo(sandbox):
@@ -274,6 +295,12 @@ def test_parse_time():
     assert productivity.parse_time("in 3 hours 45 minutes", now) == datetime(2026, 10, 22, 13, 45)
     assert productivity.parse_time("in 1 hour and 30 min", now) == datetime(2026, 10, 22, 11, 30)
     assert productivity.parse_time("2026-10-23 09:00", now) == datetime(2026, 10, 23, 9, 0)
+    sat = datetime(2026, 10, 24, 21, 0)  # a Saturday
+    assert productivity.parse_time("friday 17:00", sat) == datetime(2026, 10, 30, 17, 0)
+    assert productivity.parse_time("next monday at 9am", sat) == datetime(2026, 10, 26, 9, 0)
+    assert productivity.parse_time("saturday 22:00", sat) == datetime(2026, 10, 24, 22, 0)  # later today
+    assert productivity.parse_time("saturday 8am", sat) == datetime(2026, 10, 31, 8, 0)  # passed: next week
+    assert productivity.parse_time("next saturday 22:00", sat) == datetime(2026, 10, 31, 22, 0)
 
 
 def test_memory_keyword_fallback(sandbox, monkeypatch):
@@ -300,3 +327,22 @@ def test_calculate_tool():
     for bad in ["__import__('os')", "open('x')", "x + 1", "().__class__"]:
         with pytest.raises(ToolError):
             calc.calculate(bad)
+
+
+def test_calculate_sizes():
+    # issue 002: the probe's disk_usage sizes, summed with their units (1024-based like disk_usage)
+    assert calc.calculate("43.6 GB + 7.8 GB + 2.7 GB + 2.4 GB + 230 MB + 131 KB + 55 KB").startswith("56.72 GB (")
+    assert calc.calculate("1.5gb - 200mb").startswith("1.3 GB") and calc.calculate("512 bytes + 1 kb") == "1.5 KB (1,536 bytes)"
+    assert calc.calculate("(43.6 + 7.8) GB / 2").startswith("25.7 GB") and calc.calculate("100 b") == "100 B"
+    assert calc.calculate("15% of 5.3 GB").startswith("814.08 MB")
+    assert calc.calculate("2.5 GB / MB") == "2560" and calc.calculate("1 GB / 512 MB") == "2"  # size / size: a number
+    for bad in ["5 GB + 3", "2 GB * 3 MB", "sqrt(4 GB)", "2 GB ** 2"]:
+        with pytest.raises(ToolError):
+            calc.calculate(bad)
+
+
+def test_save_config_merges(sandbox):
+    from alfred.tools.guards import config, save_config
+    save_config({"max_calls": 5})
+    save_config({"temperature": 0.2})
+    assert config()["max_calls"] == 5 and config()["temperature"] == 0.2 and "folders" in config()

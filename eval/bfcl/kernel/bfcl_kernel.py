@@ -1,7 +1,7 @@
 """Phase 9a on Kaggle (2x T4): the BFCL v4 subset for base vs. SFT v2, both as Q8_0 GGUFs on llama.cpp (CUDA).
 
 Pushed with: kaggle kernels push -p eval/bfcl/kernel
-Inputs: alfred-adapters (the v2 LoRA adapter), alfred-bfcl-kit (eval/bfcl/run.py + qwen3.5-tokenizer/).
+Inputs: alfred-adapters (the SFT LoRA adapter, now v3), alfred-bfcl-kit (eval/bfcl/run.py + qwen3.5-tokenizer/).
 1. Unsloth converts base and base+adapter to Q8_0 the same way (the shipped GGUFs came from the same code).
 2. llama.cpp (fresh clone) is built with CUDA; base serves on GPU 0 (:8080), SFT on GPU 1 (:8081).
 3. Pinned bfcl-eval in its own venv generates and evaluates both in parallel through eval/bfcl/run.py.
@@ -18,7 +18,7 @@ import urllib.request
 
 OUT, WORK = "/kaggle/working", "/tmp/alfred"  # big intermediates stay out of the output
 T0 = time.time()
-SYSTEMS = {"base-2b-q8": ("unsloth/Qwen3.5-2B", 0, 8080), "alfred-2b-v2-q8": ("adapter", 1, 8081)}
+SYSTEMS = {"alfred-2b-v3-q8": ("adapter", 0, 8080)}  # base and v2 were scored by earlier versions of this kernel
 
 
 def log(msg):
@@ -84,6 +84,10 @@ if __name__ == "__main__":
     run(["uv", "pip", "install", "-q", "--python", f"{venv}/bin/python", "bfcl-eval==2026.3.23", "soundfile"])
     kit = os.path.dirname(glob.glob("/kaggle/input/**/run.py", recursive=True)[0])
     shutil.copytree(kit, f"{WORK}/kit")  # the dataset mount is read-only
+    p = f"{WORK}/kit/run.py"  # the kit's run.py predates v3 (the CLI fails to upload it): register its name here
+    code = open(p).read()
+    if "alfred-2b-v3-q8" not in code:
+        open(p, "w").write(code.replace('"alfred-2b-v2-q8")', '"alfred-2b-v2-q8", "alfred-2b-v3-q8")'))
     env = {**os.environ, "BFCL_PROJECT_ROOT": f"{OUT}/bfcl", "BFCL_THREADS": "8", "PYTHONIOENCODING": "utf-8"}
     gens = [subprocess.Popen([f"{venv}/bin/python", f"{WORK}/kit/run.py", "generate", system],
                              env={**env, "LOCAL_SERVER_PORT": str(port)}) for system, (_, _, port) in SYSTEMS.items()]

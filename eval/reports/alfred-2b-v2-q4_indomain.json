@@ -1,10 +1,11 @@
 {
  "system": "alfred-2b-v2-q4",
+ "prompt": "1.1",
  "backend": "local",
  "model": "local",
  "set": "indomain",
- "date": "2026-10-23T14:34:36",
- "commit": "c3500c0",
+ "date": "2026-10-25T23:46:18",
+ "commit": "379a664",
  "unreviewed": 0,
  "metrics": {
   "n": 278,

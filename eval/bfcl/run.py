@@ -31,7 +31,7 @@ from bfcl_eval.model_handler.local_inference.qwen_fc import QwenFCHandler  # noq
 from overrides import override  # noqa: E402
 
 CATEGORIES = "simple_python,multiple,parallel,irrelevance,live_relevance"
-SYSTEMS = ("base-2b-q8", "alfred-2b-v2-q8")  # names match eval/reports
+SYSTEMS = ("base-2b-q8", "alfred-2b-v2-q8", "alfred-2b-v3-q8")  # names match eval/reports
 TOKENIZER = HERE / "qwen3.5-tokenizer"  # the training tokenizer + chat template, and the base config.json
 
 XML_CALL = re.compile(r"<tool_call>\s*<function=([\w.-]+)>(.*?)</function>\s*</tool_call>", re.S)

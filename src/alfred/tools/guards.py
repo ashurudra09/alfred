@@ -36,9 +36,14 @@ def home() -> Path:
     return h
 
 
-def _config() -> dict:
+def config() -> dict:
     p = home() / "config.json"
     return json.loads(p.read_text(encoding="utf-8")) if p.exists() else {}
+
+
+def save_config(updates: dict) -> None:
+    """Merge `updates` into config.json (unknown keys are kept)."""
+    (home() / "config.json").write_text(json.dumps({**config(), **updates}, indent=2), encoding="utf-8")
 
 
 def _windows_folder(guid: str) -> str | None:
@@ -60,7 +65,7 @@ def _windows_folder(guid: str) -> str | None:
 
 def known_folders() -> dict[str, str]:
     """Name -> path, in a stable order. These are the folders file tools may touch (plus Alfred's home)."""
-    cfg = _config()
+    cfg = config()
     if "folders" in cfg:
         folders = dict(cfg["folders"])
     else:
@@ -153,7 +158,8 @@ def _closest(p: Path) -> Path:
     if len(same_stem) == 1:
         return same_stem[0]
     close = difflib.get_close_matches(p.name.casefold(), [x.name.casefold() for x in siblings], n=5, cutoff=0.5)
-    names = [x.name for x in siblings if x.name.casefold() in close] or [x.name for x in same_stem]
+    hits = [x for x in siblings if x.name.casefold() in close] or same_stem
+    names = [x.name + ("\\" if x.is_dir() else "") for x in hits]  # "resume\" is a folder, not a file
     raise ToolError(f"Not found: {p}" + (f". Similar names in {p.parent.name}: {', '.join(names)}" if names else ""))
 
 

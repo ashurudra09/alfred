@@ -6,13 +6,15 @@ A model output is a dict: {"content": str, "tool_calls": [{"name", "arguments" (
 import math
 import re
 from collections import Counter, defaultdict
-from datetime import date
+from datetime import date, datetime, time as dtime
 
 from jsonschema import Draft202012Validator
+from mcp.server.fastmcp.exceptions import ToolError
 
 from alfred.contracts.export import load
 from alfred.contracts.schemas import Decision, TestItem
 from alfred.tools.calc import evaluate
+from alfred.tools.productivity import parse_time
 
 TOOLS = {t["name"]: t["inputSchema"] for t in load()["tools"]}
 VALIDATORS = {name: Draft202012Validator(s) for name, s in TOOLS.items()}
@@ -115,6 +117,12 @@ def arg_score(rule: str, expected, got, folders: dict[str, str] = EVAL_FOLDERS) 
         return float(e is not None and g is not None and math.isclose(e, g, rel_tol=1e-6, abs_tol=1e-9))
     if rule == "text":
         return token_f1(expected, got)
+    if rule == "time":  # 'friday 17:00' and '2026-10-23 17:00' are the same reminder
+        now = datetime.combine(EVAL_DATE, dtime(12, 0))
+        try:
+            return float(parse_time(str(expected), now) == parse_time(str(got), now))
+        except ToolError:
+            return 0.0
     if isinstance(expected, str) and isinstance(got, str):
         return float(expected.strip().casefold() == got.strip().casefold())
     return float(expected == got)

@@ -22,8 +22,9 @@ CONFIRM = [n for n, r in REGISTRY.items() if r["needs_confirmation"]]
 REQUIRED = {t["name"]: t["inputSchema"].get("required", []) for t in load()["tools"]}
 
 HINTS = {
-    "search_files": "Matches file NAMES only. `query` is the name fragment; `extension` without the dot; "
-                    "`modified_within_days` only when the user mentions recency.",
+    "search_files": "Matches file NAMES only. `query` is the name fragment ('*' for any name); `extension` without the "
+                    "dot; `modified_within_days` only when the user mentions recency; leave `folder` out unless the "
+                    "user names one (then every known folder is searched).",
     "search_file_contents": "Searches INSIDE files for a phrase (not names, not notes).",
     "list_directory": "Lists what's directly inside a folder (not opening it in Explorer).",
     "read_file": "Reads txt/md/pdf text; Alfred then answers/summarises from the text. `max_chars` only if asked.",
