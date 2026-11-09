@@ -1,0 +1,11 @@
+name: tests
+on: [push, pull_request]
+jobs:
+  pytest:
+    runs-on: windows-latest  # the tools are Windows-only (known folders, Recycle Bin, Start-menu apps)
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - run: uv sync --locked
+      - run: uv run pytest -q
+      - run: uv run python -m eval.results && git diff --exit-code RESULTS.md  # RESULTS.md matches the reports

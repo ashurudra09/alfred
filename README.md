@@ -1,5 +1,7 @@
 # Alfred
 
+[![tests](https://github.com/ashurudra09/alfred/actions/workflows/tests.yml/badge.svg)](https://github.com/ashurudra09/alfred/actions/workflows/tests.yml)
+
 **An offline AI assistant for Windows, built on a 2B-parameter model I fine-tuned to call 25 local tools.**
 It runs entirely on a laptop CPU. No files leave the machine, it costs nothing per query, and every change it
 makes can be undone.
@@ -74,7 +76,7 @@ Needs [uv](https://docs.astral.sh/uv/), llama.cpp (`winget install ggml.llamacpp
 [Ollama](https://ollama.com) (for memory embeddings: `ollama pull embeddinggemma`).
 ```
 uv sync
-uv run pytest                 # 142 tests, no model needed
+uv run pytest                 # 146 tests, no model needed (also run by CI on windows-latest)
 uv run alfred                 # terminal assistant
 uv run alfred-ui              # web UI on http://127.0.0.1:7860
 ```
