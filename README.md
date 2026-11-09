@@ -4,20 +4,28 @@
 It runs entirely on a laptop CPU. No files leave the machine, it costs nothing per query, and every change it
 makes can be undone.
 
-The question behind it: *can a small fine-tuned model match a large cloud model on tool calling for a fixed tool
-set, at a fraction of the size and cost, fully offline?* On this tool set, yes:
+The question behind it: *can a small fine-tuned model match the large model that taught it, on a fixed tool set,
+at a fraction of the size and cost, fully offline?* On this tool set, yes: the 2B is on par with its 120B teacher.
 
-| | Qwen3.5-2B base | **Alfred (fine-tuned 2B, Q4, laptop CPU)** | gpt-oss-120b (cloud) |
+| | Qwen3.5-2B base | **Alfred (fine-tuned 2B, Q4, laptop CPU)** | gpt-oss-120b (cloud, its teacher) |
 |---|---|---|---|
-| In-domain accuracy (278 reviewed test items) | 79.1% | **95.3%** | 88.5% |
+| In-domain accuracy (278 test items), 95% CI | 79.1% (74.0–83.5) | **95.3% (92.2–97.2)** | 88.5% (84.2–91.7) |
 | Safety (48 items: harmful refused, benign answered) | 66.7% | **95.8%** | 95.8% |
 | When2Call: call / ask / answer / can't (3,652 public test items) | 41.2% | **65.7%** | – |
 | Tool hallucination on When2Call (lower is better) | 14.7% | **3.1%** | – |
 | BFCL v4 subset (general function calling, 1,056 items) | 72.1% | **77.2%** | – |
 | Time to first token | 1.9 s | **1.0 s** | network |
 
+Read the cloud column with care: gpt-oss-120b wrote most of the synthetic training data and runs zero-shot, and 11
+of its 32 misses are listing a folder before moving or copying in it, a habit the test set marks wrong. Counting
+those as right gives it 92.4%, inside the student's interval. The base → fine-tuned gain is significant (exact
+McNemar p < 1e-10).
+
 End to end through the real tools: 47/50 tasks, 20/20 prompt-injection attacks resisted, and 0 unconfirmed
 writes, overwrites or permanent deletes. Every number comes from a committed report: see **[RESULTS.md](RESULTS.md)**.
+A later iteration (SFT v3) reaches 97.8% in-domain and 49/50 end to end, but part of its data was written by Claude,
+which also drafted the test sets, and its in-domain gain over v2 is not significant (p = 0.065); see
+[the data card](data/card.md).
 
 <p align="center"><img src="docs/ui/3_confirm.jpg" width="720" alt="Alfred's web UI asking for confirmation before a change"></p>
 <p align="center"><sub>The web UI: a tool call shown as a card, and the exact change waiting for Confirm/Cancel.</sub></p>
@@ -66,7 +74,7 @@ Needs [uv](https://docs.astral.sh/uv/), llama.cpp (`winget install ggml.llamacpp
 [Ollama](https://ollama.com) (for memory embeddings: `ollama pull embeddinggemma`).
 ```
 uv sync
-uv run pytest                 # 133 tests, no model needed
+uv run pytest                 # 142 tests, no model needed
 uv run alfred                 # terminal assistant
 uv run alfred-ui              # web UI on http://127.0.0.1:7860
 ```
@@ -112,13 +120,10 @@ spikes/                 Phase 1 feasibility experiments (latency, caching, teach
   loops, prompt injection, quantization, public benchmarks.
 
 ## Status and roadmap
-Done: data, SFT, evaluation, tool server, agent and CLI, web UI, public benchmarks and quantization.
-Next:
-- DPO and GRPO on top of SFT;
-- 0.8B and FunctionGemma-270M ablations;
-- a larger test set;
-- a comparison with Windows Copilot;
-- public model and dataset cards.
+Done: data, SFT (v1–v3), evaluation with intervals and paired tests, tool server, agent and CLI, web UI, public
+benchmarks and quantization.
+Next: an owner review of the test set and of the scorer's text classifier, CI, and public weights.
+Not planned for now: DPO / GRPO, smaller-model ablations, a larger test set, a Windows Copilot comparison.
 
 ## License
 Code: [MIT](LICENSE). Model: Qwen3.5-2B (Apache 2.0). Training data includes When2Call and xLAM (CC-BY-4.0).

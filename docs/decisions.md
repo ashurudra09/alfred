@@ -218,3 +218,17 @@ Probing each tool with inputs a model plausibly sends found these failures; all 
   holds the v3 LoRA.
 - **Not decided yet:** whether v3 Q4 replaces v2 Q4 as the shipped model (it wins everywhere except BFCL simple /
   multiple).
+
+## 2026-11-10: audit follow-up (honest claims)
+- **v3 broke the open-weight-teacher rule** (2026-10-22 entry above): its 1,251 new examples and 111 rewrites were
+  written by Claude Haiku and audited by Claude Opus, while Claude also drafted every test set. So v3's in-domain gain
+  is measured on items from the same source as part of its training data. **v2 stays the headline model**; v3 is
+  reported as an iteration with this caveat (`data/card.md`).
+- **The scorer and the data filter are the same code:** `classify_decision` decides both which teacher replies enter
+  training and how test replies are scored. A misreading keyword rule would hide itself. Mitigation: an owner rescore
+  of ~100 text replies (`eval/review.py --rescore --text`) before trusting decision metrics further.
+- **Cloud comparison reframed:** gpt-oss-120b is the teacher, run zero-shot; 11 of its 32 in-domain misses are
+  listing/searching before a write, which prompt 1.2 itself recommends. Counting those as right gives 92.4% vs v2's
+  95.3% with overlapping 95% intervals, so the claim is "on par with its teacher", not "beats a 120B model".
+- **Statistics:** `RESULTS.md` now has Wilson 95% intervals and exact McNemar paired tests from the committed
+  per-item reports (stdlib only, byte-stable).
