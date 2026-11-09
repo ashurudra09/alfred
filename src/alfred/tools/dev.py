@@ -15,7 +15,9 @@ def port_in_use(port):
     except psutil.Error as e:
         raise ToolError(f"Windows didn't allow reading the connection list: {e}")
     for c in conns:
-        if c.laddr and c.laddr.port == port and c.status == psutil.CONN_LISTEN:
+        # Windows build 26300 + psutil 7.2 reports real listeners (445, 5432) as NONE; no remote address = listening
+        listening = c.status == psutil.CONN_LISTEN or (c.status == psutil.CONN_NONE and not c.raddr)
+        if c.laddr and c.laddr.port == port and listening:
             try:
                 name = psutil.Process(c.pid).name() if c.pid else "unknown"
             except psutil.Error:
