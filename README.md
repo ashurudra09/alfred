@@ -1,4 +1,4 @@
-﻿# Alfred
+# Alfred
 
 [![tests](https://github.com/ashurudra09/alfred/actions/workflows/tests.yml/badge.svg)](https://github.com/ashurudra09/alfred/actions/workflows/tests.yml)
 
