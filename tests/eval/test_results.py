@@ -40,6 +40,14 @@ def test_mcnemar():
     assert results.mcnemar([True, False], [False, True])[2] == 1.0  # one each way -> capped at 1
 
 
+def test_text_agreement():
+    from eval.review import text_agreement
+    a = text_agreement([{"human": "ask", "scorer": "ask"}, {"human": "ask", "scorer": "direct"},
+                        {"human": "refuse", "scorer": "refuse"}])
+    assert a["n"] == 3 and a["agree"] == 2
+    assert a["per_class"]["ask"] == {"n": 2, "agree": 1} and a["per_class"]["cannot"] == {"n": 0, "agree": 0}
+
+
 def test_look_first():
     items = [{"ok": False, "label": "list_directory", "expected_label": "move_file"},  # counts
              {"ok": False, "label": "search_files", "expected_label": "git_status"},  # read-only expected: no
