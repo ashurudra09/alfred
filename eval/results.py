@@ -4,8 +4,8 @@ Deterministic: reads only eval/reports/ and eval/bfcl/score/, no timestamps, so 
 """
 
 import json
+import math
 from collections import Counter
-from pathlib import Path
 
 import matplotlib
 
@@ -13,6 +13,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 
 from alfred.agent.backends import ROOT  # noqa: E402
+from alfred.contracts.tools import REGISTRY  # noqa: E402
 from eval.run import load_set  # noqa: E402
 
 REPORTS = ROOT / "eval" / "reports"
@@ -43,28 +44,105 @@ def pct(x) -> str:
     return "–" if x is None else f"{100 * x:.1f}%"
 
 
+def wilson(k: int, n: int, z: float = 1.959964) -> tuple[float, float]:
+    """95% Wilson score interval for k successes out of n (better than ±1.96·SE near 0% or 100%)."""
+    if n == 0:
+        return 0.0, 1.0
+    p = k / n
+    mid, half = p + z * z / (2 * n), z * math.sqrt(p * (1 - p) / n + z * z / (4 * n * n))
+    return (mid - half) / (1 + z * z / n), (mid + half) / (1 + z * z / n)
+
+
+def ci(k: int, n: int) -> str:
+    lo, hi = wilson(k, n)
+    return f"{100 * lo:.1f}–{100 * hi:.1f}"
+
+
+def ci_items(items) -> str:
+    return ci(sum(i["ok"] for i in items), len(items))
+
+
+def mcnemar(a: list[bool], b: list[bool]) -> tuple[int, int, float]:
+    """Exact (binomial) McNemar test on paired outcomes. Returns (only a right, only b right, two-sided p)."""
+    only_a = sum(x and not y for x, y in zip(a, b))
+    only_b = sum(y and not x for x, y in zip(a, b))
+    n = only_a + only_b
+    p = min(1.0, 2 * sum(math.comb(n, k) for k in range(min(only_a, only_b) + 1)) / 2 ** n) if n else 1.0
+    return only_a, only_b, p
+
+
+PAIRS = [  # (system a, system b, test set, what it shows)
+    ("alfred-2b-v2-q4", "base-2b-q8", "indomain", "fine-tuning helps"),
+    ("alfred-2b-v2-q4", "cloud-gpt-oss-120b", "indomain", "student vs its 120B teacher"),
+    ("alfred-2b-v3-q4", "alfred-2b-v2-q4", "indomain", "v3 vs v2"),
+    ("alfred-2b-v2-q4", "alfred-2b-v2-q8", "indomain", "Q4 quantization cost"),
+    ("alfred-2b-v3-q4", "alfred-2b-v2-q4", "safety", "v3 vs v2"),
+    ("alfred-2b-v3-q4", "alfred-2b-v2-q4", "regressions", "v3 vs v2"),
+]
+
+
+def paired() -> list[tuple]:
+    out = []
+    for a, b, s, what in PAIRS:
+        ra, rb = report(a, s), report(b, s)
+        if ra and rb:
+            ok_a, ok_b = ({i["id"]: i["ok"] for i in r["items"]} for r in (ra, rb))
+            ids = [i for i in ok_a if i in ok_b]
+            out.append((a, b, s, what) + mcnemar([ok_a[i] for i in ids], [ok_b[i] for i in ids]))
+    return out
+
+
+def paired_rows(pairs) -> list[str]:
+    desc = dict(SYSTEMS)
+    return ["| A | B | Set | Question | A right, B wrong | B right, A wrong | Exact McNemar p |",
+            "|---|---|---|---|---|---|---|"] + [
+        f"| {desc[a]} | {desc[b]} | {s} | {what} | {x} | {y} | {p:.2g} |" for a, b, s, what, x, y, p in pairs]
+
+
+LOOK = ("list_directory", "search_files")
+
+
+def look_first(items) -> list[dict]:
+    """Misses where a write tool was expected and the model called a read-only listing/search first instead."""
+    return [i for i in items if not i["ok"] and i["label"] in LOOK
+            and REGISTRY.get(i["expected_label"], {}).get("needs_confirmation")]
+
+
+def look_first_rows() -> list[str]:
+    rows = ["| System | Misses | Looked first (write expected, listed/searched instead) | Accuracy | "
+            "Accuracy counting a look-first as right | 95% CI |", "|---|---|---|---|---|---|"]
+    for name in ("alfred-2b-v2-q4", "alfred-2b-v3-q4", "cloud-gpt-oss-120b"):
+        items = report(name, "indomain")["items"]
+        ok, n, look = sum(i["ok"] for i in items), len(items), len(look_first(items))
+        rows.append(f"| {dict(SYSTEMS)[name]} | {n - ok} | {look} | {pct(ok / n)} | {pct((ok + look) / n)} | "
+                    f"{ci(ok + look, n)} |")
+    return rows
+
+
 def indomain_table() -> list[str]:
-    rows = ["| System | In-domain accuracy | Decision macro-F1 | Ask recall | Tool accuracy | Args score | "
-            "Median first token | Report |", "|---|---|---|---|---|---|---|---|"]
+    rows = ["| System | In-domain accuracy | 95% CI | Decision macro-F1 | Ask recall | Tool accuracy | Args score | "
+            "Median first token | Report |", "|---|---|---|---|---|---|---|---|---|"]
     for name, desc in SYSTEMS:
         r = report(name, "indomain")
         if not r:
             continue
         m, lat = r["metrics"], r.get("latency", {})
         ttft = f"{lat['ttft_median']:.1f} s" if r["backend"] == "local" and lat.get("ttft_median") else "–"
-        rows.append(f"| {desc} | {pct(m['accuracy'])} | {m['decision_macro_f1']:.3f} | "
+        rows.append(f"| {desc} | {pct(m['accuracy'])} | {ci_items(r['items'])} | {m['decision_macro_f1']:.3f} | "
                     f"{pct(m['per_decision']['ask']['recall'])} | {pct(m['tool_accuracy'])} | "
                     f"{m['args_score']:.3f} | {ttft} | [link](eval/reports/{name}_indomain.md) |")
     return rows
 
 
 def regression_rows() -> list[str]:
-    rows = ["| System | Regression accuracy | Decision accuracy | Args score | Report |", "|---|---|---|---|---|"]
+    rows = ["| System | Regression accuracy | 95% CI | Decision accuracy | Args score | Report |",
+            "|---|---|---|---|---|---|"]
     for name, desc in SYSTEMS:
         r = report(name, "regressions")
         if r:
             m = r["metrics"]
-            rows.append(f"| {desc} | {pct(m['accuracy'])} | {pct(m['decision_accuracy'])} | {m['args_score']:.3f} | "
+            rows.append(f"| {desc} | {pct(m['accuracy'])} | {ci_items(r['items'])} | {pct(m['decision_accuracy'])} | "
+                        f"{m['args_score']:.3f} | "
                         f"[link](eval/reports/{name}_regressions.md) |")
     return rows
 
@@ -72,8 +150,8 @@ def regression_rows() -> list[str]:
 def safety_rows() -> list[str]:
     """Refusal rate on harmful requests, over-refusal on benign ones (incl. borderline), injection items."""
     expected = {t.id: t for t in load_set("safety")}
-    rows = ["| System | Safety accuracy | Harmful refused | Benign over-refused | Injection items handled | Report |",
-            "|---|---|---|---|---|---|"]
+    rows = ["| System | Safety accuracy | 95% CI | Harmful refused | Benign over-refused | Injection items handled | "
+            "Report |", "|---|---|---|---|---|---|---|"]
     for name, desc in SYSTEMS:
         r = report(name, "safety")
         if not r:
@@ -84,7 +162,8 @@ def safety_rows() -> list[str]:
         inj = [i for i in items if "injection" in expected[i["id"]].tags]
         refused = sum(i["decision"] == "refuse" for i in harmful)
         over = sum(i["decision"] == "refuse" for i in benign)
-        rows.append(f"| {desc} | {pct(r['metrics']['accuracy'])} | {refused}/{len(harmful)} | {over}/{len(benign)} | "
+        rows.append(f"| {desc} | {pct(r['metrics']['accuracy'])} | {ci_items(items)} | {refused}/{len(harmful)} | "
+                    f"{over}/{len(benign)} | "
                     f"{sum(i['ok'] for i in inj)}/{len(inj)} | [link](eval/reports/{name}_safety.md) |")
     return rows
 
@@ -146,13 +225,27 @@ def main():
              "Generated by `uv run python -m eval.results` from the reports in `eval/reports/` and "
              "`eval/bfcl/score/`; every number links to its report. Laptop: Windows 11, CPU only (llama.cpp).", "",
              "## In-domain test set (278 items, our 25 tools)", ""] + indomain_table()
-    lines += ["", "Quantization: compare the three **SFT v2** rows (F16 → Q8_0 → Q4_K_M).", "",
+    lines += ["", "Quantization: compare the three **SFT v2** rows (F16 → Q8_0 → Q4_K_M). 95% CI = Wilson score "
+              "interval on accuracy; one run per system (greedy decoding), so it covers test-set sampling only, not "
+              "training seeds.", "",
+              "### Why the cloud model scores lower", "",
+              "gpt-oss-120b is the teacher that wrote most of the synthetic training data, run zero-shot. Many of its "
+              "misses are a reasonable habit the test set marks wrong: asked to move or copy a file, it lists or "
+              "searches the folder before acting.", ""] + look_first_rows()
+    lines += ["", "Forgiving that habit shrinks the gap from 6.8 to about 3 points and the intervals overlap: on this "
+              "tool set the fine-tuned 2B is **on par with** its 120B teacher, not clearly better. Part of the raw gap "
+              "is the test set's one-call convention, which the student was trained on.", "",
+              "### Paired comparisons (same items, exact McNemar test)", ""] + paired_rows(pairs := paired())
+    weak = [f"{what} ({s}, p={p:.2g})" for _, _, s, what, _, _, p in pairs if p >= 0.05]
+    lines += ["", "A p-value under 0.05 means the difference is unlikely to be item-sampling luck. **Not significant:** "
+              + "; ".join(weak) + ".", "",
               f"![decision confusion matrix]({FIG.relative_to(ROOT).as_posix()})", "",
               "## Safety (48 items) and prompt injection", ""] + safety_rows()
     lines.append("")
     for v in ("v2", "v3"):
         e2e = json.loads((REPORTS / f"e2e_alfred-2b-{v}-q4.json").read_text(encoding="utf-8"))
-        lines += [f"End-to-end through the real tools (SFT {v} Q4): **{e2e['passed']}/{e2e['n']}** tasks, "
+        lines += [f"End-to-end through the real tools (SFT {v} Q4): **{e2e['passed']}/{e2e['n']}** tasks "
+                  f"(95% CI {ci(e2e['passed'], e2e['n'])}%), "
                   f"prompt-injection files resisted **{e2e['injection_resisted']}/{e2e['injection_n']}**, unconfirmed "
                   f"writes / overwrites / permanent deletes = {' / '.join(str(v) for v in e2e['invariants'].values())} "
                   f"([report](eval/reports/e2e_alfred-2b-{v}-q4.md)).", ""]
