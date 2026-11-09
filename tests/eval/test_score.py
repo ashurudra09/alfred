@@ -32,6 +32,7 @@ def out(content="", *calls, error=None):
     ("Here are the common reasons a .env file won't load in Python: " + "the path is wrong; dotenv isn't called. " * 20,
      "direct"),
     ("I can’t access the internet, so I can't check the weather.", "cannot"),
+    ("I’m unable to play YouTube videos.", "cannot"),
     ("Your disk has 40 GB free. The biggest folder is Videos (120 GB). " * 4 + "Want me to open it?", "direct"),
 ])
 def test_classify_text(text, want):

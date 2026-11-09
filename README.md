@@ -1,4 +1,4 @@
-# Alfred
+﻿# Alfred
 
 [![tests](https://github.com/ashurudra09/alfred/actions/workflows/tests.yml/badge.svg)](https://github.com/ashurudra09/alfred/actions/workflows/tests.yml)
 
@@ -11,7 +11,7 @@ at a fraction of the size and cost, fully offline?* On this tool set, yes: the 2
 
 | | Qwen3.5-2B base | **Alfred (fine-tuned 2B, Q4, laptop CPU)** | gpt-oss-120b (cloud, its teacher) |
 |---|---|---|---|
-| In-domain accuracy (278 test items), 95% CI | 79.1% (74.0–83.5) | **95.3% (92.2–97.2)** | 88.5% (84.2–91.7) |
+| In-domain accuracy (276 test items), 95% CI | 79.7% (74.6–84.0) | **96.0% (93.0–97.8)** | 89.5% (85.3–92.6) |
 | Safety (48 items: harmful refused, benign answered) | 66.7% | **95.8%** | 95.8% |
 | When2Call: call / ask / answer / can't (3,652 public test items) | 41.2% | **65.7%** | – |
 | Tool hallucination on When2Call (lower is better) | 14.7% | **3.1%** | – |
@@ -19,13 +19,13 @@ at a fraction of the size and cost, fully offline?* On this tool set, yes: the 2
 | Time to first token | 1.9 s | **1.0 s** | network |
 
 Read the cloud column with care: gpt-oss-120b wrote most of the synthetic training data and runs zero-shot, and 11
-of its 32 misses are listing a folder before moving or copying in it, a habit the test set marks wrong. Counting
-those as right gives it 92.4%, inside the student's interval. The base → fine-tuned gain is significant (exact
+of its 29 misses are listing a folder before moving or copying in it, a habit the test set marks wrong. Counting
+those as right gives it 93.5%, inside the student's interval. The base → fine-tuned gain is significant (exact
 McNemar p < 1e-10).
 
 End to end through the real tools: 47/50 tasks, 20/20 prompt-injection attacks resisted, and 0 unconfirmed
 writes, overwrites or permanent deletes. Every number comes from a committed report: see **[RESULTS.md](RESULTS.md)**.
-A later iteration (SFT v3) reaches 97.8% in-domain and 49/50 end to end, but part of its data was written by Claude,
+A later iteration (SFT v3) reaches 98.6% in-domain and 49/50 end to end, but part of its data was written by Claude,
 which also drafted the test sets, and its in-domain gain over v2 is not significant (p = 0.065); see
 [the data card](data/card.md).
 
@@ -65,7 +65,7 @@ Trained on a free Kaggle T4, quantized to GGUF and served by `llama-server` with
 token on a laptop CPU).
 
 **The evaluation.**
-- A 278-item in-domain test set and a 48-item safety set, scored on decision (call / ask / answer / can't / refuse),
+- A 276-item in-domain test set and a 48-item safety set, scored on decision (call / ask / answer / can't / refuse),
   tool choice and arguments.
 - An end-to-end suite that runs real tasks and prompt-injection files through the real tools.
 - Two public benchmarks: When2Call and a BFCL v4 subset (with a Qwen3.5 handler written for the pinned
@@ -76,7 +76,7 @@ Needs [uv](https://docs.astral.sh/uv/), llama.cpp (`winget install ggml.llamacpp
 [Ollama](https://ollama.com) (for memory embeddings: `ollama pull embeddinggemma`).
 ```
 uv sync
-uv run pytest                 # 146 tests, no model needed (also run by CI on windows-latest)
+uv run pytest                 # 147 tests, no model needed (also run by CI on windows-latest)
 uv run alfred                 # terminal assistant
 uv run alfred-ui              # web UI on http://127.0.0.1:7860
 ```
@@ -124,7 +124,7 @@ spikes/                 Phase 1 feasibility experiments (latency, caching, teach
 ## Status and roadmap
 Done: data, SFT (v1–v3), evaluation with intervals and paired tests, tool server, agent and CLI, web UI, public
 benchmarks and quantization.
-Next: an owner review of the test set and of the scorer's text classifier, CI, and public weights.
+Next: public weights.
 Not planned for now: DPO / GRPO, smaller-model ablations, a larger test set, a Windows Copilot comparison.
 
 ## License

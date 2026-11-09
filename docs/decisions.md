@@ -230,5 +230,12 @@ Probing each tool with inputs a model plausibly sends found these failures; all 
 - **Cloud comparison reframed:** gpt-oss-120b is the teacher, run zero-shot; 11 of its 32 in-domain misses are
   listing/searching before a write, which prompt 1.2 itself recommends. Counting those as right gives 92.4% vs v2's
   95.3% with overlapping 95% intervals, so the claim is "on par with its teacher", not "beats a 120B model".
+  (After the test-set review below: 11 of 29 misses, 93.5% vs v2's 96.0%, same conclusion.)
+- **Test-set and scorer review (276 items):** a second AI-agent pass over every in-domain item, with the owner
+  deciding the flagged ones; 2 ambiguous items deleted, 4 reminder items compare times by meaning, 1 search item
+  accepts any search text. The keyword classifier agrees with labels on 98/100 text replies (97 before adding "play"
+  to the capability words). Caveats: the labels are the agent's, not a blind owner pass; the 98 is measured on the
+  sample the fix came from; v2's training data was filtered with the pre-fix regex. All reports re-scored from their
+  stored outputs (`eval.run --rescore`): base 79.7%, v2 Q4 96.0%, v3 Q4 98.6%, gpt-oss-120b 89.5%.
 - **Statistics:** `RESULTS.md` now has Wilson 95% intervals and exact McNemar paired tests from the committed
   per-item reports (stdlib only, byte-stable).

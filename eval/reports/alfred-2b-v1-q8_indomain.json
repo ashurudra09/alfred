@@ -7,25 +7,25 @@
  "commit": "c3500c0",
  "unreviewed": 0,
  "metrics": {
-  "n": 278,
-  "accuracy": 0.9173,
+  "n": 276,
+  "accuracy": 0.9239,
   "valid_rate": 1.0,
-  "decision_accuracy": 0.9317,
-  "tool_accuracy": 0.9209,
-  "args_score": 0.9684,
-  "decision_macro_f1": 0.787,
+  "decision_accuracy": 0.9312,
+  "tool_accuracy": 0.9239,
+  "args_score": 0.9743,
+  "decision_macro_f1": 0.7861,
   "per_decision": {
    "tool_call": {
-    "precision": 0.9241,
-    "recall": 0.9955,
-    "f1": 0.9584,
-    "support": 220
+    "precision": 0.9237,
+    "recall": 0.9954,
+    "f1": 0.9582,
+    "support": 219
    },
    "direct": {
-    "precision": 0.9474,
-    "recall": 0.9,
-    "f1": 0.9231,
-    "support": 20
+    "precision": 0.9444,
+    "recall": 0.8947,
+    "f1": 0.9189,
+    "support": 19
    },
    "ask": {
     "precision": 1.0,
@@ -52,9 +52,9 @@
    "cannot": 0.8667,
    "copy_file": 1.0,
    "create_note": 1.0,
-   "direct": 0.9,
+   "direct": 0.8947,
    "disk_usage": 1.0,
-   "git_status": 0.8889,
+   "git_status": 1.0,
    "list_directory": 0.8889,
    "list_reminders": 1.0,
    "move_file": 1.0,
@@ -71,7 +71,7 @@
    "refuse": 1.0,
    "remember": 1.0,
    "rename_file": 1.0,
-   "search_file_contents": 0.8889,
+   "search_file_contents": 1.0,
    "search_files": 0.9,
    "search_notes": 1.0,
    "set_reminder": 1.0,
@@ -108,7 +108,7 @@
     "create_note": 8
    },
    "direct": {
-    "direct": 18,
+    "direct": 17,
     "calculate": 1,
     "system_info": 1
    },
@@ -116,8 +116,7 @@
     "disk_usage": 8
    },
    "git_status": {
-    "git_status": 8,
-    "disk_usage": 1
+    "git_status": 8
    },
    "list_directory": {
     "list_directory": 8,
@@ -672,9 +671,9 @@
    "decision": "tool_call",
    "decision_ok": true,
    "tool_ok": true,
-   "args_score": 0.6666666666666666,
+   "args_score": 1.0,
    "valid": true,
-   "ok": false,
+   "ok": true,
    "expected_label": "search_file_contents",
    "label": "search_file_contents",
    "tags": [],
@@ -4627,37 +4626,6 @@
    }
   },
   {
-   "id": "git_status-08",
-   "decision": "tool_call",
-   "decision_ok": true,
-   "tool_ok": false,
-   "args_score": 0.0,
-   "valid": true,
-   "ok": false,
-   "expected_label": "git_status",
-   "label": "disk_usage",
-   "tags": [
-    "confusable"
-   ],
-   "ttft": 1.3247953999962192,
-   "total": 3.112,
-   "prompt_tokens": 2560,
-   "cached_tokens": 2537,
-   "output": {
-    "content": "",
-    "error": null,
-    "tool_calls": [
-     {
-      "name": "disk_usage",
-      "arguments": {
-       "path": "D:\\projects\\portfolio"
-      },
-      "raw": "{\"path\":\"D:\\\\projects\\\\portfolio\"}"
-     }
-    ]
-   }
-  },
-  {
    "id": "create_note-01",
    "decision": "tool_call",
    "decision_ok": true,
@@ -7108,27 +7076,6 @@
    "cached_tokens": 2537,
    "output": {
     "content": "RAM is volatile memory for active programs; storage is non‑volatile for files and data.",
-    "error": null,
-    "tool_calls": []
-   }
-  },
-  {
-   "id": "direct-12",
-   "decision": "direct",
-   "decision_ok": true,
-   "tool_ok": true,
-   "args_score": null,
-   "valid": true,
-   "ok": true,
-   "expected_label": "direct",
-   "label": "direct",
-   "tags": [],
-   "ttft": 0.6255811000009999,
-   "total": 1.361,
-   "prompt_tokens": 2557,
-   "cached_tokens": 2537,
-   "output": {
-    "content": "Type /undo to reverse the last change.",
     "error": null,
     "tool_calls": []
    }

@@ -1,6 +1,7 @@
 """Run a backend over a test set and write a scored report.
 
 Usage: uv run python -m eval.run --backend local --system base-2b-q8 --set indomain [--limit N]
+       uv run python -m eval.run --rescore    # re-score all reports from their stored outputs
 Writes eval/reports/<system>_<set>.json (+ .md summary). Raw outputs are cached in <...>.raw.jsonl, so an interrupted
 or rate-limited run resumes where it stopped (delete the .raw.jsonl to rerun from scratch).
 """
@@ -56,8 +57,28 @@ def summary_md(r: dict) -> str:
     return "\n".join(lines)
 
 
+def rescore_all():
+    """Re-score every report from the outputs stored inside it (after a test item or the scorer changed).
+    Rows of deleted items are dropped; latency stays as measured."""
+    for path in sorted(REPORTS.glob("*.json")):
+        r = json.loads(path.read_text(encoding="utf-8"))
+        if not (isinstance(r, dict) and {"system", "set", "items", "metrics"} <= r.keys()):
+            continue
+        items = {it.id: it for it in load_set(r["set"])}
+        rows = [row for row in r["items"] if row["id"] in items]
+        scores = [score_item(items[row["id"]], row["output"]) for row in rows]
+        r["metrics"] = aggregate(scores, [items[row["id"]].expected_decision for row in rows])
+        r["unreviewed"] = unreviewed(r["set"], list(items.values()))
+        r["items"] = [{**s, **{k: v for k, v in row.items() if k not in s}} for s, row in zip(scores, rows)]
+        path.write_text(json.dumps(r, indent=1, ensure_ascii=False), encoding="utf-8")
+        path.with_suffix(".md").write_text(summary_md(r), encoding="utf-8")
+        print(f"{path.name}: {pct(r['metrics']['accuracy'])} (n={r['metrics']['n']})")
+
+
 def main():
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")  # model replies contain emoji; cp1252 crashes
+    if sys.argv[1:] == ["--rescore"]:
+        return rescore_all()
     ap = argparse.ArgumentParser()
     ap.add_argument("--backend", choices=list(BACKENDS), default="local")
     ap.add_argument("--system", required=True, help="name of the system in the results table, e.g. base-2b-q8")

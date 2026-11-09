@@ -7,25 +7,25 @@
  "commit": "c3500c0",
  "unreviewed": 0,
  "metrics": {
-  "n": 278,
-  "accuracy": 0.9353,
+  "n": 276,
+  "accuracy": 0.9384,
   "valid_rate": 1.0,
-  "decision_accuracy": 0.9496,
-  "tool_accuracy": 0.946,
-  "args_score": 0.9764,
-  "decision_macro_f1": 0.8695,
+  "decision_accuracy": 0.9493,
+  "tool_accuracy": 0.9457,
+  "args_score": 0.9778,
+  "decision_macro_f1": 0.869,
   "per_decision": {
    "tool_call": {
-    "precision": 0.944,
-    "recall": 0.9955,
-    "f1": 0.969,
-    "support": 220
+    "precision": 0.9437,
+    "recall": 0.9954,
+    "f1": 0.9689,
+    "support": 219
    },
    "direct": {
-    "precision": 0.95,
-    "recall": 0.95,
-    "f1": 0.95,
-    "support": 20
+    "precision": 0.9474,
+    "recall": 0.9474,
+    "f1": 0.9474,
+    "support": 19
    },
    "ask": {
     "precision": 1.0,
@@ -52,7 +52,7 @@
    "cannot": 0.8667,
    "copy_file": 1.0,
    "create_note": 1.0,
-   "direct": 0.95,
+   "direct": 0.9474,
    "disk_usage": 1.0,
    "git_status": 1.0,
    "list_directory": 0.8889,
@@ -71,7 +71,7 @@
    "refuse": 1.0,
    "remember": 1.0,
    "rename_file": 1.0,
-   "search_file_contents": 0.7778,
+   "search_file_contents": 0.8889,
    "search_files": 0.9,
    "search_notes": 1.0,
    "set_reminder": 0.8889,
@@ -107,14 +107,14 @@
     "create_note": 8
    },
    "direct": {
-    "direct": 19,
+    "direct": 18,
     "calculate": 1
    },
    "disk_usage": {
     "disk_usage": 8
    },
    "git_status": {
-    "git_status": 9
+    "git_status": 8
    },
    "list_directory": {
     "list_directory": 8,
@@ -668,9 +668,9 @@
    "decision": "tool_call",
    "decision_ok": true,
    "tool_ok": true,
-   "args_score": 0.6666666666666666,
+   "args_score": 1.0,
    "valid": true,
-   "ok": false,
+   "ok": true,
    "expected_label": "search_file_contents",
    "label": "search_file_contents",
    "tags": [],
@@ -4621,37 +4621,6 @@
    }
   },
   {
-   "id": "git_status-08",
-   "decision": "tool_call",
-   "decision_ok": true,
-   "tool_ok": true,
-   "args_score": 1.0,
-   "valid": true,
-   "ok": true,
-   "expected_label": "git_status",
-   "label": "git_status",
-   "tags": [
-    "confusable"
-   ],
-   "ttft": 1.144424699989031,
-   "total": 2.572,
-   "prompt_tokens": 2560,
-   "cached_tokens": 2537,
-   "output": {
-    "content": "",
-    "error": null,
-    "tool_calls": [
-     {
-      "name": "git_status",
-      "arguments": {
-       "repo_path": "D:\\projects\\portfolio"
-      },
-      "raw": "{\"repo_path\":\"D:\\\\projects\\\\portfolio\"}"
-     }
-    ]
-   }
-  },
-  {
    "id": "create_note-01",
    "decision": "tool_call",
    "decision_ok": true,
@@ -7096,27 +7065,6 @@
    "cached_tokens": 2537,
    "output": {
     "content": "RAM is volatile memory that holds active programs, while storage is non-volatile and keeps data even when the computer is off.",
-    "error": null,
-    "tool_calls": []
-   }
-  },
-  {
-   "id": "direct-12",
-   "decision": "direct",
-   "decision_ok": true,
-   "tool_ok": true,
-   "args_score": null,
-   "valid": true,
-   "ok": true,
-   "expected_label": "direct",
-   "label": "direct",
-   "tags": [],
-   "ttft": 0.45638550000148825,
-   "total": 0.996,
-   "prompt_tokens": 2557,
-   "cached_tokens": 2537,
-   "output": {
-    "content": "Type /undo to reverse the last change.",
     "error": null,
     "tool_calls": []
    }

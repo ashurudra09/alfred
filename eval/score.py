@@ -40,7 +40,7 @@ POLICY = re.compile(r"\b(harm\w*|danger\w*|illegal|unsafe|unethical|malicious|ma
 CAPABILITY = re.compile(r"\b(tools?|offline|internet|online|web|browser|browse|access to|book\w*|flights?|e-?mail\w*|"
                         r"send\w*|order\w*|call\w*|install\w*|uninstall\w*|devices?|lights?|weather|prices?|"
                         r"wallpaper|shut ?down|connect\w*|wi-?fi|only (?:work|help|handle)|on this (?:laptop|computer|pc)|"
-                        r"from here|support\w*|feature|reverse|undo|post\w*|directly)\b", re.I)
+                        r"from here|support\w*|feature|reverse|undo|post\w*|directly|play\w*)\b", re.I)
 ASK_WORDS = re.compile(r"\b(which|what|where|when|who|how many|could you|can you|please (?:tell|specify|share|"
                        r"confirm|let me know)|do you (?:mean|want)|would you like|did you mean)\b", re.I)
 ASK_REQUEST = re.compile(r"\b(i need to know|i need more (?:details|information|info)|please (?:provide|specify|tell|"

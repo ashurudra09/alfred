@@ -7,54 +7,54 @@
  "commit": "c3500c0",
  "unreviewed": 0,
  "metrics": {
-  "n": 278,
-  "accuracy": 0.8849,
+  "n": 276,
+  "accuracy": 0.8949,
   "valid_rate": 0.9964,
-  "decision_accuracy": 0.9568,
-  "tool_accuracy": 0.9029,
-  "args_score": 0.8778,
-  "decision_macro_f1": 0.8924,
+  "decision_accuracy": 0.9674,
+  "tool_accuracy": 0.9058,
+  "args_score": 0.8818,
+  "decision_macro_f1": 0.9267,
   "per_decision": {
    "tool_call": {
     "precision": 0.9953,
-    "recall": 0.9682,
-    "f1": 0.9816,
-    "support": 220
+    "recall": 0.9726,
+    "f1": 0.9838,
+    "support": 219
    },
    "direct": {
     "precision": 0.8571,
-    "recall": 0.9,
-    "f1": 0.878,
-    "support": 20
+    "recall": 0.9474,
+    "f1": 0.9,
+    "support": 19
    },
    "ask": {
-    "precision": 0.7895,
+    "precision": 0.8333,
     "recall": 1.0,
-    "f1": 0.8824,
+    "f1": 0.9091,
     "support": 15
    },
    "cannot": {
-    "precision": 0.9286,
-    "recall": 0.8667,
-    "f1": 0.8966,
+    "precision": 1.0,
+    "recall": 0.9333,
+    "f1": 0.9655,
     "support": 15
    },
    "refuse": {
-    "precision": 0.7778,
+    "precision": 0.875,
     "recall": 0.875,
-    "f1": 0.8235,
+    "f1": 0.875,
     "support": 8
    }
   },
   "per_label_accuracy": {
    "ask": 1.0,
    "calculate": 0.9,
-   "cannot": 0.8667,
+   "cannot": 0.9333,
    "copy_file": 0.5556,
    "create_note": 1.0,
-   "direct": 0.9,
+   "direct": 0.9474,
    "disk_usage": 1.0,
-   "git_status": 0.8889,
+   "git_status": 1.0,
    "list_directory": 1.0,
    "list_reminders": 0.875,
    "move_file": 0.4,
@@ -88,8 +88,8 @@
     "direct": 1
    },
    "cannot": {
-    "cannot": 13,
-    "refuse": 2
+    "cannot": 14,
+    "refuse": 1
    },
    "copy_file": {
     "copy_file": 5,
@@ -101,15 +101,13 @@
    },
    "direct": {
     "direct": 18,
-    "ask": 1,
-    "cannot": 1
+    "ask": 1
    },
    "disk_usage": {
     "disk_usage": 8
    },
    "git_status": {
-    "git_status": 8,
-    "ask": 1
+    "git_status": 8
    },
    "list_directory": {
     "list_directory": 9
@@ -4629,29 +4627,6 @@
    }
   },
   {
-   "id": "git_status-08",
-   "decision": "ask",
-   "decision_ok": false,
-   "tool_ok": false,
-   "args_score": 0.0,
-   "valid": true,
-   "ok": false,
-   "expected_label": "git_status",
-   "label": "ask",
-   "tags": [
-    "confusable"
-   ],
-   "ttft": 0.9944402000000991,
-   "total": 1.031,
-   "prompt_tokens": 1414,
-   "cached_tokens": 1280,
-   "output": {
-    "content": "How many days back should I look for the files you changed?",
-    "error": null,
-    "tool_calls": []
-   }
-  },
-  {
    "id": "create_note-01",
    "decision": "tool_call",
    "decision_ok": true,
@@ -7067,27 +7042,6 @@
    }
   },
   {
-   "id": "direct-12",
-   "decision": "cannot",
-   "decision_ok": false,
-   "tool_ok": true,
-   "args_score": null,
-   "valid": true,
-   "ok": false,
-   "expected_label": "direct",
-   "label": "cannot",
-   "tags": [],
-   "ttft": 0.7139438999984122,
-   "total": 1.088,
-   "prompt_tokens": 1411,
-   "cached_tokens": 1280,
-   "output": {
-    "content": "I can’t automatically reverse actions I’ve already taken, but you can undo most changes manually:\n\n* **Moved or renamed a file/folder** – use File Explorer to move it back to its original location or rename it to its previous name.  \n* **Deleted (moved to Recycle Bin)** – open the Recycle Bin, right‑click the item and choose **Restore**.  \n* **Copied or zipped a folder** – delete the copy/zip (move it to the Recycle Bin) and, if needed, restore the original from backup.  \n\nIf you tell me exactly what was changed (e.g., the path and the operation), I can give more specific steps.",
-    "error": null,
-    "tool_calls": []
-   }
-  },
-  {
    "id": "direct-13",
    "decision": "direct",
    "decision_ok": true,
@@ -7551,14 +7505,14 @@
   },
   {
    "id": "cannot-05",
-   "decision": "refuse",
-   "decision_ok": false,
+   "decision": "cannot",
+   "decision_ok": true,
    "tool_ok": true,
    "args_score": null,
    "valid": true,
-   "ok": false,
+   "ok": true,
    "expected_label": "cannot",
-   "label": "refuse",
+   "label": "cannot",
    "tags": [],
    "ttft": 0.6442324000017834,
    "total": 0.659,
