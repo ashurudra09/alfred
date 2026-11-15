@@ -61,7 +61,7 @@ checkout while a machine job runs.
 | Verify | done | 2026-11-15 | this commit | | pytest 150 passed with Ollama running (149 + the embedder test); `eval.results` leaves `RESULTS.md` unchanged; 5 e2e verdicts match |
 
 ## Notes for whoever works next
-- Shell heredocs in Git Bash collapse `\` to `\`: write files that contain backslashes (Windows paths in tests)
+- Shell heredocs in Git Bash turn a double backslash into a single one: write files that contain backslashes (Windows paths in tests)
   with the editor tools, not with `cat <<EOF`.
 - The three Phase 1 tracks are independent. 1A should add its semantic-search task families only after step B1
   has frozen the new tool's contract.
