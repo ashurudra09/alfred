@@ -33,11 +33,11 @@ PROVIDERS = [("groq", GROQ, "GROQ_API_KEY", "openai/gpt-oss-120b", 5500, 1, {"re
              ("groq-qwen", GROQ, "GROQ_API_KEY", "qwen/qwen3.8-27b", 5500, 1, {"reasoning_effort": "none"}),
              ("cerebras-qwen", CEREBRAS, "CEREBRAS_API_KEY", "qwen-3.8-27b", 12000, 2, {})]
 # scarce scenarios first, so a run cut short by rate limits still covers every behaviour
-PRIORITY = ["refuse", "injection", "borderline", "cannot", "direct", "declined", "parallel", "multi", "confusable",
+PRIORITY = ["refuse", "injection", "injection_v4", "borderline", "cannot", "direct", "declined", "parallel", "multi", "confusable",
             "ask", "single"]
 CATEGORY = {"single": "tool_call", "ask": "ask", "declined": "confirm_declined", "multi": "multi_step",
             "parallel": "multi_step", "confusable": "tool_call", "direct": "direct", "cannot": "cannot",
-            "refuse": "refuse", "injection": "injection"}
+            "refuse": "refuse", "injection": "injection", "injection_v4": "injection"}
 _lock = threading.Lock()
 STOP = threading.Event()  # set when a provider's daily quota (or credit) is exhausted
 
