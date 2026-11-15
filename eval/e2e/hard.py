@@ -75,7 +75,7 @@ class Turn:
         return canon(data) in {key(o) for o in self.ops}
 
 
-# --- changes: ("move"|"copy", src, dst) · ("recycle", path) · ("zip", (sources,), dst); paths like Downloads/a.pdf
+# --- changes: ("move"|"copy", src, dst) · ("recycle", path) · ("zip", (sources,), folder): the zip may have any name there; paths like Downloads/a.pdf
 
 def key(op) -> tuple:
     return tuple(tuple(sorted(s.casefold() for s in x)) if isinstance(x, (tuple, list)) else x.casefold() for x in op)
@@ -102,16 +102,16 @@ def canon(d: dict) -> tuple:
         return "move", _rel(a), _rel(Path(a).with_name(b))
     if name == "zip_folder":
         a, b = pv.removeprefix("Zip ").split(" → ")
-        return "zip", tuple(sorted(map(_rel, a.split(", ")))), _rel(b)
+        return "zip", tuple(sorted(map(_rel, a.split(", ")))), _rel(Path(b).parent)
     if name == "move_to_recycle_bin":
         return "recycle", _rel(pv.removeprefix("Move ").removesuffix(" to the Recycle Bin (restorable)"))
     return name, json.dumps(d["args"], sort_keys=True)
 
 
 def apply(files: dict, op) -> None:
-    """Carry out a change on {path: body}; a path may be a folder. A zip's content is not predicted (None)."""
+    """Carry out a change on {path: body}; a path may be a folder. A zip's name and content are not predicted."""
     if op[0] == "zip":
-        files[op[2]] = None
+        files[f"{op[2]}/*.zip"] = None
         return
     for f in [f for f in files if f == op[1] or f.startswith(op[1] + "/")]:
         if op[0] != "recycle":
@@ -146,10 +146,14 @@ def state_diff(root: Path, want: dict) -> str | None:
     have = {str(p.relative_to(root)).replace("\\", "/").casefold(): p
             for f in FOLDERS for p in (root / f).rglob("*") if p.is_file()}
     want = {k.casefold(): v for k, v in want.items()}
+    for k in [k for k, v in want.items() if v is None]:  # one new .zip in that folder, whatever it is called
+        new = sorted(h for h in have.keys() - want.keys() if h.endswith(".zip") and h.rsplit("/", 1)[0] == k[:-6])
+        if new:
+            del want[k], have[new[0]]
     if have.keys() != want.keys():
         return (f"files differ: missing {sorted(want.keys() - have.keys())[:4]}, "
                 f"unexpected {sorted(have.keys() - want.keys())[:4]}")
-    bad = [k for k, v in want.items() if v is not None and
+    bad = [k for k, v in want.items() if
            (have[k].read_text(encoding="utf-8") if isinstance(v, str) else have[k].read_bytes()) != v]
     return f"wrong content in {bad[:4]}" if bad else None
 
@@ -419,7 +423,7 @@ def memory_then_act(w):  # issue 012: a saved fact has to be recalled in a new c
                             "Make a zip of the {stem} folder I told you about, saved to my Desktop."],
                            ["compress my {stem} folder onto the Desktop",
                             "I need my {stem} folder as a zip file on the Desktop"], stem=stem),
-                     look, [("zip", (folder,), f"Desktop/{base(folder)}.zip")])]
+                     look, [("zip", (folder,), "Desktop")])]
     if kind == "list":
         return [Turn(w.say(["What files are in my {stem} folder?",
                             "List what's inside the {stem} folder I told you about."],
@@ -448,12 +452,12 @@ def two_part(w):  # issue 007: both halves of a request
                             ("list_directory", {"path": P(folder)})], facts=[round(amount * pct / 100, 2), n])]
     stem, (q, q2) = w.pick("stems"), w.rng.sample(QUALS, 2)
     code = f"{w.pick('words')}-{w.rng.randrange(100, 999)}"
-    path = w.file(w.folder(), stem, q, "txt", text=f"{stem.title()} portal\nAccess code: {code}\nKeep this safe.\n")
+    path = w.file(w.folder(), stem, q, "txt", text=f"{stem.title()} review\nMeeting room: {code}\nBring a laptop.\n")
     new = f"{stem}_{q2}.txt"
-    text = w.say(["Rename {p} to {new} and tell me the access code written in it.",
-                  "What's the access code inside {p}? Also rename the file to {new}."],
-                 ["read me the access code from {p}, then change the file's name to {new}",
-                  "{p} needs to be called {new} from now on, and I need the access code it contains"],
+    text = w.say(["Rename {p} to {new} and tell me which meeting room is written in it.",
+                  "Which meeting room does {p} mention? Also rename the file to {new}."],
+                 ["read me the meeting room from {p}, then change the file's name to {new}",
+                  "{p} needs to be called {new} from now on, and I need the meeting room it gives"],
                  p=P(path), new=new)
     return [Turn(text, [("read_file", {"path": P(path)})], [("move", path, f"{path.rsplit('/', 1)[0]}/{new}")],
                  facts=[code])]
@@ -508,7 +512,7 @@ def decline_then_continue(w):  # a "no" at the prompt ends that change only
                       "First send {a} to the recycle bin. After that, make a zip of {z} on the Desktop."],
                      ["trash {a} and afterwards compress {z} onto the Desktop",
                       "two jobs: remove {a}, and create a Desktop zip of {z}"], a=P(a), z=P(z))
-        return [Turn(text, declined=[("recycle", a)], ops=[("zip", (z,), f"Desktop/{base(z)}.zip")])]
+        return [Turn(text, declined=[("recycle", a)], ops=[("zip", (z,), "Desktop")])]
     dest = w.folder(w.top(a))
     return [Turn(w.say(["Delete {a}.", "Send {a} to the recycle bin."], ["trash {a}", "remove {a} for me"], a=P(a)),
                  declined=[("recycle", a)]),
@@ -521,12 +525,12 @@ def decline_then_continue(w):  # a "no" at the prompt ends that change only
 def notes_and_reminders(w):  # issues 011, 018: notes are not memories; reminder times come from what was read
     stem = w.pick("stems")
     if w.cycle("file_to_note", "note_to_reminder") == "file_to_note":
-        code, title = f"{w.pick('words').upper()}-{w.rng.randrange(1000, 9999)}", f"{stem} booking"
-        path = w.file(w.folder(), stem, ext="txt", text=f"{stem.title()} confirmation\nBooking reference: {code}\n")
-        text = w.say(["Save a note called '{t}' with the booking reference from {p}.",
-                      "Read {p} and make a note titled '{t}' containing its booking reference."],
-                     ["grab the booking reference out of {p} and store it in a note named '{t}'",
-                      "I want a note '{t}' holding the booking reference that's in {p}"], t=title, p=P(path))
+        code, title = f"{w.pick('words').upper()}-{w.rng.randrange(1000, 9999)}", f"{stem} gate"
+        path = w.file(w.folder(), stem, ext="txt", text=f"{stem.title()} fair\nEntrance gate: {code}\nDoors open at 10.\n")
+        text = w.say(["Save a note called '{t}' with the entrance gate from {p}.",
+                      "Read {p} and make a note titled '{t}' containing the entrance gate it gives."],
+                     ["grab the entrance gate out of {p} and store it in a note named '{t}'",
+                      "I want a note '{t}' holding the entrance gate that's in {p}"], t=title, p=P(path))
         return [Turn(text, [("read_file", {"path": P(path)})], notes=[(title, code)])]
     when = f"{w.today + timedelta(days=w.rng.randrange(2, 10))} {w.rng.choice(['09:20', '10:30', '14:15', '16:45'])}"
     w.notes = [(f"{w.pick('stems')} ideas", "Ask about a discount next month."),
@@ -610,7 +614,7 @@ def conditional_act(w):
                   "Count the pdfs in {f}. More than 3 means zip the folder onto the Desktop; 3 or fewer means only "
                   "tell me the count."], f=P(folder))
     look = [("search_files", {"query": "*", "folder": P(folder), "extension": "pdf"})]
-    return [Turn(text, look, [("zip", (folder,), f"Desktop/{base(folder)}.zip")]) if n > 3 else Turn(text, look, facts=[n])]
+    return [Turn(text, look, [("zip", (folder,), "Desktop")]) if n > 3 else Turn(text, look, facts=[n])]
 
 
 def bulk_rename(w):
