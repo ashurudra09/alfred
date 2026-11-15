@@ -1,0 +1,81 @@
+{
+  "set": "test",
+  "prompts": true,
+  "documents": 300,
+  "chunks": 873,
+  "queries": 150,
+  "unanswerable": 75,
+  "index_seconds": 373.5,
+  "chunks_embedded_fresh": 782,
+  "overlap_median": 0.5,
+  "modes": {
+    "keyword": {
+      "all": {
+        "n": 150,
+        "recall@1": 0.7533333333333333,
+        "recall@5": 0.8866666666666667,
+        "mrr": 0.811349814653278
+      },
+      "paraphrased": {
+        "n": 70,
+        "recall@1": 0.5285714285714286,
+        "recall@5": 0.7571428571428571,
+        "mrr": 0.6278924599713102
+      },
+      "query_ms": 41
+    },
+    "embedding": {
+      "all": {
+        "n": 150,
+        "recall@1": 0.8933333333333333,
+        "recall@5": 0.9733333333333334,
+        "mrr": 0.9292407407407408
+      },
+      "paraphrased": {
+        "n": 70,
+        "recall@1": 0.8142857142857143,
+        "recall@5": 0.9571428571428572,
+        "mrr": 0.8751587301587301
+      },
+      "query_ms": 296
+    },
+    "fused": {
+      "all": {
+        "n": 150,
+        "recall@1": 0.8866666666666667,
+        "recall@5": 0.94,
+        "mrr": 0.9141748436748437
+      },
+      "paraphrased": {
+        "n": 70,
+        "recall@1": 0.7714285714285715,
+        "recall@5": 0.8714285714285714,
+        "mrr": 0.823231807874665
+      },
+      "query_ms": 151
+    }
+  },
+  "chunks_per_second": 2.09,
+  "cutoff": 0.346,
+  "cosine": {
+    "relevant_median": 0.557,
+    "unanswerable_top_median": 0.378
+  },
+  "shipped": {
+    "all": {
+      "n": 150,
+      "recall@1": 0.8733333333333333,
+      "recall@5": 0.9333333333333333,
+      "mrr": 0.8999444444444445
+    },
+    "paraphrased": {
+      "n": 70,
+      "recall@1": 0.7714285714285715,
+      "recall@5": 0.8714285714285714,
+      "mrr": 0.8123809523809524
+    },
+    "query_ms": 97,
+    "answerable_returning_nothing": 6,
+    "unanswerable_returning_nothing": 16
+  }
+}

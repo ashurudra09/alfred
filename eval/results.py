@@ -305,21 +305,33 @@ def main():
                   "[eval/bfcl/run.py](eval/bfcl/run.py). Not comparable to the vendor's 43.6 (full BFCL v4, "
                   "thinking mode).", ""]
 
-    if (rp := REPORTS / "retrieval_scifact.json").exists():
+    if (rp := REPORTS / "retrieval_scifact_test.json").exists():
         r = json.loads(rp.read_text(encoding="utf-8"))
+        dev = json.loads((REPORTS / "retrieval_scifact_dev.json").read_text(encoding="utf-8"))
         lines += [f"## Semantic file search: retrieval only, no LLM ({r['documents']} SciFact abstracts, "
-                  f"{r['queries']} expert claims)", "",
+                  f"{r['queries']} expert claims, held-out half)", "",
                   "| Ranking | Recall@1 | Recall@5 | MRR | Paraphrased half: R@1 | R@5 | MRR | Query ms |",
                   "|---|---|---|---|---|---|---|---|"]
-        for mode, m in r["modes"].items():
+        rows = list(r["modes"].items()) + [(f"**shipped**: embedding, cosine ≥ {r['cutoff']}", r["shipped"])]
+        for mode, m in rows:
             a, p = m["all"], m["paraphrased"]
             lines.append(f"| {mode} | {pct(a['recall@1'])} | {pct(a['recall@5'])} | {a['mrr']:.3f} | "
                          f"{pct(p['recall@1'])} | {pct(p['recall@5'])} | {p['mrr']:.3f} | {m['query_ms']} |")
-        lines += ["", f"Keyword = SQLite FTS5 BM25, embedding = embeddinggemma cosine, fused = reciprocal rank fusion "
-                  f"([eval/retrieval.py](eval/retrieval.py)). \"Paraphrased\" = the {r['modes']['fused']['paraphrased']['n']} "
-                  f"claims sharing the fewest content words with their abstract (below the median "
-                  f"{r['overlap_median']:.2f}). Indexing {r['chunks']} chunks took {r['index_seconds']:.0f} s on the "
-                  "laptop CPU. SciFact: claims CC BY 4.0, abstracts ODC-By 1.0.", ""]
+        sh, ds = r["shipped"], dev["shipped"]
+        lines += ["", f"Keyword = SQLite FTS5 BM25, embedding = embeddinggemma cosine, fused = reciprocal rank fusion of "
+                  f"the two ([eval/retrieval.py](eval/retrieval.py)). \"Paraphrased\" = the "
+                  f"{r['modes']['fused']['paraphrased']['n']} claims sharing the fewest content words with their abstract "
+                  f"(below the median {r['overlap_median']:.2f}). SciFact: claims CC BY 4.0, abstracts ODC-By 1.0.", "",
+                  f"The method, the embedder prompts and the cut-off were chosen on a separate dev half "
+                  f"({dev['queries']} other claims; MRR there: keyword {dev['modes']['keyword']['all']['mrr']:.3f}, "
+                  f"embedding {dev['modes']['embedding']['all']['mrr']:.3f}, fused {dev['modes']['fused']['all']['mrr']:.3f}; "
+                  f"embedding without the prompts {dev['no_prompts']['modes']['embedding']['all']['mrr']:.3f}), then this "
+                  f"half was run once. Cut-off rule: 5th percentile of the first relevant chunk's cosine on dev. With it, "
+                  f"{sh['answerable_returning_nothing']} of {r['queries']} answerable claims return nothing, and "
+                  f"{sh['unanswerable_returning_nothing']} of {r['unanswerable']} claims whose abstract is not in the "
+                  f"corpus return nothing (dev: {ds['unanswerable_returning_nothing']} of {dev['unanswerable']}); for the "
+                  f"rest the model has to judge the snippets. Indexing ran at {dev['chunks_per_second']} chunks per "
+                  f"second on the laptop CPU ({dev['chunks']} chunks in {dev['index_seconds']:.0f} s, dev half).", ""]
 
     confusion_png()
     OUT.write_text("\n".join(lines), encoding="utf-8")

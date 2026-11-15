@@ -48,6 +48,7 @@ def build() -> FastMCP:
 
 def main():
     threading.Thread(target=productivity.reminder_loop, daemon=True).start()
+    threading.Thread(target=semantic.index_all, daemon=True).start()
     build().run("stdio")
 
 

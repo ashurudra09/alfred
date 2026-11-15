@@ -3,16 +3,22 @@
 Index: SQLite in Alfred's home (semantic.db). `files` holds each indexed path and its mtime, the FTS5 table `chunks`
 holds the text in ~1,000-character pieces (keyword ranking by BM25), and `vecs` holds one embedding per chunk.
 Text comes from read_file's extractors, embeddings from the same Ollama embedder as memory. The index is updated
-on every search, incrementally by mtime and within a time budget, so the first search of a big folder may say
-it is still indexing; deleted files are purged. Files go through the same walk as search_files (sensitive and
-hidden paths never seen) plus an extension allow-list and a size cap.
+on every search, incrementally by mtime and within a time budget, and in a background thread when the tool server
+starts (`index_all`), so a search of a big folder may say it is still indexing; deleted files are purged. Files go
+through the same walk as search_files (sensitive and hidden paths never seen) plus an extension allow-list and a
+size cap.
 
-Ranking: BM25 and embedding cosine, fused by reciprocal rank (Cormack et al. 2009); keyword-only when Ollama is
-not running, which the result says.
+Ranking (plan amendment 1, from eval/retrieval.py): embedding cosine, with matches under MIN_COS dropped. BM25
+keyword hits stand in for chunks that have no embedding yet (interleaved by reciprocal rank, Cormack et al. 2009)
+and for everything when Ollama is not running, which the result says.
 """
+
+import hashlib
+import os
 
 import re
 import sqlite3
+import threading
 import time
 from contextlib import closing
 from pathlib import Path
@@ -20,14 +26,15 @@ from pathlib import Path
 import numpy as np
 
 from alfred.tools import files, memory
-from alfred.tools.guards import home, is_sensitive
+from alfred.tools.guards import config, home, is_sensitive
 
 EXTS = files.TEXT_EXT | {".pdf", ".docx"}
 MAX_BYTES = 5_000_000
 CHUNK, MAX_CHUNKS = 1000, 20  # characters per chunk, chunks per file
 BUDGET = 20.0  # seconds of indexing per search
 RRF_K, POOL, TOP = 60, 50, 5  # fusion constant, candidates per ranker, files returned
-MIN_COS = 0.0  # embedding-only hits below this are dropped (calibrated in eval/retrieval.py)
+MIN_COS = 0.346  # embedding hits below this are dropped: 5th percentile of true matches on the SciFact dev half
+LOCK = threading.Lock()  # one indexer at a time: a search skips its own update while the background one runs
 QUERY, DOC = "task: search result | query: {}", "title: {} | text: {}"  # embeddinggemma's retrieval prompts
 
 
@@ -95,6 +102,24 @@ def _drop(db, path: str):
     db.execute("DELETE FROM files WHERE path = ?", (path,))
 
 
+def _embed(texts: list[str], timeout: float) -> np.ndarray:
+    """memory.embed_many behind an optional cache keyed by model + text (ALFRED_EMBED_CACHE=<sqlite file>): evals
+    and rollouts rebuild the same fixture files in a fresh home every task."""
+    path = os.environ.get("ALFRED_EMBED_CACHE")
+    if not path:
+        return memory.embed_many(texts, timeout=timeout)
+    keys = [hashlib.sha256(f"{memory.MODEL}\0{t}".encode()).hexdigest() for t in texts]
+    with closing(sqlite3.connect(path, timeout=60)) as c:
+        c.execute("CREATE TABLE IF NOT EXISTS e (k TEXT PRIMARY KEY, v BLOB)")
+        got = {k: v for k in set(keys) for (v,) in c.execute("SELECT v FROM e WHERE k = ?", (k,))}
+        new = {k: t for k, t in zip(keys, texts) if k not in got}
+        if new:
+            got.update(zip(new, (x.tobytes() for x in memory.embed_many(list(new.values()), timeout=timeout))))
+            with c:
+                c.executemany("INSERT OR IGNORE INTO e VALUES (?, ?)", [(k, got[k]) for k in new])
+    return np.stack([np.frombuffer(got[k], dtype=np.float32) for k in keys])
+
+
 def _embed_missing(db, deadline: float) -> bool:
     """Embed chunks that have no vector yet, 64 at a time, until the deadline. False if Ollama is down."""
     while time.monotonic() < deadline:
@@ -103,7 +128,7 @@ def _embed_missing(db, deadline: float) -> bool:
         if not rows:
             return True
         try:
-            v = memory.embed_many([DOC.format(Path(p).name, t) for _, p, t in rows], timeout=60)
+            v = _embed([DOC.format(Path(p).name, t) for _, p, t in rows], timeout=60)
         except Exception:
             return False
         with db:
@@ -119,24 +144,42 @@ def embedder_up() -> bool:
         return False
 
 
-def keyword_rank(db, query: str, roots: list[Path]) -> list[int]:
+def index_all():
+    """Background indexing of every known folder, started with the tool server (config index_on_start, default
+    on), so searches don't pay for it. Stops when everything is embedded or Ollama is down."""
+    # ponytail: runs flat out until done; add a pause between batches if it slows the model on battery
+    while config().get("index_on_start", True):
+        with LOCK, closing(_db()) as db:
+            left, up = _update(db, files._search_roots(None), time.monotonic() + BUDGET)
+            missing = db.execute("SELECT count(*) FROM chunks WHERE rowid NOT IN (SELECT id FROM vecs)").fetchone()[0]
+        if not up or not (left or missing):
+            return
+        time.sleep(0.2)  # let a waiting search take the lock
+
+
+def keyword_rank(db, query: str, roots: list[Path], unembedded: bool = False) -> list[int]:
     words = {w for w in re.findall(r"[^\W_]+", query.casefold()) if len(w) > 2}
     if not words:
         return []
-    rows = db.execute("SELECT rowid, path FROM chunks WHERE chunks MATCH ? ORDER BY bm25(chunks) LIMIT 500",
-                      (" OR ".join(f'"{w}"' for w in words),)).fetchall()
+    rows = db.execute("SELECT rowid, path FROM chunks WHERE chunks MATCH ? "
+                      + ("AND rowid NOT IN (SELECT id FROM vecs) " if unembedded else "")
+                      + "ORDER BY bm25(chunks) LIMIT 500", (" OR ".join(f'"{w}"' for w in words),)).fetchall()
     return [i for i, p in rows if _under(p, roots)][:POOL]
 
 
-def embedding_rank(db, query: str, roots: list[Path]) -> list[int]:
+def embedding_scores(db, query: str, roots: list[Path]) -> list[tuple[int, float]]:
+    """(chunk id, cosine) for the POOL closest chunks, best first. Raises if the embedder is down."""
     rows = [(i, v) for i, p, v in db.execute("SELECT c.rowid, c.path, v.vec FROM chunks c JOIN vecs v ON v.id = c.rowid")
             if _under(p, roots)]
     if not rows:
         return []
     sims = np.frombuffer(b"".join(v for _, v in rows), dtype=np.float32).reshape(len(rows), -1) \
-        @ memory.embed_many([QUERY.format(query)], timeout=30)[0]
-    best = np.argsort(-sims)[:POOL]
-    return [rows[j][0] for j in best if sims[j] >= MIN_COS]
+        @ _embed([QUERY.format(query)], timeout=30)[0]
+    return [(rows[j][0], float(sims[j])) for j in np.argsort(-sims)[:POOL]]
+
+
+def embedding_rank(db, query: str, roots: list[Path]) -> list[int]:
+    return [i for i, cos in embedding_scores(db, query, roots) if cos >= MIN_COS]
 
 
 def rrf(*rankings: list[int]) -> list[int]:
@@ -148,20 +191,24 @@ def rrf(*rankings: list[int]) -> list[int]:
     return sorted(score, key=lambda i: -score[i])
 
 
-def rank(query: str, roots: list[Path], mode: str = "fused", db=None) -> list[tuple[str, str]]:
-    """Files best matching the query as (path, best chunk), best first. mode: fused, keyword or embedding;
-    fused falls back to keyword when the embedder is down."""
+def rank(query: str, roots: list[Path], mode: str = "auto", db=None) -> list[tuple[str, str]]:
+    """Files best matching the query as (path, best chunk), best first.
+    auto (what the tool uses): embedding order, keyword hits for chunks not embedded yet, keyword for everything if
+    the embedder is down. keyword / embedding / fused (RRF of both over all chunks) are for eval/retrieval.py."""
     if db is None:
         with closing(_db()) as db:
             return rank(query, roots, mode, db)
-    kw = keyword_rank(db, query, roots) if mode != "embedding" else []
-    try:
-        em = embedding_rank(db, query, roots) if mode != "keyword" else []
-    except Exception:
-        if mode == "embedding":
-            raise
-        em = []
-    chunk_ids = kw if mode == "keyword" else em if mode == "embedding" else rrf(kw, em)
+    if mode == "keyword":
+        chunk_ids = keyword_rank(db, query, roots)
+    elif mode == "embedding":
+        chunk_ids = embedding_rank(db, query, roots)
+    elif mode == "fused":
+        chunk_ids = rrf(keyword_rank(db, query, roots), embedding_rank(db, query, roots))
+    else:
+        try:  # the two lists are disjoint, so RRF interleaves them rank by rank, embedding first
+            chunk_ids = rrf(embedding_rank(db, query, roots), keyword_rank(db, query, roots, unembedded=True))
+        except Exception:
+            chunk_ids = keyword_rank(db, query, roots)
     out, seen = [], set()
     for i in chunk_ids:
         path, text = db.execute("SELECT path, text FROM chunks WHERE rowid = ?", (i,)).fetchone()
@@ -180,11 +227,17 @@ def snippet(text: str, query: str, width: int = 160) -> str:
 
 def search_by_meaning(query, folder=None):
     roots = files._search_roots(folder)
-    left, up = update(roots, time.monotonic() + BUDGET)
+    if LOCK.acquire(blocking=False):
+        try:
+            left, up = update(roots, time.monotonic() + BUDGET)
+        finally:
+            LOCK.release()
+    else:  # the background indexer is at work: search what is there
+        left, up = -1, embedder_up()
     hits = rank(query, roots)[:TOP]
     out = files.listing("", [f'{p}: "...{snippet(t, query)}..."' for p, t in hits])
     if not up:
         out += "\n(Matched by keywords only: the embedding model isn't running.)"
     if left:
-        out += f"\n(Still indexing: {left} files not searched yet. Ask again in a minute.)"
+        out += f"\n(Still indexing: {'some' if left < 0 else left} files not searched yet. Ask again in a minute.)"
     return out

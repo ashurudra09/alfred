@@ -2,6 +2,7 @@ import ctypes
 import os
 import re
 import sqlite3
+from contextlib import closing
 
 import numpy as np
 import pytest
@@ -30,7 +31,8 @@ def docs(sandbox, monkeypatch):
 
 
 def indexed() -> set[str]:
-    return {os.path.basename(p) for (p,) in sqlite3.connect(semantic.home() / "semantic.db").execute("SELECT path FROM files")}
+    with closing(sqlite3.connect(semantic.home() / "semantic.db")) as db:
+        return {os.path.basename(p) for (p,) in db.execute("SELECT path FROM files")}
 
 
 def test_paraphrase_found_and_fused(docs):
@@ -91,3 +93,32 @@ def test_split():
     chunks = semantic.split("word " * 1000)
     assert all(len(c) <= semantic.CHUNK for c in chunks) and len(chunks) == 5
     assert semantic.rrf([1, 2], [2, 3]) == [2, 1, 3]
+
+
+def test_unembedded_chunks_found_by_keyword(docs, monkeypatch):
+    """A file indexed while the embedder was down is still found (by keyword) once it is back, next to embedding hits."""
+    roots = [docs["Documents"].resolve()]
+    semantic.update(roots, float("inf"))
+    monkeypatch.setattr(semantic, "_embed_missing", lambda db, deadline: True)  # new files get text but no vector
+    (docs["Documents"] / "tax.txt").write_text("Income tax return deadline is in July.")
+    semantic.update(roots, float("inf"))
+    names = lambda mode: [os.path.basename(p) for p, _ in semantic.rank("tax deadline", roots, mode)]
+    assert "tax.txt" in names("auto")[:2]  # interleaved: best embedding hit, then best keyword hit
+    assert "tax.txt" not in names("embedding")
+
+
+def test_min_cos_gives_no_match(docs, monkeypatch):
+    monkeypatch.setattr(semantic, "MIN_COS", 0.99)
+    assert semantic.search_by_meaning("quarterly earnings forecast", "Documents") == "No matching files found."
+
+
+def test_embed_cache_and_background_index(docs, monkeypatch, tmp_path):
+    calls = []
+    monkeypatch.setattr(memory, "embed_many", lambda texts, timeout=0: calls.append(len(texts)) or fake_embed(texts))
+    monkeypatch.setenv("ALFRED_EMBED_CACHE", str(tmp_path / "cache.db"))
+    semantic.index_all()  # indexes every known folder, then returns
+    assert {"auto.md", "recipe.txt", "notes.txt"} <= indexed() and sum(calls) > 0
+    (semantic.home() / "semantic.db").unlink()  # a fresh home with the same files: every vector comes from the cache
+    calls.clear()
+    semantic.index_all()
+    assert calls == [] and "auto.md" in semantic.search_by_meaning("car upkeep", "Documents")

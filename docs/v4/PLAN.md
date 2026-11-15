@@ -403,4 +403,30 @@ that uses it · `uv run alfred` answers a semantic-search request and a request 
 plug-in server.
 
 ## Amendments
-- None yet.
+
+### 2026-11-15, after the first retrieval results of track 1B (approved by the owner)
+On 300 SciFact abstracts, embedding-only ranking beat the planned fusion (MRR 0.938 against 0.896; keyword 0.797)
+and indexing ran at about 2.4 chunks per second on a shared CPU.
+
+1. **B3 ranking.** `search_by_meaning` ranks by embedding cosine. Keyword (BM25) hits are used for chunks that have
+   no embedding yet (interleaved with the embedding hits) and for everything when Ollama is down. Fusion of both
+   rankers over all chunks stays in the evaluation table as a compared method, not as the shipped one.
+2. **B4 tuning and reporting halves.** The 150 claims used so far become the **dev** set: the ranking choice, the
+   match cut-off and the prompt check are decided on it. A second subset (the unused test claims, their abstracts,
+   random distractors) is the **test** set, run once after those choices are fixed; its numbers are the ones in
+   `RESULTS.md`. Dev numbers stay in the report file, labelled.
+3. **B4 "nothing found" cut-off (new).** `MIN_COS` is set on dev from claims whose abstracts are not in the corpus
+   (taken from SciFact's train split, so no test claim is touched). Rule fixed before looking at test: the cut-off
+   is the 5th percentile of the cosine of the first relevant chunk on dev, so about 95% of real matches survive.
+   Test reports how many unanswerable claims then return nothing.
+4. **B2 indexing outside the search call (new).** An embedding cache keyed by a hash of model and text
+   (`ALFRED_EMBED_CACHE=<file>`, set by evals and rollouts, which rebuild the same fixtures many times), and
+   indexing in a background thread when the tool server starts (config `index_on_start`, default on). Indexing
+   speed is re-measured and the machine load at the time recorded.
+5. **A2, 2.2, 5.3: tool-26 tasks.** Fixtures for semantic-search tasks are a handful of short files, so indexing
+   finishes inside one call. Every report and rollout records whether the embedder was up; a tool-26 task run with
+   the embedder down is **invalid** (re-run), not a pass or fail, because keyword-only recall@1 on low-overlap
+   queries is about 51% against 84%.
+6. **Corrected numbers.** Track 1B machine time is 1–2 h, not 30 min. Step 3.1: v3's longest example was 3,978
+   tokens and tool 26 adds about 85 to every Alfred example, leaving about 33 tokens under the 4,096 limit before
+   real tool outputs are added; expect drops and count them.

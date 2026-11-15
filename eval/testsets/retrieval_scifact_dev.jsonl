@@ -448,3 +448,78 @@
 {"query": "1370", "text": "Vitamin D deficiency is unrelated to birth weight.", "relevant": ["2425364"], "overlap": 0.6}
 {"query": "1382", "text": "aPKCz causes tumour enhancement by affecting glutamine metabolism.", "relevant": ["17755060"], "overlap": 0.286}
 {"query": "1395", "text": "p16INK4A accumulation is  linked to an abnormal wound response caused by the microinvasive step of advanced Oral Potentially Malignant Lesions (OPMLs).", "relevant": ["17717391"], "overlap": 0.133}
+{"query": "14", "text": "5'-nucleotidase metabolizes 6MP.", "relevant": []}
+{"query": "20", "text": "7-day-old adult Caenorhabditis elegans exhibit approximately 75% of the learning capacity seen in 1-day old adults.", "relevant": []}
+{"query": "32", "text": "A country's Vaccine Alliance (GAVI) eligibility is not indictivate of accelerated adoption of the Hub vaccine.", "relevant": []}
+{"query": "46", "text": "A single nucleotide variant the gene DGKK is strongly associated with increased risk of hypospadias.", "relevant": []}
+{"query": "66", "text": "AZT given with ribavirin increases anemia.", "relevant": []}
+{"query": "106", "text": "Ambulatory blood pressure monitoring is inaccurate at diagnosing hypertension.", "relevant": []}
+{"query": "138", "text": "Asymptomatic visual impairment screening in elderly populations leads to improved vision.", "relevant": []}
+{"query": "149", "text": "Autophagy deficiency in the liver increases vulnerability to insulin resistance.", "relevant": []}
+{"query": "164", "text": "Bariatric surgery increases rates of colorectal cancer.", "relevant": []}
+{"query": "196", "text": "C2 works synergistically with A-769662 to activate dephosphorylated AMPK.", "relevant": []}
+{"query": "266", "text": "Cnn1 recruitment varies with cell cycle timing.", "relevant": []}
+{"query": "277", "text": "Commelina yellow mottle virus (ComYMV) has three typical badnavirus ORFs, capable of encoding proteins 23, 15, and 216 kD.", "relevant": []}
+{"query": "305", "text": "DRD1 proteins enable Pol V transcription in vivo.", "relevant": []}
+{"query": "310", "text": "De novo assembly of sequence data has fewer specific contigs than unassembled sequence data.", "relevant": []}
+{"query": "340", "text": "Diabetes remission occurs less in people treated with conventional therapy than in people treated with laparoscopic adjustable gastric banding surgery.", "relevant": []}
+{"query": "342", "text": "Diabetic patients with acute coronary syndrome experience decreased short-term and long-term risk for bleeding events.", "relevant": []}
+{"query": "364", "text": "EGR2 is important to myelination of the peripheral nervous system.", "relevant": []}
+{"query": "365", "text": "ER-localized phosphatase Sac1 processes PI4P through coordination with OSBP and the endosome-localized protein sorting nexin 2.", "relevant": []}
+{"query": "370", "text": "Egr2 regulates the homeostasis of B and T cells.", "relevant": []}
+{"query": "371", "text": "Egr3 regulates the homeostasis of B and T cells.", "relevant": []}
+{"query": "417", "text": "Female carriers of the Apolipoprotein E4 (APOE4) allele have shorter lifetime exposure to estrogen due to a decreased reproductive period.", "relevant": []}
+{"query": "420", "text": "Fibroblast growth factor 21 protects against atherosclerosis by modulating adiponectin and SREBP2 levels.", "relevant": []}
+{"query": "423", "text": "Folate and vitamin B12 levels influence the association between homocysteine and preeclampsia.", "relevant": []}
+{"query": "454", "text": "General exercise therapy is more effective than scapular stabilizer exercises in reducing pain and improving function of the shoulder.", "relevant": []}
+{"query": "472", "text": "Glucose restriction to 0.05% reduces RLS (replicative life span) by 20-40% in S. cerevisiae.", "relevant": []}
+{"query": "473", "text": "Glycan adaptation involves insertion-deletion events.", "relevant": []}
+{"query": "489", "text": "HIV trans-activator protein (TAT) effectively transports large and small molecules across cellular membranes into larger populations of neurons.", "relevant": []}
+{"query": "504", "text": "Healthy volunteers exhibit rapid and transient increase of cellular ATP after being bolus-injected with fructose.", "relevant": []}
+{"query": "555", "text": "Immune complex triggered cell death leads to extracellular release of nuclear DNA.", "relevant": []}
+{"query": "562", "text": "Improvements in OER catalysts show stable activity over several hundred hours.", "relevant": []}
+{"query": "564", "text": "In British Men, haplogroup I increases risk of cardiovascular disease by 50%.", "relevant": []}
+{"query": "572", "text": "In chronic viral infections or tumors, peptides that selectively inhibit PTPRS can be utilized to boost insufficient activity of pDCs.", "relevant": []}
+{"query": "576", "text": "In melanoma, anti-CTLA-4 treatment reinvigorates exhausted PD-1+Eomes+CD8 T cells.", "relevant": []}
+{"query": "617", "text": "Increased mobility of retrotransposons is assosciated with mutation and higher tumorigenesis rates.", "relevant": []}
+{"query": "621", "text": "Individuals with Alzheimers who participate in six months of physical activity improve cognitive function for up to 18 months.", "relevant": []}
+{"query": "662", "text": "JMJD6 slows the hydroxylation of C-terminal lysine", "relevant": []}
+{"query": "663", "text": "KLF4 is necessary for VSMCs to gain genetic characteristics of other cell types within atherosclerotic lesions.", "relevant": []}
+{"query": "683", "text": "Lack of FGF21 in mice slows the rate of atherosclerotic plaque formation.", "relevant": []}
+{"query": "685", "text": "Lamins are associated with nuclear membrane structure maintenance.", "relevant": []}
+{"query": "688", "text": "Lamins have no effect on nuclear membrane structure maintenance.", "relevant": []}
+{"query": "689", "text": "Less than 10% of patients exposed to radiation have activated markers of mesenchymal stem cells.", "relevant": []}
+{"query": "748", "text": "MafA ubiquitination increases the recruitment of coavtivator P/CAF by MafA.", "relevant": []}
+{"query": "749", "text": "Major antigen-induced signals from the T cell receptor and secondary signals from costimulatory receptors are required for T cell activation.", "relevant": []}
+{"query": "777", "text": "Mice defective for deoxyribonucleic acid (DNA) polymerase m (polm) reveal increased sensitivity to ionizing radiation (IR).", "relevant": []}
+{"query": "803", "text": "Monoclonal antibody targeting of N-cadherin inhibits castration resistance.", "relevant": []}
+{"query": "893", "text": "Osteocytes have an essential role in G-CSF induced HSPC mobilization.", "relevant": []}
+{"query": "896", "text": "Overexpressing Cnp1 N-tail variants exacerbates the temperature-sensitive growth defect of scm3-139.", "relevant": []}
+{"query": "899", "text": "Oxidative DNA damage inhibits STING signalling.", "relevant": []}
+{"query": "933", "text": "Pediatric SCD patients with vaso-occlusive crisis show increased morphine use after breathing 80 ppm iNO for 4 hours.", "relevant": []}
+{"query": "940", "text": "Pharmacist attendance at ward rounds increases adverse events in wards.", "relevant": []}
+{"query": "972", "text": "Primary cervical cancer screening with HPV detection has lower longitudinal sensitivity than conventional cytology to detect cervical intraepithelial neoplasia grade 2.", "relevant": []}
+{"query": "977", "text": "Pro-inflammatory cytokines are up regulated during tumor development.", "relevant": []}
+{"query": "989", "text": "Pure neural progenitor cell (NPC) populations can only be obtained from cell cultures that undergo passaging, filtration, or other isolation and cell sorting methods.", "relevant": []}
+{"query": "1001", "text": "R2D2 stops miRNA production by increasing the selectivity of Dcr2 for long dsRNA.", "relevant": []}
+{"query": "1015", "text": "Rapamycin delays aging in fruit flies.", "relevant": []}
+{"query": "1031", "text": "Reduction of Rpl38 alters the composition of the Hox gene mRNAs translation in mice without lowering overall protein synthesis.", "relevant": []}
+{"query": "1073", "text": "Sepsis related mortality has risen from 2009 to 2014.", "relevant": []}
+{"query": "1091", "text": "Sn is present on mature DCs during inflammation in vivo.", "relevant": []}
+{"query": "1111", "text": "Sudden death can occur in patients with complex ventricular arrhythmias.", "relevant": []}
+{"query": "1120", "text": "Sympathetic nerve activity is reduced throughout normal pregnancy.", "relevant": []}
+{"query": "1157", "text": "The DESMOND program demonstrates no significant impact on biochemical outcomes.", "relevant": []}
+{"query": "1188", "text": "The ability of activator E2Fs in preventing cell death is limited to terminally differentiated cells.", "relevant": []}
+{"query": "1215", "text": "The effect of Lipopolysaccharides on kidney barrier function is dependent on inflammation levels.", "relevant": []}
+{"query": "1227", "text": "The mean suicide rate in women is higher after miscarriage than live birth.", "relevant": []}
+{"query": "1236", "text": "The morphology change from large white adipocytes to small brown adipocytes is a sign of increased energy expenditure potential in white adipose tissue.", "relevant": []}
+{"query": "1246", "text": "The one-child policy has created a hospitable environment for female infants.", "relevant": []}
+{"query": "1249", "text": "The peak incidence of fractures occurs in toddlers.", "relevant": []}
+{"query": "1253", "text": "The predominant localization of Linc00173 is in mononuclear macrophage nuclei.", "relevant": []}
+{"query": "1265", "text": "The risk of breast cancer among parous women decreases with placental weight of pregnancies.", "relevant": []}
+{"query": "1284", "text": "Therapeutics receiving accelerated approval encounter a lower frequency of post-marketing safety events", "relevant": []}
+{"query": "1300", "text": "Thiopurine active metabolites can be catabolized through dephosphorylation of thioguanine nucleotides.", "relevant": []}
+{"query": "1311", "text": "Trans-acting factors, such as lncRNAs, influence mRNA translation.", "relevant": []}
+{"query": "1350", "text": "Upregulation of PD1 causes the upregulation of Satb1.", "relevant": []}
+{"query": "1392", "text": "miR-142-5P is a temperature-sensitive microRNA (miRNA).", "relevant": []}
+{"query": "1394", "text": "miRNAs regulate a unique suite of mRNAs to maintain homeostasis in cells.", "relevant": []}

@@ -96,12 +96,15 @@ Log-likelihood scoring as in the official lm-eval task, Qwen3.5 chat template ([
 
 Pinned `bfcl-eval==2026.3.23`, non-thinking mode, AST checker; Qwen3.5 handler in [eval/bfcl/run.py](eval/bfcl/run.py). Not comparable to the vendor's 43.6 (full BFCL v4, thinking mode).
 
-## Semantic file search: retrieval only, no LLM (300 SciFact abstracts, 150 expert claims)
+## Semantic file search: retrieval only, no LLM (300 SciFact abstracts, 150 expert claims, held-out half)
 
 | Ranking | Recall@1 | Recall@5 | MRR | Paraphrased half: R@1 | R@5 | MRR | Query ms |
 |---|---|---|---|---|---|---|---|
-| keyword | 74.7% | 85.3% | 0.797 | 51.4% | 71.6% | 0.608 | 11 |
-| embedding | 91.3% | 96.0% | 0.938 | 83.8% | 91.9% | 0.881 | 180 |
-| fused | 85.3% | 94.0% | 0.896 | 70.3% | 87.8% | 0.789 | 244 |
+| keyword | 75.3% | 88.7% | 0.811 | 52.9% | 75.7% | 0.628 | 41 |
+| embedding | 89.3% | 97.3% | 0.929 | 81.4% | 95.7% | 0.875 | 296 |
+| fused | 88.7% | 94.0% | 0.914 | 77.1% | 87.1% | 0.823 | 151 |
+| **shipped**: embedding, cosine ≥ 0.346 | 87.3% | 93.3% | 0.900 | 77.1% | 87.1% | 0.812 | 97 |
 
-Keyword = SQLite FTS5 BM25, embedding = embeddinggemma cosine, fused = reciprocal rank fusion ([eval/retrieval.py](eval/retrieval.py)). "Paraphrased" = the 74 claims sharing the fewest content words with their abstract (below the median 0.56). Indexing 857 chunks took 356 s on the laptop CPU. SciFact: claims CC BY 4.0, abstracts ODC-By 1.0.
+Keyword = SQLite FTS5 BM25, embedding = embeddinggemma cosine, fused = reciprocal rank fusion of the two ([eval/retrieval.py](eval/retrieval.py)). "Paraphrased" = the 70 claims sharing the fewest content words with their abstract (below the median 0.50). SciFact: claims CC BY 4.0, abstracts ODC-By 1.0.
+
+The method, the embedder prompts and the cut-off were chosen on a separate dev half (150 other claims; MRR there: keyword 0.797, embedding 0.938, fused 0.896; embedding without the prompts 0.881), then this half was run once. Cut-off rule: 5th percentile of the first relevant chunk's cosine on dev. With it, 6 of 150 answerable claims return nothing, and 16 of 75 claims whose abstract is not in the corpus return nothing (dev: 19 of 75); for the rest the model has to judge the snippets. Indexing ran at 1.42 chunks per second on the laptop CPU (857 chunks in 602 s, dev half).
