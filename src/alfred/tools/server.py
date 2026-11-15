@@ -6,14 +6,13 @@ Run: uv run python -m alfred.tools.server     (Claude Desktop / MCP Inspector: t
 
 import functools
 import threading
-from datetime import date
 
 from mcp.server.fastmcp import FastMCP
 
 from alfred.contracts.export import tool_options
 from alfred.contracts.tools import REGISTRY
 from alfred.tools import calc, dev, files, memory, productivity, system
-from alfred.tools.guards import known_folders
+from alfred.tools.guards import known_folders, now
 
 IMPLS = {name: getattr(mod, name) for mod in (files, system, dev, productivity, memory, calc)
          for name in REGISTRY if hasattr(mod, name)}
@@ -31,7 +30,7 @@ def bound(name: str):
 def instructions() -> str:
     """Sent to MCP clients (e.g. Claude Desktop) on connect: they don't see Alfred's own system prompt."""
     folders = "\n".join(f"- {n}: {p}" for n, p in known_folders().items())
-    return (f"Alfred's tools act on this Windows laptop. Today is {date.today():%Y-%m-%d (%A)}.\n"
+    return (f"Alfred's tools act on this Windows laptop. Today is {now():%Y-%m-%d (%A)}.\n"
             f"File tools work inside these known folders (a path may start with the name, e.g. Downloads\\old):\n"
             f"{folders}\n"
             "disk_usage also accepts a whole drive ('C:'); git_status works on any repo folder. Paths are Windows "

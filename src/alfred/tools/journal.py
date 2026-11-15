@@ -3,9 +3,11 @@ undo is the user's decision, not the model's.
 """
 
 import json
+import os
 import shutil
 import sqlite3
 import subprocess
+import uuid
 from datetime import datetime
 from pathlib import Path
 
@@ -58,7 +60,32 @@ if (Test-Path -LiteralPath $want) {{ exit 0 }} else {{ exit 3 }}
 """
 
 
+def trash(path) -> None:
+    """Send to the Recycle Bin. ALFRED_TRASH=<dir> swaps in a sandbox folder (evals and data rollouts delete
+    thousands of fixture files; they must not land in the user's real bin)."""
+    sandbox = os.environ.get("ALFRED_TRASH")
+    if not sandbox:
+        return send2trash(str(path))
+    dst = Path(sandbox) / uuid.uuid4().hex / Path(path).name
+    dst.parent.mkdir(parents=True)
+    shutil.move(str(path), str(dst))
+    with (Path(sandbox) / "index.jsonl").open("a", encoding="utf-8") as f:
+        f.write(json.dumps({"from": str(path), "to": str(dst)}) + "\n")
+
+
+def _restore_from_sandbox(path: Path, sandbox: str) -> bool:
+    index = Path(sandbox) / "index.jsonl"
+    rows = [json.loads(line) for line in index.read_text(encoding="utf-8").splitlines()] if index.exists() else []
+    for row in reversed(rows):  # newest deletion of this path first
+        if row["from"] == str(path) and Path(row["to"]).exists() and not path.exists():
+            shutil.move(row["to"], str(path))
+            return True
+    return False
+
+
 def restore_from_recycle_bin(path: Path) -> bool:
+    if sandbox := os.environ.get("ALFRED_TRASH"):
+        return _restore_from_sandbox(path, sandbox)
     script = RESTORE_PS.format(path=str(path).replace("'", "''"))
     r = subprocess.run(["powershell", "-NoProfile", "-NonInteractive", "-Command", script], capture_output=True,
                        stdin=subprocess.DEVNULL,
@@ -81,7 +108,7 @@ def undo(action_id: int | None = None) -> str:
             _move_back(src, dst)
             msg = f"Moved {dst} back to {src}."
         elif op == "create":  # copy / zip: the created file goes to the Recycle Bin
-            send2trash(str(dst))
+            trash(dst)
             msg = f"Moved the created {dst} to the Recycle Bin."
         elif op == "organize":
             for s, d in reversed(extra["moves"]):

@@ -11,6 +11,7 @@ import json
 import os
 import re
 import uuid
+from datetime import date, datetime
 from pathlib import Path
 
 from mcp.server.fastmcp.exceptions import ToolError
@@ -27,6 +28,13 @@ SENSITIVE = re.compile(  # matched against each path part, case-insensitive
     r"protect|vault|.*password.*\.(csv|txt|xlsx?|json))$", re.I)
 EXECUTABLE = {".exe", ".bat", ".cmd", ".com", ".ps1", ".psm1", ".vbs", ".vbe", ".js", ".jse", ".wsf", ".wsh",
               ".msi", ".msp", ".scr", ".lnk", ".url", ".hta", ".cpl", ".reg", ".jar", ".pif", ".appx", ".msix"}
+
+
+def now() -> datetime:
+    """The clock the agent and the tools read. ALFRED_TODAY=YYYY-MM-DD pins the date (evals, data rollouts) so
+    date-relative requests and recorded prompts are reproducible; the time of day stays real."""
+    pinned = os.environ.get("ALFRED_TODAY")
+    return datetime.combine(date.fromisoformat(pinned), datetime.now().time()) if pinned else datetime.now()
 
 
 def home() -> Path:

@@ -43,8 +43,11 @@ def render(data: dict) -> str:
     return json.dumps(data, indent=2, ensure_ascii=False) + "\n"
 
 
-def load() -> dict:
-    return json.loads(TOOLS_JSON.read_text(encoding="utf-8"))
+def load(version: str | None = None) -> dict:
+    """The current tools.json, or a frozen earlier list (tools_<version>.json): a model is scored with the tool
+    list it was trained on (SFT v2/v3: contracts 1.2, 25 tools)."""
+    path = TOOLS_JSON if version in (None, CONTRACTS_VERSION) else TOOLS_JSON.with_name(f"tools_{version}.json")
+    return json.loads(path.read_text(encoding="utf-8"))
 
 
 def compact(schema: dict) -> dict:

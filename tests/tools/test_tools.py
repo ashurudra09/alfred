@@ -346,3 +346,25 @@ def test_save_config_merges(sandbox):
     save_config({"max_calls": 5})
     save_config({"temperature": 0.2})
     assert config()["max_calls"] == 5 and config()["temperature"] == 0.2 and "folders" in config()
+
+
+def test_sandbox_trash_and_undo(sandbox, monkeypatch, tmp_path):
+    """ALFRED_TRASH: deletes go to a folder, not the real Recycle Bin, and undo brings the file back."""
+    monkeypatch.setenv("ALFRED_TRASH", str(tmp_path / "trash"))
+    f = sandbox["Downloads"] / "budget.xlsx"
+    body = f.read_bytes()
+    assert "Recycle Bin" in files.move_to_recycle_bin("Downloads/budget.xlsx") and not f.exists()
+    assert len(list((tmp_path / "trash").glob("*/budget.xlsx"))) == 1
+    assert "Restored" in journal.undo() and f.read_bytes() == body
+
+
+def test_pinned_clock(sandbox, monkeypatch):
+    """ALFRED_TODAY pins the date for the system prompt, reminders and 'modified in the last N days'."""
+    assert "notes.txt" in files.search_files("notes", "Downloads", modified_within_days=1)  # just created
+    monkeypatch.setenv("ALFRED_TODAY", "2031-03-05")
+    assert guards.now().date().isoformat() == "2031-03-05"
+    assert productivity.parse_time("tomorrow at 9am").isoformat(timespec="minutes") == "2031-03-06T09:00"
+    assert "2031-03-06 09:00" in productivity.set_reminder("call", "tomorrow at 9am")
+    assert "No matching" in files.search_files("notes", "Downloads", modified_within_days=1)  # years old by 2031
+    monkeypatch.delenv("ALFRED_TODAY")
+    assert abs((guards.now() - datetime.now()).total_seconds()) < 5

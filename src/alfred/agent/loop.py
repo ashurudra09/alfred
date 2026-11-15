@@ -9,7 +9,6 @@ Events (`Event.kind`): token, retry, tool_call_proposed, confirm_required, tool_
 import json
 import time
 from dataclasses import dataclass, field
-from datetime import date
 
 from jsonschema import Draft202012Validator
 from mcp.server.fastmcp.exceptions import ToolError
@@ -20,7 +19,7 @@ from alfred.agent.timing import TurnTimer, log_turn
 from alfred.contracts.export import openai_tools
 from alfred.contracts.prompt import render_system_prompt
 from alfred.contracts.schemas import Message, ToolCall
-from alfred.tools.guards import config, known_folders
+from alfred.tools.guards import config, known_folders, now
 
 MAX_CALLS = 8  # per user turn (FR4); 3 blocked "do X to every file" past 2 files
 DECLINED = "The user declined this change. Nothing was changed."  # the exact text the model was trained on
@@ -53,7 +52,7 @@ def run_turn(chat_id: int, user_text: str, backend, tools, max_calls: int | None
     max_calls = max_calls or cfg.get("max_calls", MAX_CALLS)
     off = set(cfg.get("disabled_tools", []))
     timer = TurnTimer()
-    system = render_system_prompt(known_folders(), date.today())
+    system = render_system_prompt(known_folders(), now())
     history, new = chats.context(chat_id, cfg.get("context_chars", chats.CONTEXT_CHARS)), [Message(role="user", content=user_text)]
     validators = {n: Draft202012Validator(s["schema"]) for n, s in tools.specs.items()}
     tool_defs = [t for t in openai_tools() if t["function"]["name"] not in off]

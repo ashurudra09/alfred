@@ -10,7 +10,7 @@ from datetime import datetime, timedelta
 from mcp.server.fastmcp.exceptions import ToolError
 
 from alfred.tools import journal
-from alfred.tools.guards import home
+from alfred.tools.guards import home, now as clock
 
 _lock = threading.Lock()
 
@@ -26,7 +26,7 @@ def create_note(title, content):
     nid = 1 + max((int(p.stem.split("-")[0]) for p in d.glob("*.md") if p.stem.split("-")[0].isdigit()), default=0)
     slug = re.sub(r"[^\w]+", "-", title.casefold()).strip("-")[:40] or "note"
     path = d / f"{nid}-{slug}.md"
-    path.write_text(f"# {title}\n{datetime.now():%Y-%m-%d}\n\n{content}\n", encoding="utf-8")
+    path.write_text(f"# {title}\n{clock():%Y-%m-%d}\n\n{content}\n", encoding="utf-8")
     journal.record("create_note", "note", None, path)
     return f"Saved note '{title}' (note {nid})."
 
@@ -95,7 +95,7 @@ def _clock(hour: str, minute: str | None, ampm: str | None) -> tuple[int, int] |
 def parse_time(text: str, now: datetime | None = None) -> datetime:
     """'in 20 minutes', 'YYYY-MM-DD HH:MM' (any ISO form, with T, seconds or a timezone), 'tomorrow at 9am',
     'today 18:30', 'at 6pm', '18:30' (today, or tomorrow if that time has passed), 'friday 17:00', 'next monday 9am'."""
-    now = now or datetime.now()
+    now = now or clock()
     t = re.sub(r"\s+", " ", text.strip().casefold())
     m = re.fullmatch(r"in ((?:(?:an?|\d+(?:\.\d+)?) ?[a-z]+ ?)+)", re.sub(r",? and |, ", " ", t))
     parts = re.findall(r"(an?|\d+(?:\.\d+)?) ?([a-z]+)", m.group(1)) if m else []
@@ -126,7 +126,7 @@ def parse_time(text: str, now: datetime | None = None) -> datetime:
 
 def set_reminder(text, time):
     when = parse_time(time)
-    if when <= datetime.now():
+    if when <= clock():
         raise ToolError(f"{when:%Y-%m-%d %H:%M} is in the past.")
     with _lock:
         items = _load()

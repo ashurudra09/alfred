@@ -13,10 +13,8 @@ from datetime import datetime
 from pathlib import Path
 
 from mcp.server.fastmcp.exceptions import ToolError
-from send2trash import send2trash
-
 from alfred.tools import journal
-from alfred.tools.guards import (assert_no_overwrite, config, is_executable, is_hidden, is_sensitive, known_folders,
+from alfred.tools.guards import (assert_no_overwrite, config, is_executable, is_hidden, is_sensitive, known_folders, now,
                                  resolve_movable, resolve_safe)
 
 MAX_RESULTS, MAX_SCAN = 50, 20000
@@ -91,7 +89,7 @@ def _search_roots(folder) -> list[Path]:
 
 def search_files(query, folder=None, extension=None, modified_within_days=None):
     match, ext = name_matcher(query), _ext(extension)
-    since = time.time() - modified_within_days * 86400 if modified_within_days else None
+    since = now().timestamp() - modified_within_days * 86400 if modified_within_days else None
     hits, left = {}, config().get("max_scan", MAX_SCAN)
     for root in _search_roots(folder):  # ponytail: one scan budget for all roots; a budget per root if hits come back thin
         for p in walk(root):
@@ -372,7 +370,7 @@ def move_to_recycle_bin(path):
     if ctypes.windll.kernel32.GetDriveTypeW(p.anchor) != 3:  # 3 = fixed disk; USB/network drives may delete for good
         raise ToolError(f"Refused: {p.anchor} has no Recycle Bin (removable or network drive), so deleting would be "
                         "permanent.")
-    _os(f"move {p.name} to the Recycle Bin", send2trash, str(p))
+    _os(f"move {p.name} to the Recycle Bin", journal.trash, p)
     journal.record("move_to_recycle_bin", "recycle", p)
     return f"Moved {p} to the Recycle Bin. Undo: /undo"
 

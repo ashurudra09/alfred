@@ -15,9 +15,10 @@ from datetime import datetime
 from pathlib import Path
 
 from alfred.agent.backends import BACKENDS, Backend, openai_messages
-from alfred.contracts.export import openai_tools
+from alfred.contracts.export import load, openai_tools
 from alfred.contracts.prompt import PROMPT_VERSION, TEMPLATES, render_system_prompt
 from alfred.contracts.schemas import TestItem
+from alfred.contracts.tools import CONTRACTS_VERSION
 from eval.score import EVAL_DATE, EVAL_FOLDERS, aggregate, score_item
 
 HERE = Path(__file__).parent
@@ -86,6 +87,7 @@ def main():
     ap.add_argument("--limit", type=int)
     ap.add_argument("--prompt", choices=list(TEMPLATES), default=PROMPT_VERSION,
                     help="system prompt version: score each model with the one it was trained on (SFT v1/v2: 1.1)")
+    ap.add_argument("--contracts", help="tool-list version the model was trained on, e.g. 1.2 (default: current)")
     a = ap.parse_args()
 
     items = load_set(a.set)[: a.limit]
@@ -96,7 +98,7 @@ def main():
     raw = {}
     if raw_path.exists():
         raw = {r["id"]: r for r in map(json.loads, raw_path.read_text(encoding="utf-8").splitlines())}
-    backend, tools = Backend(a.backend), openai_tools()
+    backend, tools = Backend(a.backend), openai_tools(load(a.contracts))
     system = render_system_prompt(EVAL_FOLDERS, EVAL_DATE, a.prompt)
 
     with raw_path.open("a", encoding="utf-8") as f:
@@ -118,7 +120,7 @@ def main():
     rows = [raw[it.id] for it in items]
     ttfts = [r["ttft"] for r in rows if r["ttft"] is not None]
     report = {
-        "system": a.system, "prompt": a.prompt, "backend": a.backend, "model": backend.model, "set": set_name,
+        "system": a.system, "prompt": a.prompt, "contracts": a.contracts or CONTRACTS_VERSION, "backend": a.backend, "model": backend.model, "set": set_name,
         "date": datetime.now().isoformat(timespec="seconds"),
         "commit": subprocess.run(["git", "rev-parse", "--short", "HEAD"], capture_output=True, text=True).stdout.strip(),
         "unreviewed": unreviewed(set_name, items),

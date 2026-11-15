@@ -109,3 +109,11 @@ def test_data_formats():
         Message(role="tool", content="x")  # tool result without the tool's name
     with pytest.raises(ValidationError):
         Example(id="e2", source="x", category="direct", tools=[], messages=item.messages[:1])  # no assistant turn
+
+
+def test_frozen_tool_list_1_2():
+    """SFT v2/v3 are scored with the 25 tools they were trained on, whatever the current contracts are."""
+    from alfred.contracts.export import load
+    old = load("1.2")
+    assert old["version"] == "1.2" and len(old["tools"]) == 25
+    assert {t["name"] for t in old["tools"]} <= {t["name"] for t in load()["tools"]}
