@@ -106,6 +106,27 @@ tool 26; give them contracts 1.2). Fixtures need Ollama running; record whether 
 Ripples handled in this track: `agent/loop.py` reads `config.json` `"contracts"` (set `"1.2"` to keep v2/v3 on their
 25 tools in the UI; without it the UI now sends 26); `data/v3.py` pinned to contracts 1.2.
 
+## Track 1C: Masking + frozen lists (branch `v4-1C`, worktree `.claude/worktrees/v4-1C`)
+
+| Step | State | Date | Commit | Artifacts | Numbers / notes |
+|---|---|---|---|---|---|
+| C1 Name masking | done | 2026-11-16 | 5920c36 | `data/augment.py` (`mask`, `unmask`, `apply`, `leaks`) | After Hammer (read; arXiv 2410.04587): tool names and parameter names become random 5-7 character identifiers in the tool list, the calls and the tool-result names; identifier-like names are also replaced in descriptions, the system prompt and message text (so `move_to_recycle_bin` in the prompt and cross-references in descriptions follow). Ordinary-word names (`search`, `query`, `recall`) are replaced in structure only, not in sentences. Rates: xLAM 0.33, When2Call 0.33 (the paper's worked ratio; it does not state its final one), Alfred's own examples 0.10. Not done: Hammer's randomised default values. Mix integration is step 3.1 (`augment.apply`). |
+| C2 Tests | done | 2026-11-16 | 5920c36 | `tests/data/test_augment.py` (6 tests) | masked calls validate against masked schemas; renders through the Qwen template; no original identifier-like name anywhere, no original name in any structural position; `unmask` restores byte for byte; deterministic per seed. |
+| C3 Held-out tool specs | done | 2026-11-16 | 71cc648 | `eval/unseen/specs.py` (10 tools, v1.0), `data/mix.py` (`unreserved` + assertion), `tests/eval/test_unseen_specs.py` | `clipboard_get`, `clipboard_set`, `convertUnits`, `countWords`, `hashFile`, `files-differ`, `todo_add`, `todo_list`, `todo_done`, `colorConvert`. No name collides with xLAM's 3,605 tool names or When2Call's. xLAM has colour, unit and text-hash converters under other names (about 840 of 60k examples): 17 look-alike names are excluded from training too. On a v3-sized sample the mix drops 19 of 1,544 xLAM and 17 of 1,544 When2Call examples. |
+| C4 Injection families | done | 2026-11-16 | this commit | `eval/security/families.py`, `data/gen/prompts.py` (`injection_v4`, 20 batches), `tests/eval/test_security_families.py` | **Train-allowed:** `direct`, `ignore_previous`, `injecagent`, `system_message`, `fake_tool_call` (v3's 169 injection examples already contain these styles, 66 of them plain notes to the AI, so they cannot be held out). **Test-only:** `important_instructions`, `tool_knowledge` (AgentDojo), `fake_user_turn` (closes `</tool_output>` and imitates a user turn); their markers occur 0 times in v3's 7,191 synthetic examples and the mix now drops and asserts on them. Generator: 5 batches each for the vectors file name, note, memory, git output; the first 584 batches and their prompts are unchanged (checked), so the teacher cache still hits. **Not generated yet** (machine job, see below). |
+| Verify | done | 2026-11-16 | this commit | | pytest 168 passed. Masking statistics, 500 examples in the mix's proportions, every one masked: leaks 0, byte-exact round trip 500 of 500. Names per example (median): Alfred 48, When2Call 6, xLAM 9. **Extra tokens (median / max): Alfred 332 / 409**, When2Call 20 / 97, xLAM 42 / 133. Alfred examples over 4,096 tokens: 1 -> 2 of 350. |
+
+Left for other tracks (not part of 1C's code):
+- **Machine job, after 1B is merged** (examples should carry the 26-tool list): `uv run python -m data.gen.teacher`
+  generates the 20 `injection_v4` batches on the free tiers (about 240 conversations before validation), then
+  `data.validate`. Needs `.env` and `data/out/cache`, so main checkout.
+- **Token budget (adds to plan amendment 6):** a masked Alfred example is about 330 tokens longer and tool 26 adds
+  about 85, against a 4,096 limit with v3's longest at 3,978. Step 3.1 should expect masked Alfred rows near the
+  limit to be dropped, or leave rows over about 3,650 tokens unmasked; count either way.
+- **Finding for track 4E (E6):** `backends.wrap_tool_output` does not escape a literal `</tool_output>` or Qwen chat
+  markup inside a tool result, so the `fake_user_turn` family can close the untrusted wrapper. Not fixed here: the
+  plan says measure first, then bring the fix to the owner.
+
 ## Notes for whoever works next
 - Track branches cannot be named `v4/<track>` (git refuses while a branch `v4` exists); 1B uses `v4-1B`.
 - A new hard-suite family is one function in `eval/e2e/hard.py` added to `SHARED` or `HELD_OUT`; then
