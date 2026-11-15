@@ -41,10 +41,10 @@ VOCAB = {
         "words": ["indigo", "falcon", "cobalt", "maple", "quartz", "harbor", "lantern", "saffron"],
         "items": ["rent", "groceries", "fuel", "internet", "insurance", "gym", "books", "repairs"]},
     "train": {
-        "stems": ["report", "budget", "notes", "summary", "draft", "receipt", "schedule", "agenda", "essay", "slides",
+        "stems": ["report", "budget", "voucher", "summary", "diagram", "receipt", "schedule", "agenda", "essay", "slides",
                   "ticket", "statement", "handbook", "memo", "checklist", "outline", "letter", "plan", "roster",
                   "quote"],
-        "subs": ["work", "personal", "projects", "taxes", "school", "backup", "old", "reports", "temp", "finance"],
+        "subs": ["work", "personal", "projects", "taxes", "school", "backup", "misc", "reports", "temp", "finance"],
         "words": ["amber", "otter", "nickel", "cedar", "garnet", "meadow", "beacon", "pepper"],
         "items": ["electricity", "water", "phone", "taxi", "software", "coffee", "parking", "laundry"]},
 }
@@ -534,7 +534,7 @@ def notes_and_reminders(w):  # issues 011, 018: notes are not memories; reminder
     text = w.say(["Look up the {stem} appointment in my notes and set a reminder for the time it says.",
                   "My notes have the {stem} appointment. Remind me about it at the date and time written there."],
                  ["check my notes for when the {stem} appointment is, then create a reminder for exactly then",
-                  "there's a note about my {stem} appointment; put a reminder at its date and time"], stem=stem)
+                  "one of my notes mentions the {stem} appointment, schedule an alert for when it happens"], stem=stem)
     return [Turn(text, [("search_notes", {"query": f"{stem} appointment"})], reminders=[when])]
 
 
@@ -549,7 +549,7 @@ def count_and_size(w):  # issues 002, 008: count from a search, sizes added with
     text = w.say(["How many {ext} files are in {f}, and how big are they in total?",
                   "Count the {ext} files in {f} and tell me their combined size."],
                  ["what's the number of {ext}s inside {f} and how much space do they take together",
-                  "give me a count and the summed size of the {ext} files under {f}"], ext=ext, f=P(folder))
+                  "tally up the {ext} files under {f}: how many are there and what do they weigh altogether"], ext=ext, f=P(folder))
     return [Turn(text, [("search_files", {"query": "*", "folder": P(folder), "extension": ext}),
                         ("calculate", {"expression": " + ".join(f"{k} KB" for k in kbs)})],
                  facts=[len(kbs), (total, round(total / 1024, 2), round(total / 1024, 1))])]
