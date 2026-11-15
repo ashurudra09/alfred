@@ -106,9 +106,9 @@ def setup(task, root, config=None):
     return home
 
 
-def run_task(task, backend, base, config=None, scripted=False):
+def run_task(task, backend, base, config=None, scripted=False, root=None):
     """`scripted` runs the same loop on in-process tools (no MCP server start): only for the scripted agents."""
-    root = base / task.id
+    root = root or base / task.id
     home = setup(task, root, config)
     env = {"ALFRED_HOME": str(home), "ALFRED_NO_LAUNCH": "1"}
     if task.today:  # hard suite: pinned date, and deletes go to a sandbox instead of the real Recycle Bin
@@ -275,17 +275,21 @@ def main():
         return {(r["id"], r["trial"]): r for f in sorted(base.glob(f"{run_key}_*.jsonl"))
                 for r in map(json.loads, f.read_text(encoding="utf-8").splitlines())}
 
+    # Hard suite: short sandboxes (runs/sb/<pid>/<job>), removed at the end. Tool results carry full paths, and a real
+    # C:\Users\<name>\Documents is about 25 characters; under runs/e2e/<system>/<task>/ the model had to copy 110.
+    box = ROOT / "runs" / "sb" / str(os.getpid()) if a.suite == "hard" else None
     done, jobs = read(), [(t, k) for t in tasks for k in range(a.trials)]
     for j, (t, k) in enumerate(jobs[i::n], 1):
         if (t.id, k) in done:
             continue
-        r = run_task(t, hard.Scripted(t.script(a.system)) if scripted else backend, base / f"shard{i}", config, scripted)
+        r = run_task(t, hard.Scripted(t.script(a.system)) if scripted else backend, base, config, scripted, box and box / str(j))
         r["trial"] = k
         with cache.open("a", encoding="utf-8") as f:
             f.write(json.dumps(r, ensure_ascii=False) + "\n")
         bad = {k: v for k, v in r["invariants"].items() if v}
         print(f"[{j}/{len(jobs[i::n])}] {'PASS' if r['ok'] else 'FAIL'} {t.id} {r['turn_secs']} {r['calls']} "
               f"{r['reason'] or ''} {bad or ''}", flush=True)
+    shutil.rmtree(box or "", ignore_errors=True)
     done = read()
     results = [{k: v for k, v in done[t.id, k].items() if k != "trajectory"} for t, k in jobs if (t.id, k) in done]
     if len(results) < len(jobs):

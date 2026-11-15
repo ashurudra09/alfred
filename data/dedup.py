@@ -20,7 +20,8 @@ from eval.run import load_set
 
 THRESHOLD = 0.9
 NGRAM = 8
-EMBED_URL, MODEL = "http://127.0.0.1:11434/api/embed", "embeddinggemma"
+HARD = Path(__file__).parents[1] / "eval" / "e2e" / "hard_test.jsonl"
+EMBED_URL, MODEL ="http://127.0.0.1:11434/api/embed", "embeddinggemma"
 
 
 def embed(texts: list[str]) -> np.ndarray:
@@ -43,7 +44,9 @@ def ngrams(text: str) -> set[tuple]:
 class Guard:
     def __init__(self):
         self.tests = sorted({m.content for s in ("indomain", "safety", "regressions") for it in load_set(s)
-                             for m in it.messages if m.role == "user"})
+                             for m in it.messages if m.role == "user"} |
+                            {t["text"] for line in HARD.read_text(encoding="utf-8").splitlines()
+                             for t in json.loads(line)["turns"]})  # the hard e2e suite's requests (v4)
         self.vecs = embed(self.tests)
         self.grams = set().union(*map(ngrams, self.tests))
 
