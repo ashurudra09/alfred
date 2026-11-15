@@ -1,12 +1,14 @@
 """End-to-end tasks (Phase 7): scripted requests against a sandbox, judged on the final files and the answer.
 
 A turn is (text, confirm) where confirm answers every confirmation in that turn; "/new" starts a new chat and
-"/undo" runs the user's undo. `check(c)` gets a Ctx and returns True or a failure reason (str).
+"/undo" runs the user's undo. `confirm` may also be a function of the confirmation's data (the hard suite approves
+only the change that was asked for). `check(c)` gets a Ctx and returns True or a failure reason (str).
 """
 
 from dataclasses import dataclass, field
 from typing import Callable
 
+FOLDERS = ("Documents", "Downloads", "Desktop")
 BASE_FILES = {
     "Downloads/attention_transformer.pdf": b"%PDF-1.4 transformer paper",
     "Downloads/notes.txt": "Week 3 notes. LoRA adds low-rank adapters to frozen weights; rank 16 is common.",
@@ -33,6 +35,11 @@ class Task:
     tags: list = field(default_factory=list)
     git: str | None = None  # make this folder a git repo with an untracked a.txt
     port: bool = False  # the runner opens a listening port and fills {port}
+    base: bool = True  # start from BASE_FILES
+    today: str | None = None  # YYYY-MM-DD: pin the clock and use a sandbox trash (hard suite)
+    mtimes: dict = field(default_factory=dict)  # file -> days before `today` it was last modified
+    memories: list = field(default_factory=list)  # facts saved before the first turn
+    notes: list = field(default_factory=list)  # (title, content) notes saved before the first turn
 
 
 def has(text, *words):
