@@ -47,10 +47,7 @@ checkout while a machine job runs.
 - Nothing yet. (Next: review ~30 benchmark tasks in step A7, once the A6 baseline has passed the headroom gate; try 5 semantic-search queries in track 1B.)
 
 ## Machine
-- **Busy since 2026-11-15 ~19:50: track 1A step A6**, v3 Q4 baseline on the hard suite from commit `f6f1252`.
-  llama-server PIDs 1800 (:8081) and 2668 (:8082), two `eval.e2e --suite hard --shard i/2` processes, logs
-  `runs/v4/hard_v3_shard{0,1}.log`. No merges into or branch switches in the main checkout until this line says idle.
-  (The owner's UI server on :8080 is never touched.)
+- Idle since 2026-11-15 ~21:45. (Eval servers: :8081, :8082. The owner's UI server on :8080 is never touched.)
 
 ## Track 0: Setup
 
@@ -72,8 +69,8 @@ checkout while a machine job runs.
 | A3 Two pools | done | 2026-11-15 | f6f1252 | `hard.tasks("test")`, `hard.tasks("train", n)`; `eval/e2e/hard_test.jsonl` | Test 124 = 84 shared (7 per family) + 40 held-out (8 per family). Train: shared families, seeds from 1000, other file/folder vocabulary and phrasings. Max cosine of a train request to a test request 0.82 (guard limit 0.9), no shared 8-gram. |
 | A4 Runner upgrades | done | 2026-11-15 | f221a3c | `eval/e2e/__main__.py` | `--suite --trials --temperature --url --contracts --shard --fresh --show --review`; cache with trajectories in `runs/e2e/<system>/<suite>_<commit>_*.jsonl`; hard tasks pin `ALFRED_TODAY` and use `ALFRED_TRASH`. A run with `--only` or a scripted agent no longer writes a report. |
 | A5 Checker validation | done | 2026-11-15 | f221a3c | `tests/eval/test_hard.py`; `python -m eval.e2e --suite hard --system oracle\|null\|wrong\|extra` | oracle 124/124 with invariants 0; null 0/124; wrong 0/124; extra 0/124. pytest 157 passed (4.5 min; the hard tests add about 3 min because Windows scans each new fixture file). |
-| A6 v3 baseline + headroom gate | running | 2026-11-15 | f6f1252 | `eval/reports/hard_alfred-2b-v3-q4.{json,md}` when both shards finish | see Machine |
-| A7 Owner review (30+ tasks) | todo | | | `uv run python -m eval.e2e --suite hard --review` | waits for A6: families may change if the gate fails |
+| A6 v3 baseline + headroom gate | done, failures of the second run not yet read | 2026-11-15 | 78fae0b | `eval/reports/hard_alfred-2b-v3-q4.{json,md}`; trajectories in `runs/e2e/alfred-2b-v3-q4/` | **v3 Q4: 78/124 (62.9%)**, shared 55/84, held-out 23/40, invariants 0/0/0: inside the 30-80% gate. First run (f6f1252) was 75/124; reading its failures found two suite flaws, fixed in 78fae0b for whole families: a prescribed zip name, and facts called 'access code' / 'booking reference' that v3 refused to read out. Still to do: read the 46 failures of the second run for checker false negatives (notes_and_reminders is still 4/7). |
+| A7 Owner review (30+ tasks) | todo | | | `uv run python -m eval.e2e --suite hard --review` | ready once the A6 failure read is finished |
 | A8 Freeze + dedup guard | todo | | | | current (not frozen) sha256 of `hard_test.jsonl` is printed by `python -m eval.e2e.hard --write` |
 | B5 hand-over: semantic-search families | todo | | | | after track 1B step B1 freezes the tool |
 
