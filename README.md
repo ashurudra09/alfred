@@ -118,6 +118,7 @@ spikes/                 Phase 1 feasibility experiments (latency, caching, teach
 - [Requirements](docs/requirements.md) and the [implementation plan](docs/implementation-plan.md).
 - [Progress](docs/PROGRESS.md): phase gates and evidence. [Decisions](docs/decisions.md): what was decided, and why.
 - [Dataset card](data/card.md) and [data issues to fix](data/to_fix.md); [patch notes](docs/patch_notes.md) per model version.
+- [References](docs/references.md): the papers and projects each part builds on, and where it is used.
 - [Learning notes](docs/learning/README.md): chat templates, LoRA, synthetic data, evaluation metrics, MCP, agent
   loops, prompt injection, quantization, public benchmarks.
 
