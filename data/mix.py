@@ -72,8 +72,12 @@ def main():
     synthetic += ask_endings(synthetic)
     total = round(len(synthetic) / (1 - sum(SHARE.values())))
     external = when2call(round(total * SHARE["when2call"])) + xlam(round(total * SHARE["xlam"]))
+    from eval.unseen.specs import uses_held_out
+    held_out = [e.id for e in external if uses_held_out(e)]  # tools reserved for the unseen-tools eval (track 4F)
+    external = [e for e in external if not uses_held_out(e)]
     guard = Guard()
     kept, dropped = guard.filter(synthetic + external)
+    assert not any(uses_held_out(e) for e in kept), "a held-out tool (eval/unseen/specs.py) is in the training data"
     (OUT / "dedup_dropped.json").write_text(json.dumps(sorted(dropped, key=lambda d: -d["cos"]), indent=1,
                                                        ensure_ascii=False), encoding="utf-8")
 
@@ -104,6 +108,7 @@ def main():
              f"xLAM: {sum(e.source == 'xlam' for e in external)}",
              f"- Dropped as near-duplicates of test items: {len(dropped)} (cosine > 0.9 or a shared 8-gram); "
              f"dropped as longer than {MAX_TOKENS} tokens: {too_long}",
+             f"- Dropped for offering a tool held out for the unseen-tools eval, or a look-alike: {len(held_out)}",
              f"- **Train {len(train)}, val {len(val)}**", "",
              f"Tokens per example: median {statistics.median(lengths):.0f}, p95 "
              f"{sorted(lengths)[int(0.95 * len(lengths))]}, max {max(lengths)}", "",
