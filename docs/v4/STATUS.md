@@ -44,10 +44,13 @@ checkout while a machine job runs.
 | 6 Write-up | blocked | 5 | |
 
 ## Waiting on the owner
-- Nothing yet. (Later: review ~30 benchmark tasks in step A7; try 5 semantic-search queries in track 1B.)
+- Nothing yet. (Next: review ~30 benchmark tasks in step A7, once the A6 baseline has passed the headroom gate; try 5 semantic-search queries in track 1B.)
 
 ## Machine
-- Idle. (Eval servers: :8081, :8082. The owner's UI server on :8080 is never touched.)
+- **Busy since 2026-11-15 ~19:50: track 1A step A6**, v3 Q4 baseline on the hard suite from commit `f6f1252`.
+  llama-server PIDs 1800 (:8081) and 2668 (:8082), two `eval.e2e --suite hard --shard i/2` processes, logs
+  `runs/v4/hard_v3_shard{0,1}.log`. No merges into or branch switches in the main checkout until this line says idle.
+  (The owner's UI server on :8080 is never touched.)
 
 ## Track 0: Setup
 
@@ -60,7 +63,24 @@ checkout while a machine job runs.
 | 0.5 Throughput probe | done | 2026-11-15 | this commit | `runs/v4/server_808*.log` | v3 Q4, 5 single-call e2e tasks: one server 75 s (15 s/task incl. tool-server start); two servers, 4 threads each: 10 tasks in 93 s (9.3 s/task, 1.6x). Use two servers for long jobs. Verdicts 5/5 = committed v3 report. Find eval servers by command line (`Get-CimInstance Win32_Process`): port lookups return PID 0 on this Windows build; PID 22924-style servers under Ollama are the embedder, never stop them. |
 | Verify | done | 2026-11-15 | this commit | | pytest 150 passed with Ollama running (149 + the embedder test); `eval.results` leaves `RESULTS.md` unchanged; 5 e2e verdicts match |
 
+## Track 1A: Benchmark + generator
+
+| Step | State | Date | Commit | Artifacts | Numbers / notes |
+|---|---|---|---|---|---|
+| A1 Task families | done | 2026-11-15 | f221a3c | `eval/e2e/hard.py` | 12 shared: find_then_act, read_then_compute, pick_extreme, all_except, filtered_bulk, memory_then_act, two_part, recover_empty, ask_then_act, decline_then_continue, notes_and_reminders, count_and_size. 5 held-out: compare_files, act_on_list, deadline_reminder, conditional_act, bulk_rename. Scripted solutions take 1-5 calls (1 only for conditional_act's "just tell me" branch). |
+| A2 Parametric templates | done | 2026-11-15 | f221a3c | `eval/e2e/hard.py` (`World`, `Turn`, `HardTask`) | One turn description gives the confirm policy (only the requested change is approved), the exact expected end state (every file), and the scripted agents. A proposal that was not asked for fails the task even though it is declined. |
+| A3 Two pools | done | 2026-11-15 | f6f1252 | `hard.tasks("test")`, `hard.tasks("train", n)`; `eval/e2e/hard_test.jsonl` | Test 124 = 84 shared (7 per family) + 40 held-out (8 per family). Train: shared families, seeds from 1000, other file/folder vocabulary and phrasings. Max cosine of a train request to a test request 0.82 (guard limit 0.9), no shared 8-gram. |
+| A4 Runner upgrades | done | 2026-11-15 | f221a3c | `eval/e2e/__main__.py` | `--suite --trials --temperature --url --contracts --shard --fresh --show --review`; cache with trajectories in `runs/e2e/<system>/<suite>_<commit>_*.jsonl`; hard tasks pin `ALFRED_TODAY` and use `ALFRED_TRASH`. A run with `--only` or a scripted agent no longer writes a report. |
+| A5 Checker validation | done | 2026-11-15 | f221a3c | `tests/eval/test_hard.py`; `python -m eval.e2e --suite hard --system oracle\|null\|wrong\|extra` | oracle 124/124 with invariants 0; null 0/124; wrong 0/124; extra 0/124. pytest 157 passed (4.5 min; the hard tests add about 3 min because Windows scans each new fixture file). |
+| A6 v3 baseline + headroom gate | running | 2026-11-15 | f6f1252 | `eval/reports/hard_alfred-2b-v3-q4.{json,md}` when both shards finish | see Machine |
+| A7 Owner review (30+ tasks) | todo | | | `uv run python -m eval.e2e --suite hard --review` | waits for A6: families may change if the gate fails |
+| A8 Freeze + dedup guard | todo | | | | current (not frozen) sha256 of `hard_test.jsonl` is printed by `python -m eval.e2e.hard --write` |
+| B5 hand-over: semantic-search families | todo | | | | after track 1B step B1 freezes the tool |
+
 ## Notes for whoever works next
+- Track branches cannot be named `v4/<track>` (git refuses while a branch `v4` exists); 1B uses `v4-1B`.
+- A new hard-suite family is one function in `eval/e2e/hard.py` added to `SHARED` or `HELD_OUT`; then
+  `python -m eval.e2e.hard --write` and the four scripted runs.
 - Shell heredocs in Git Bash turn a double backslash into a single one: write files that contain backslashes (Windows paths in tests)
   with the editor tools, not with `cat <<EOF`.
 - The three Phase 1 tracks are independent. 1A should add its semantic-search task families only after step B1
