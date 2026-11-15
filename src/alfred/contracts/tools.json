@@ -1,5 +1,5 @@
 {
-  "version": "1.2",
+  "version": "1.3",
   "tools": [
     {
       "name": "search_files",
@@ -102,6 +102,47 @@
           "folder"
         ],
         "title": "search_file_contentsArguments",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "_meta": {
+        "alfred/group": "files",
+        "alfred/needs_confirmation": false
+      }
+    },
+    {
+      "name": "search_by_meaning",
+      "description": "Find documents about a topic even if they use other words. For exact phrases use search_file_contents.",
+      "inputSchema": {
+        "properties": {
+          "query": {
+            "description": "What the document is about, in any words",
+            "title": "Query",
+            "type": "string"
+          },
+          "folder": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Leave out to search all known folders",
+            "title": "Folder"
+          }
+        },
+        "required": [
+          "query"
+        ],
+        "title": "search_by_meaningArguments",
         "type": "object"
       },
       "annotations": {

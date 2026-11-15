@@ -21,7 +21,7 @@ from collections import Counter
 from datetime import date, timedelta
 from pathlib import Path
 
-from alfred.contracts.export import openai_tools
+from alfred.contracts.export import load, openai_tools
 from alfred.contracts.prompt import render_system_prompt
 from alfred.contracts.schemas import Example, Message
 from data.gen.prompts import EXTRA, USERS
@@ -125,7 +125,7 @@ def build(name: str) -> int:
                 msgs = [Message.model_validate({**m, "content": m.get("content") or ""}) for m in conv["messages"]
                         if m.get("role") != "system"]
                 ex = Example(id=eid, source="synthetic", category=conv["category"],
-                             messages=[Message(role="system", content=system), *msgs], tools=openai_tools())
+                             messages=[Message(role="system", content=system), *msgs], tools=openai_tools(load("1.2")))
                 errs = check(ex)
             except Exception as e:  # noqa: BLE001 - malformed agent output is counted, not fatal
                 errs, ex = [f"{type(e).__name__}: {str(e)[:150]}"], None
@@ -434,7 +434,7 @@ def transform(exs: list[Example]) -> tuple[list[Example], Counter]:
             calls = sum(len(m.tool_calls or []) for m in e.messages)
             if e.category == "multi_step" and calls < 2:  # a merged search can leave a single call
                 e, n["multi_step -> tool_call"] = e.model_copy(update={"category": "tool_call"}), n["multi_step -> tool_call"] + 1
-            out.append(e.model_copy(update={"tools": openai_tools()}))  # contracts 1.2 for every example
+            out.append(e.model_copy(update={"tools": openai_tools(load("1.2"))}))  # contracts 1.2 for every example
     return out, n
 
 

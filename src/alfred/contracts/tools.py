@@ -1,5 +1,6 @@
-"""The 25 frozen tool contracts (requirements Section 5). Signatures, docstrings and flags only; bodies live in
-`alfred.tools` (Phase 6), which registers each implementation under the contract's signature.
+"""The 26 frozen tool contracts (requirements Section 5; search_by_meaning added in 1.3). Signatures, docstrings
+and flags only; bodies live in `alfred.tools` (Phase 6), which registers each implementation under the
+contract's signature.
 
 Docstrings become the model-facing descriptions, so they are short and say how to tell look-alike tools apart.
 Changing anything here means bumping CONTRACTS_VERSION and regenerating training data.
@@ -10,7 +11,7 @@ from typing import Annotated, Literal
 
 from pydantic import Field
 
-CONTRACTS_VERSION = "1.2"
+CONTRACTS_VERSION = "1.3"
 
 GROUPS = ("files", "open", "system", "developer", "productivity", "memory", "utility")
 REGISTRY: dict[str, dict] = {}
@@ -53,6 +54,14 @@ def search_file_contents(
     extension: Ext = None,
 ):
     """Find files whose text contains a phrase (txt, md, pdf, code)."""
+
+
+@contract("files", read_only=True)
+def search_by_meaning(
+    query: Annotated[str, Field(description="What the document is about, in any words")],
+    folder: Annotated[str | None, Field(description="Leave out to search all known folders")] = None,
+):
+    """Find documents about a topic even if they use other words. For exact phrases use search_file_contents."""
 
 
 @contract("files", read_only=True)

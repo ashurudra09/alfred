@@ -7,7 +7,10 @@ RESULTS = {
                     "C:\\Users\\{U}\\Downloads\\transformer_notes.pdf (310 KB, modified 2026-09-02)\n...",
     "search_file_contents": "2 files:\nC:\\Users\\{U}\\Documents\\ml\\lora.md: \"...LoRA adds low-rank adapters...\"\n"
                             "C:\\Users\\{U}\\Documents\\notes.txt: \"...try LoRA r=16...\"",
-    "list_directory": "C:\\Users\\{U}\\Downloads (5 items):\nphotos\\ (folder)\nlecture1.pdf (1.2 MB)\nsetup.exe (88 MB)\n...",
+    "search_by_meaning": "2 files:\nC:\\Users\\{U}\\Documents\\ml\\lora.md: \"...adapters with a small rank keep the "
+                         "base weights frozen...\"\nC:\\Users\\{U}\\Downloads\\finetuning_notes.pdf: \"...parameter-"
+                         "efficient tuning...\"",  # or "No matching files found."
+    "list_directory":"C:\\Users\\{U}\\Downloads (5 items):\nphotos\\ (folder)\nlecture1.pdf (1.2 MB)\nsetup.exe (88 MB)\n...",
     "read_file": "C:\\Users\\{U}\\Documents\\notes.txt (1,204 chars):\nWeek 3 notes. LoRA adds low-rank adapters...",
     "disk_usage": "C:\\ 476 GB total, 18 GB free.\nLargest:\nC:\\Users\\{U}\\Videos 120 GB\nC:\\Users\\{U}\\AppData 96 GB\n...",
     "move_file": "Moved C:\\Users\\{U}\\Downloads\\resume.pdf to C:\\Users\\{U}\\Documents\\resume.pdf. Undo: /undo",

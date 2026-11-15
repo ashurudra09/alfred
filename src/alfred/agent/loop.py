@@ -16,7 +16,7 @@ from mcp.server.fastmcp.exceptions import ToolError
 from alfred.agent import chats
 from alfred.agent.backends import openai_messages
 from alfred.agent.timing import TurnTimer, log_turn
-from alfred.contracts.export import openai_tools
+from alfred.contracts.export import load, openai_tools
 from alfred.contracts.prompt import render_system_prompt
 from alfred.contracts.schemas import Message, ToolCall
 from alfred.tools.guards import config, known_folders, now
@@ -55,7 +55,7 @@ def run_turn(chat_id: int, user_text: str, backend, tools, max_calls: int | None
     system = render_system_prompt(known_folders(), now())
     history, new = chats.context(chat_id, cfg.get("context_chars", chats.CONTEXT_CHARS)), [Message(role="user", content=user_text)]
     validators = {n: Draft202012Validator(s["schema"]) for n, s in tools.specs.items()}
-    tool_defs = [t for t in openai_tools() if t["function"]["name"] not in off]
+    tool_defs = [t for t in openai_tools(load(cfg.get("contracts"))) if t["function"]["name"] not in off]  # "1.2": v2/v3
     calls_made, retried, final, log_calls = 0, False, "", []
     failed = {}  # (name, args) -> result of a call that failed or was declined this turn: never run it again
 

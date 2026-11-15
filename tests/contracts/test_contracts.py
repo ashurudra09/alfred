@@ -10,12 +10,12 @@ from alfred.contracts.schemas import Example, Message, TestItem, ToolCall
 from alfred.contracts.tools import REGISTRY
 
 # requirements Section 5, in order
-SPEC_NAMES = ["search_files", "search_file_contents", "list_directory", "read_file", "disk_usage", "move_file",
+SPEC_NAMES = ["search_files", "search_file_contents", "search_by_meaning", "list_directory", "read_file", "disk_usage", "move_file",
               "rename_file", "copy_file", "zip_folder", "organize_folder", "move_to_recycle_bin", "open_path",
               "open_app", "system_info", "top_processes", "network_status", "port_in_use", "git_status",
               "create_note", "search_notes", "set_reminder", "list_reminders", "remember", "recall", "calculate"]
 SPEC_CONFIRM = {"move_file", "rename_file", "copy_file", "zip_folder", "organize_folder", "move_to_recycle_bin"}
-SPEC_READ = {"search_files", "search_file_contents", "list_directory", "read_file", "disk_usage", "system_info",
+SPEC_READ = {"search_files", "search_file_contents", "search_by_meaning", "list_directory", "read_file", "disk_usage", "system_info",
              "top_processes", "network_status", "port_in_use", "git_status", "search_notes", "list_reminders",
              "recall", "calculate"}
 FOLDERS = {"Documents": r"C:\Users\asha\Documents", "Downloads": r"C:\Users\asha\Downloads"}
@@ -88,7 +88,7 @@ def test_prompt_token_count():
     system = len(tok.encode(render_system_prompt(FOLDERS, date(2026, 10, 22))).ids)
     tools = len(tok.encode(json.dumps(openai_tools(), ensure_ascii=False)).ids)
     print(f"\nprompt tokens: system {system} + tools {tools} = {system + tools} (before chat-template wrapping)")
-    assert system + tools < 2450  # guard against growth (2400 before contracts 1.2); prefix is cached by llama-server
+    assert system + tools < 2600  # guard against growth (2525 at contracts 1.3, 2450 at 1.2); prefix is cached by llama-server
 
 
 def test_data_formats():

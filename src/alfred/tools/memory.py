@@ -10,6 +10,8 @@ import sqlite3
 import urllib.request
 from datetime import datetime
 
+import numpy as np
+
 from mcp.server.fastmcp.exceptions import ToolError
 
 from alfred.tools import journal
@@ -25,12 +27,22 @@ def _db():
     return db
 
 
+def embed_many(texts: list[str], timeout: float = 600) -> np.ndarray:
+    """Unit-normalised embeddings, one row per text, in batches of 64. Raises if Ollama is not reachable.
+    Shared by recall, semantic search (tools/semantic.py) and the contamination guard (data/dedup.py)."""
+    out = []
+    for i in range(0, len(texts), 64):
+        req = urllib.request.Request(EMBED_URL, json.dumps({"model": MODEL, "input": texts[i:i + 64]}).encode(),
+                                     {"Content-Type": "application/json"})
+        with urllib.request.urlopen(req, timeout=timeout) as r:
+            out += json.load(r)["embeddings"]
+    v = np.array(out, dtype=np.float32).reshape(len(out), -1)
+    return v / np.maximum(np.linalg.norm(v, axis=1, keepdims=True), 1e-9)
+
+
 def embed(text: str) -> list[float] | None:
     try:
-        req = urllib.request.Request(EMBED_URL, json.dumps({"model": MODEL, "input": [text]}).encode(),
-                                     {"Content-Type": "application/json"})
-        with urllib.request.urlopen(req, timeout=30) as r:
-            return json.load(r)["embeddings"][0]
+        return embed_many([text], timeout=30)[0].tolist()
     except Exception:
         return None
 

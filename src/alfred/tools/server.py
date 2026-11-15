@@ -1,4 +1,4 @@
-"""Alfred's MCP server over stdio: the 25 tools, each registered under its frozen contract (signature, docstring,
+"""Alfred's MCP server over stdio: the 26 tools, each registered under its frozen contract (signature, docstring,
 annotations, meta), so `list_tools` equals contracts/tools.json.
 
 Run: uv run python -m alfred.tools.server     (Claude Desktop / MCP Inspector: the same command)
@@ -11,10 +11,10 @@ from mcp.server.fastmcp import FastMCP
 
 from alfred.contracts.export import tool_options
 from alfred.contracts.tools import REGISTRY
-from alfred.tools import calc, dev, files, memory, productivity, system
+from alfred.tools import calc, dev, files, memory, productivity, semantic, system
 from alfred.tools.guards import known_folders, now
 
-IMPLS = {name: getattr(mod, name) for mod in (files, system, dev, productivity, memory, calc)
+IMPLS = {name: getattr(mod, name) for mod in (files, semantic, system, dev, productivity, memory, calc)
          for name in REGISTRY if hasattr(mod, name)}
 assert set(IMPLS) == set(REGISTRY), f"missing implementations: {set(REGISTRY) - set(IMPLS)}"
 
