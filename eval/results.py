@@ -305,6 +305,22 @@ def main():
                   "[eval/bfcl/run.py](eval/bfcl/run.py). Not comparable to the vendor's 43.6 (full BFCL v4, "
                   "thinking mode).", ""]
 
+    if (rp := REPORTS / "retrieval_scifact.json").exists():
+        r = json.loads(rp.read_text(encoding="utf-8"))
+        lines += [f"## Semantic file search: retrieval only, no LLM ({r['documents']} SciFact abstracts, "
+                  f"{r['queries']} expert claims)", "",
+                  "| Ranking | Recall@1 | Recall@5 | MRR | Paraphrased half: R@1 | R@5 | MRR | Query ms |",
+                  "|---|---|---|---|---|---|---|---|"]
+        for mode, m in r["modes"].items():
+            a, p = m["all"], m["paraphrased"]
+            lines.append(f"| {mode} | {pct(a['recall@1'])} | {pct(a['recall@5'])} | {a['mrr']:.3f} | "
+                         f"{pct(p['recall@1'])} | {pct(p['recall@5'])} | {p['mrr']:.3f} | {m['query_ms']} |")
+        lines += ["", f"Keyword = SQLite FTS5 BM25, embedding = embeddinggemma cosine, fused = reciprocal rank fusion "
+                  f"([eval/retrieval.py](eval/retrieval.py)). \"Paraphrased\" = the {r['modes']['fused']['paraphrased']['n']} "
+                  f"claims sharing the fewest content words with their abstract (below the median "
+                  f"{r['overlap_median']:.2f}). Indexing {r['chunks']} chunks took {r['index_seconds']:.0f} s on the "
+                  "laptop CPU. SciFact: claims CC BY 4.0, abstracts ODC-By 1.0.", ""]
+
     confusion_png()
     OUT.write_text("\n".join(lines), encoding="utf-8")
     print(f"wrote {OUT.name} and {FIG.name}")

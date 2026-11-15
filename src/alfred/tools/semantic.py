@@ -14,6 +14,7 @@ not running, which the result says.
 import re
 import sqlite3
 import time
+from contextlib import closing
 from pathlib import Path
 
 import numpy as np
@@ -59,7 +60,12 @@ def _under(path: str, roots: list[Path]) -> bool:
 
 def update(roots: list[Path], deadline: float) -> tuple[int, bool]:
     """Bring the index up to date for these roots until the deadline. Returns (files still to index, embedder up)."""
-    db, todo = _db(), []
+    with closing(_db()) as db:
+        return _update(db, roots, deadline)
+
+
+def _update(db, roots: list[Path], deadline: float) -> tuple[int, bool]:
+    todo = []
     known = dict(db.execute("SELECT path, mtime FROM files"))
     for root in roots:
         for p in files.walk(root):
@@ -145,7 +151,9 @@ def rrf(*rankings: list[int]) -> list[int]:
 def rank(query: str, roots: list[Path], mode: str = "fused", db=None) -> list[tuple[str, str]]:
     """Files best matching the query as (path, best chunk), best first. mode: fused, keyword or embedding;
     fused falls back to keyword when the embedder is down."""
-    db = db or _db()
+    if db is None:
+        with closing(_db()) as db:
+            return rank(query, roots, mode, db)
     kw = keyword_rank(db, query, roots) if mode != "embedding" else []
     try:
         em = embedding_rank(db, query, roots) if mode != "keyword" else []

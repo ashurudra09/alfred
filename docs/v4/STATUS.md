@@ -44,7 +44,11 @@ checkout while a machine job runs.
 | 6 Write-up | blocked | 5 | |
 
 ## Waiting on the owner
-- Nothing yet. (Later: review ~30 benchmark tasks in step A7; try 5 semantic-search queries in track 1B.)
+- Track 1B: fused ranking (the plan) scored below embedding-only on SciFact (MRR 0.896 vs 0.938). Choose: keep
+  fused, or rank by embedding and use keywords only when Ollama is down. Choosing from this test set is tuning on
+  it; either way the RESULTS table keeps all three rows.
+- Track 1B: try 5 semantic-search queries (verify step).
+- Later: review ~30 benchmark tasks in step A7.
 
 ## Machine
 - Idle. (Eval servers: :8081, :8082. The owner's UI server on :8080 is never touched.)
@@ -67,9 +71,22 @@ checkout while a machine job runs.
 | B1 Contract 1.3 `search_by_meaning(query, folder=None)` | done | 2026-11-15 | 82a9eff | `contracts/tools.py`, `tools.json` (26 tools, v1.3), `data/gen/formats.py` | read-only, group files. Prompt + tools 2525 tokens (was ~2440); guard raised to 2600. Tool list frozen from here: 1A may add its families. |
 | B2 Index `tools/semantic.py` | done | 2026-11-15 | 82a9eff | `ALFRED_HOME/semantic.db`; `tests/tools/test_semantic.py` (6 tests) | FTS5 + vectors per 1,000-char chunk (max 20 per file); incremental by mtime, 20 s indexing budget per call, deleted files purged; `files.walk` guards + extension allow-list + 5 MB cap. Embedder moved to `memory.embed_many`, used by recall, semantic, `data/dedup.py`. |
 | B3 RRF ranking + fallback | done | 2026-11-15 | 82a9eff | `semantic.rank(mode=fused/keyword/embedding)` | RRF k=60, 50 candidates per ranker, top 5 files; result says when it fell back to keywords or is still indexing. `MIN_COS` = 0 until B4 calibrates it. |
-| B4 Retrieval eval | todo | | | | corpus source needs the owner's OK (download + licence) |
-| B5 Hand families to 1A | todo | | | | |
-| Verify | todo | | | | pytest 156 passed (worktree, Ollama running) |
+| B4 Retrieval eval | done | 2026-11-15 | this commit | `eval/retrieval.py`, `eval/testsets/retrieval_scifact.jsonl` (300 abstracts, 150 claims, seed 1), `eval/reports/retrieval_scifact.json`, table in `RESULTS.md` | Owner chose BEIR SciFact; licence checked at allenai/scifact (claims CC BY 4.0, abstracts ODC-By 1.0). R@1 / R@5 / MRR: keyword 74.7 / 85.3 / 0.797, **embedding 91.3 / 96.0 / 0.938**, fused 85.3 / 94.0 / 0.896. Paraphrased half (74 claims, overlap < 0.56): keyword 51.4 / 71.6, embedding 83.8 / 91.9, fused 70.3 / 87.8. Query 11 / 180 / 244 ms. Index: 857 chunks in 356 s (~2.4 chunks/s, CPU shared with track 1A), so a 20 s budget embeds ~50 chunks per search. Fused < embedding-only here: **owner decision pending** (see Waiting). `MIN_COS` left at 0 (not calibrated). The query/document prompts were not ablated. |
+| B5 Hand families to 1A | done | 2026-11-15 | this commit | the list below | |
+| Verify | todo | | | | pytest 156 passed; `RESULTS.md` identical on a second `eval.results`; retrieval re-run gives identical recall and MRR (timings vary: index 312 s, fused query 363 ms); owner tries 5 queries |
+
+**For track 1A (B5): semantic-search task families**, tagged `new_capability`, scored separately (v2/v3 never saw
+tool 26; give them contracts 1.2). Fixtures need Ollama running; record whether the embedder was up (risk 24).
+1. *find-by-topic*: a file whose name and wording share nothing with the request ("the doc about cutting cloud costs"
+   → `infra_notes_q3.md` that talks about reserved instances); check: the answer names that path. 1 call.
+2. *find-by-topic-then-act*: as 1, then open / move / zip it; check: end state; confirmation only for the asked change. 2 calls.
+3. *find-by-topic-then-read*: as 1, then read it and answer a fact from it. 2 calls.
+4. *look-alike choice*: same fixture, but the request names the file or quotes an exact phrase, so `search_files` /
+   `search_file_contents` is right; check: the answer is correct (the tool used isn't scored as wrong if the answer
+   is right). 1 call.
+5. *nothing-matches*: no fixture file is about the topic; check: the answer says so, no file is acted on. 1–2 calls.
+6. *stale-index*: the file was edited or created after an earlier search in the same task; check: the new content is
+   found (incremental re-index). 2 calls.
 
 Ripples handled in this track: `agent/loop.py` reads `config.json` `"contracts"` (set `"1.2"` to keep v2/v3 on their
 25 tools in the UI; without it the UI now sends 26); `data/v3.py` pinned to contracts 1.2.

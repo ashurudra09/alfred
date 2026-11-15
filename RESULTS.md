@@ -95,3 +95,13 @@ Log-likelihood scoring as in the official lm-eval task, Qwen3.5 chat template ([
 | **unweighted mean** | | **72.1%** | **77.2%** | **77.8%** |
 
 Pinned `bfcl-eval==2026.3.23`, non-thinking mode, AST checker; Qwen3.5 handler in [eval/bfcl/run.py](eval/bfcl/run.py). Not comparable to the vendor's 43.6 (full BFCL v4, thinking mode).
+
+## Semantic file search: retrieval only, no LLM (300 SciFact abstracts, 150 expert claims)
+
+| Ranking | Recall@1 | Recall@5 | MRR | Paraphrased half: R@1 | R@5 | MRR | Query ms |
+|---|---|---|---|---|---|---|---|
+| keyword | 74.7% | 85.3% | 0.797 | 51.4% | 71.6% | 0.608 | 11 |
+| embedding | 91.3% | 96.0% | 0.938 | 83.8% | 91.9% | 0.881 | 180 |
+| fused | 85.3% | 94.0% | 0.896 | 70.3% | 87.8% | 0.789 | 244 |
+
+Keyword = SQLite FTS5 BM25, embedding = embeddinggemma cosine, fused = reciprocal rank fusion ([eval/retrieval.py](eval/retrieval.py)). "Paraphrased" = the 74 claims sharing the fewest content words with their abstract (below the median 0.56). Indexing 857 chunks took 356 s on the laptop CPU. SciFact: claims CC BY 4.0, abstracts ODC-By 1.0.
