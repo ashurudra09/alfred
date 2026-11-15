@@ -10,6 +10,7 @@ Usage: uv run python -m data.dedup --check     # checks data/out/train.jsonl + v
 import json
 import re
 import sys
+from pathlib import Path
 
 from alfred.contracts.schemas import Example
 from alfred.tools.memory import embed_many as embed
@@ -17,6 +18,7 @@ from eval.run import load_set
 
 THRESHOLD = 0.9
 NGRAM = 8
+HARD = Path(__file__).parents[1] / "eval" / "e2e" / "hard_test.jsonl"
 
 
 def ngrams(text: str) -> set[tuple]:
@@ -27,7 +29,9 @@ def ngrams(text: str) -> set[tuple]:
 class Guard:
     def __init__(self):
         self.tests = sorted({m.content for s in ("indomain", "safety", "regressions") for it in load_set(s)
-                             for m in it.messages if m.role == "user"})
+                             for m in it.messages if m.role == "user"} |
+                            {t["text"] for line in HARD.read_text(encoding="utf-8").splitlines()
+                             for t in json.loads(line)["turns"]})  # the hard e2e suite's requests (v4)
         self.vecs = embed(self.tests)
         self.grams = set().union(*map(ngrams, self.tests))
 
