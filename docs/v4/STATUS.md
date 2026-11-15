@@ -31,7 +31,7 @@ checkout while a machine job runs.
 | Track | State | Prerequisites | Claimed by / branch |
 |---|---|---|---|
 | 0 Setup | done (2026-11-15) | none | |
-| 1A Benchmark + generator | ready | 0 | |
+| 1A Benchmark + generator | in progress (claimed 2026-11-15) | 0 | main checkout, branch `v4` directly: git cannot create `v4/1A` while a branch named `v4` exists |
 | 1B Semantic search | ready | 0 | |
 | 1C Masking + frozen lists | ready | 0 | |
 | 2 On-policy data | blocked | 1A, 1B | |
