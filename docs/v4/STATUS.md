@@ -47,7 +47,7 @@ checkout while a machine job runs.
 - Nothing yet. (Next: review ~30 benchmark tasks in step A7, once the A6 baseline has passed the headroom gate; try 5 semantic-search queries in track 1B.)
 
 ## Machine
-- Idle since 2026-11-15 ~21:45. (Eval servers: :8081, :8082. The owner's UI server on :8080 is never touched.)
+- **Busy since 2026-11-16: track 1A, v3 baseline rerun on the hard suite from commit `562d51d`** (llama-server PIDs 2816 on :8081 and 20968 on :8082, logs `runs/v4/hard_v3_shard{0,1}.log`, ~30 min). No merges into or branch switches in the main checkout until this says idle. (Eval servers: :8081, :8082. The owner's UI server on :8080 is never touched.)
 
 ## Track 0: Setup
 
