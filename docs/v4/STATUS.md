@@ -33,7 +33,7 @@ checkout while a machine job runs.
 | 0 Setup | done (2026-11-15) | none | |
 | 1A Benchmark + generator | in progress (claimed 2026-11-15) | 0 | main checkout, branch `v4` directly: git cannot create `v4/1A` while a branch named `v4` exists |
 | 1B Semantic search | in progress (claimed 2026-11-15, branch `v4-1B`) | 0 | worktree `.claude/worktrees/v4-1B` (`v4/1B` is impossible while `v4` exists) |
-| 1C Masking + frozen lists | in progress (claimed 2026-11-16, branch `v4-1C`) | 0 | worktree `.claude/worktrees/v4-1C` |
+| 1C Masking + frozen lists | done (2026-11-16, merged in 7aab2fe) | 0 | was branch `v4-1C` |
 | 2 On-policy data | blocked | 1A, 1B | |
 | 3 Mix + train | blocked | 2, 1C, owner's go per run | |
 | 4D Grammar | blocked | 1A (step D2 also needs 4G's baselines) | |
@@ -44,11 +44,11 @@ checkout while a machine job runs.
 | 6 Write-up | blocked | 5 | |
 
 ## Waiting on the owner
-- Track 1B: try 5 semantic-search queries (verify step).
-- Review ~30 benchmark tasks in step A7, once the A6 baseline has passed the headroom gate.
+- **Track 1A step A7:** review at least 30 hard-suite tasks with `uv run python -m eval.e2e --suite hard --review`.
+- **Track 1B verify:** try 5 semantic-search queries (the only step left before 1B is merged).
 
 ## Machine
-- **Busy since 2026-11-16: track 1A, v3 baseline rerun on the hard suite from commit `562d51d`** (llama-server PIDs 2816 on :8081 and 20968 on :8082, logs `runs/v4/hard_v3_shard{0,1}.log`, ~30 min). No merges into or branch switches in the main checkout until this says idle. (Eval servers: :8081, :8082. The owner's UI server on :8080 is never touched.)
+- Idle since 2026-11-16 02:10. (Eval servers: :8081, :8082. The owner's UI server on :8080 is never touched.)
 
 ## Track 0: Setup
 
@@ -70,9 +70,9 @@ checkout while a machine job runs.
 | A3 Two pools | done | 2026-11-15 | f6f1252 | `hard.tasks("test")`, `hard.tasks("train", n)`; `eval/e2e/hard_test.jsonl` | Test 124 = 84 shared (7 per family) + 40 held-out (8 per family). Train: shared families, seeds from 1000, other file/folder vocabulary and phrasings. Max cosine of a train request to a test request 0.82 (guard limit 0.9), no shared 8-gram. |
 | A4 Runner upgrades | done | 2026-11-15 | f221a3c | `eval/e2e/__main__.py` | `--suite --trials --temperature --url --contracts --shard --fresh --show --review`; cache with trajectories in `runs/e2e/<system>/<suite>_<commit>_*.jsonl`; hard tasks pin `ALFRED_TODAY` and use `ALFRED_TRASH`. A run with `--only` or a scripted agent no longer writes a report. |
 | A5 Checker validation | done | 2026-11-15 | f221a3c | `tests/eval/test_hard.py`; `python -m eval.e2e --suite hard --system oracle\|null\|wrong\|extra` | oracle 124/124 with invariants 0; null 0/124; wrong 0/124; extra 0/124. pytest 157 passed (4.5 min; the hard tests add about 3 min because Windows scans each new fixture file). |
-| A6 v3 baseline + headroom gate | done, failures of the second run not yet read | 2026-11-15 | 78fae0b | `eval/reports/hard_alfred-2b-v3-q4.{json,md}`; trajectories in `runs/e2e/alfred-2b-v3-q4/` | **v3 Q4: 78/124 (62.9%)**, shared 55/84, held-out 23/40, invariants 0/0/0: inside the 30-80% gate. First run (f6f1252) was 75/124; reading its failures found two suite flaws, fixed in 78fae0b for whole families: a prescribed zip name, and facts called 'access code' / 'booking reference' that v3 refused to read out. Still to do: read the 46 failures of the second run for checker false negatives (notes_and_reminders is still 4/7). |
-| A7 Owner review (30+ tasks) | todo | | | `uv run python -m eval.e2e --suite hard --review` | ready once the A6 failure read is finished |
-| A8 Freeze + dedup guard | todo | | | | current (not frozen) sha256 of `hard_test.jsonl` is printed by `python -m eval.e2e.hard --write` |
+| A6 v3 baseline + headroom gate | done | 2026-11-16 | b93fc93 (code of 562d51d) | `eval/reports/hard_alfred-2b-v3-q4.{json,md}`; trajectories in `runs/e2e/alfred-2b-v3-q4/hard_b93fc93_*.jsonl` | **v3 Q4: 73/124 (58.9%)**, shared 54/84, held-out 19/40, invariants 0/0/0, median turn 16 s: inside the 30-80% gate, no family change needed. Weakest: recover_empty 0/7, bulk_rename 0/8, act_on_list 1/8, find_then_act 2/7, memory_then_act 2/7. Three runs, each after a suite fix made for whole families and written down before the rerun: 75/124 (f6f1252) -> zip name no longer prescribed, 'access code' / 'booking reference' reworded because v3 refused them -> 78/124 (78fae0b) -> sandbox paths shortened from ~110 to ~55 characters -> 73/124. All 51 failure reasons read, 27 trajectories opened across the three runs: no checker false negative found; failures are v3's (wrong file picked, stops after a decline, no recall, name search not followed by a content search, "I have no rename tool", refusing to read a benign file). |
+| A7 Owner review (30+ tasks) | todo, waiting on the owner | | | `uv run python -m eval.e2e --suite hard --review` | tasks come one family after another, so the first 34 cover every family twice; y = right, s = skip and tell Claude what is wrong |
+| A8 Freeze + dedup guard | guard done (562d51d); freeze after A7 | | | `data/dedup.py` `Guard` reads `hard_test.jsonl` | `data.dedup --check` on v3's data: 0 near-duplicates. sha256 of the LF file now: 540d30b5...4305, final value recorded after the review. |
 | B5 hand-over: semantic-search families | todo | | | | after track 1B step B1 freezes the tool |
 
 ## Track 1B: Semantic search (branch `v4-1B`, worktree `.claude/worktrees/v4-1B`)
@@ -87,7 +87,7 @@ checkout while a machine job runs.
 | B2' Cache + start-up indexing (amendment 4) | done | 2026-11-15 | this commit | `semantic._embed`, `semantic.index_all`, `tools/server.py` | `ALFRED_EMBED_CACHE=<sqlite file>` caches vectors by model + text (rollouts and evals should set it). The tool server indexes all known folders in a background thread (config `index_on_start`, default true; one indexer at a time via `semantic.LOCK`). Not throttled: on a big Documents folder it will use the CPU for a long time at the speeds below. |
 | B4' Dev/test split, prompts, cut-off (amendments 2, 3) | done | 2026-11-15 | this commit | `eval/testsets/retrieval_scifact_{dev,test}.jsonl` (300 abstracts, 150 claims, 75 unanswerable each; no shared claims, 30 shared abstracts), `eval/reports/retrieval_scifact_{dev,test}.json`, `RESULTS.md` | **Dev** (choices made here): prompts help (embedding MRR 0.938 with, 0.881 without) so they stay; cut-off by the fixed rule = **0.346**. **Test, run once** (R@1 / R@5 / MRR): keyword 75.3 / 88.7 / 0.811, embedding 89.3 / 97.3 / 0.929, fused 88.7 / 94.0 / 0.914, embedding with the 0.346 cut-off 87.3 / 93.3 / 0.900. Paraphrased half (70): keyword 52.9 / 75.7, embedding 81.4 / 95.7, fused 77.1 / 87.1, with cut-off 77.1 / 87.1. **The cut-off costs more than it gives:** it returns nothing for 16 of 75 unanswerable claims (dev 19 of 75) and for 6 of 150 answerable ones (dev 4), and takes 2 points of R@1 and 4 of R@5 off plain embedding. **Owner removed the cut-off (amendment 7): `MIN_COS` = 0, shipped = the plain embedding row.** The experiment stays in the reports under `with_cutoff`. Indexing speed: 1.42 chunks/s (dev, prompts), 1.83 (dev, no prompts), 2.09 (test) with track 1A's baseline using the CPU; **no idle-machine measurement yet**. Query-time columns are noisy for the same reason. |
 | B5 Hand families to 1A | done | 2026-11-15 | this commit | the list below | |
-| Verify | todo | | | | pytest 159 passed (9 in `test_semantic.py`); `RESULTS.md` identical on a second `eval.results`; first-pass retrieval numbers reproduced exactly on the dev re-run. Left: owner tries 5 queries, idle-machine indexing speed, merge into `v4`. |
+| Verify | todo: only the owner's 5 queries are left | 2026-11-16 | this commit | `tests/tools/test_server.py` | Branch now contains `v4` (1A's suite) and 1C: pytest 177 passed on the combination, so merging into `v4` is a fast-forward of content with no conflicts left. `RESULTS.md` identical on a second `eval.results`. **Idle-machine indexing speed: 3.0 chunks/s** (857 chunks in 286 s, no other job running, 12 logical CPUs at 65% during the run; 1.4-2.1 with another eval running), so the 20 s budget per search embeds about 60 chunks. The tool is now also called through the real stdio server in the test suite. That check found a bug, fixed here: a search made while the start-up indexer held the lock returned nothing ('still indexing') at once, which every eval task would have hit because each starts a fresh server; the search now waits its turn (at most one 20 s budget). `data/gen/prompts.py`: the per-tool batch loop is pinned to the 25 tools of contracts 1.2 so tool 26 does not shift the ids of cached teacher batches; its own batches are step 2.7. |
 
 **For track 1A (B5): semantic-search task families**, tagged `new_capability`, scored separately (v2/v3 never saw
 tool 26; give them contracts 1.2). Fixtures need Ollama running; record whether the embedder was up (risk 24).
@@ -129,6 +129,8 @@ Left for other tracks (not part of 1C's code):
 
 ## Notes for whoever works next
 - Track branches cannot be named `v4/<track>` (git refuses while a branch `v4` exists); 1B uses `v4-1B`.
+- Run long eval jobs only after the last commit: the result cache is keyed by HEAD, so a commit made while two
+  shards start can split them across two keys.
 - A new hard-suite family is one function in `eval/e2e/hard.py` added to `SHARED` or `HELD_OUT`; then
   `python -m eval.e2e.hard --write` and the four scripted runs.
 - Shell heredocs in Git Bash turn a double backslash into a single one: write files that contain backslashes (Windows paths in tests)

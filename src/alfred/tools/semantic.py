@@ -35,7 +35,7 @@ BUDGET = 20.0  # seconds of indexing per search
 RRF_K, POOL, TOP = 60, 50, 5  # fusion constant, candidates per ranker, files returned
 MIN_COS = 0.0  # embedding hits below this are dropped. 0 = off: 0.346 (dev-half rule) cost recall and rejected
                # only ~1 in 4 unanswerable queries (eval/reports/retrieval_scifact_*.json), so the model judges
-LOCK = threading.Lock()  # one indexer at a time: a search skips its own update while the background one runs
+LOCK = threading.Lock()  # one indexer at a time: a search waits its turn behind the background one
 QUERY, DOC = "task: search result | query: {}", "title: {} | text: {}"  # embeddinggemma's retrieval prompts
 
 
@@ -228,12 +228,12 @@ def snippet(text: str, query: str, width: int = 160) -> str:
 
 def search_by_meaning(query, folder=None):
     roots = files._search_roots(folder)
-    if LOCK.acquire(blocking=False):
+    if LOCK.acquire(timeout=BUDGET):  # the background indexer holds it for at most one BUDGET at a time
         try:
             left, up = update(roots, time.monotonic() + BUDGET)
         finally:
             LOCK.release()
-    else:  # the background indexer is at work: search what is there
+    else:  # still busy: search what is there
         left, up = -1, embedder_up()
     hits = rank(query, roots)[:TOP]
     out = files.listing("", [f'{p}: "...{snippet(t, query)}..."' for p, t in hits])
