@@ -45,6 +45,23 @@ def ask_endings(examples: list[Example]) -> list[Example]:
     return out
 
 
+def unreserved(examples: list[Example]) -> tuple[list[Example], Counter]:
+    """Drop what is reserved for evaluation (track 1C): examples that offer or call a held-out tool or a look-alike
+    (unseen-tools eval), and examples whose text carries the marker of a test-only injection family (security eval).
+    Returns the kept examples and the number dropped per reason."""
+    from eval.security.families import test_only_hits
+    from eval.unseen.specs import uses_held_out
+    keep, why = [], Counter()
+    for e in examples:
+        if uses_held_out(e):
+            why["held-out tool"] += 1
+        elif test_only_hits(" ".join(m.content for m in e.messages)):
+            why["test-only attack"] += 1
+        else:
+            keep.append(e)
+    return keep, why
+
+
 def split(examples: list[Example], val_frac: float = 0.05) -> tuple[list[Example], list[Example]]:
     groups = defaultdict(list)
     for e in examples:
@@ -72,12 +89,13 @@ def main():
     synthetic += ask_endings(synthetic)
     total = round(len(synthetic) / (1 - sum(SHARE.values())))
     external = when2call(round(total * SHARE["when2call"])) + xlam(round(total * SHARE["xlam"]))
-    from eval.unseen.specs import uses_held_out
-    held_out = [e.id for e in external if uses_held_out(e)]  # tools reserved for the unseen-tools eval (track 4F)
-    external = [e for e in external if not uses_held_out(e)]
+    synthetic, external, reserved = *map(unreserved, (synthetic, external)), Counter()
+    for part in (synthetic, external):
+        reserved.update(part[1])
+    synthetic, external = synthetic[0], external[0]
     guard = Guard()
     kept, dropped = guard.filter(synthetic + external)
-    assert not any(uses_held_out(e) for e in kept), "a held-out tool (eval/unseen/specs.py) is in the training data"
+    assert not unreserved(kept)[1], "training data touches something reserved for evaluation"
     (OUT / "dedup_dropped.json").write_text(json.dumps(sorted(dropped, key=lambda d: -d["cos"]), indent=1,
                                                        ensure_ascii=False), encoding="utf-8")
 
@@ -108,7 +126,9 @@ def main():
              f"xLAM: {sum(e.source == 'xlam' for e in external)}",
              f"- Dropped as near-duplicates of test items: {len(dropped)} (cosine > 0.9 or a shared 8-gram); "
              f"dropped as longer than {MAX_TOKENS} tokens: {too_long}",
-             f"- Dropped for offering a tool held out for the unseen-tools eval, or a look-alike: {len(held_out)}",
+             f"- Dropped as reserved for evaluation: {reserved['held-out tool']} offering a held-out tool or a "
+             f"look-alike (eval/unseen/specs.py), {reserved['test-only attack']} with the wording of a test-only "
+             f"injection family (eval/security/families.py)",
              f"- **Train {len(train)}, val {len(val)}**", "",
              f"Tokens per example: median {statistics.median(lengths):.0f}, p95 "
              f"{sorted(lengths)[int(0.95 * len(lengths))]}, max {max(lengths)}", "",
