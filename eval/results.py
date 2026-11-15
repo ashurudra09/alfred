@@ -312,26 +312,32 @@ def main():
                   f"{r['queries']} expert claims, held-out half)", "",
                   "| Ranking | Recall@1 | Recall@5 | MRR | Paraphrased half: R@1 | R@5 | MRR | Query ms |",
                   "|---|---|---|---|---|---|---|---|"]
-        rows = list(r["modes"].items()) + [(f"**shipped**: embedding, cosine ≥ {r['cutoff']}", r["shipped"])]
-        for mode, m in rows:
+        label = {"embedding": "**embedding (shipped)**"}
+        for mode, m in r["modes"].items():
             a, p = m["all"], m["paraphrased"]
-            lines.append(f"| {mode} | {pct(a['recall@1'])} | {pct(a['recall@5'])} | {a['mrr']:.3f} | "
+            lines.append(f"| {label.get(mode, mode)} | {pct(a['recall@1'])} | {pct(a['recall@5'])} | {a['mrr']:.3f} | "
                          f"{pct(p['recall@1'])} | {pct(p['recall@5'])} | {p['mrr']:.3f} | {m['query_ms']} |")
-        sh, ds = r["shipped"], dev["shipped"]
+        c, dc = r["with_cutoff"], dev["with_cutoff"]
         lines += ["", f"Keyword = SQLite FTS5 BM25, embedding = embeddinggemma cosine, fused = reciprocal rank fusion of "
                   f"the two ([eval/retrieval.py](eval/retrieval.py)). \"Paraphrased\" = the "
                   f"{r['modes']['fused']['paraphrased']['n']} claims sharing the fewest content words with their abstract "
                   f"(below the median {r['overlap_median']:.2f}). SciFact: claims CC BY 4.0, abstracts ODC-By 1.0.", "",
-                  f"The method, the embedder prompts and the cut-off were chosen on a separate dev half "
-                  f"({dev['queries']} other claims; MRR there: keyword {dev['modes']['keyword']['all']['mrr']:.3f}, "
-                  f"embedding {dev['modes']['embedding']['all']['mrr']:.3f}, fused {dev['modes']['fused']['all']['mrr']:.3f}; "
+                  f"The method and the embedder prompts were chosen on a separate dev half ({dev['queries']} other "
+                  f"claims; MRR there: keyword {dev['modes']['keyword']['all']['mrr']:.3f}, embedding "
+                  f"{dev['modes']['embedding']['all']['mrr']:.3f}, fused {dev['modes']['fused']['all']['mrr']:.3f}; "
                   f"embedding without the prompts {dev['no_prompts']['modes']['embedding']['all']['mrr']:.3f}), then this "
-                  f"half was run once. Cut-off rule: 5th percentile of the first relevant chunk's cosine on dev. With it, "
-                  f"{sh['answerable_returning_nothing']} of {r['queries']} answerable claims return nothing, and "
-                  f"{sh['unanswerable_returning_nothing']} of {r['unanswerable']} claims whose abstract is not in the "
-                  f"corpus return nothing (dev: {ds['unanswerable_returning_nothing']} of {dev['unanswerable']}); for the "
-                  f"rest the model has to judge the snippets. Indexing ran at {dev['chunks_per_second']} chunks per "
-                  f"second on the laptop CPU ({dev['chunks']} chunks in {dev['index_seconds']:.0f} s, dev half).", ""]
+                  f"half was run once.", "",
+                  f"**A \"nothing found\" cut-off was tried and dropped.** Rule fixed on dev: cosine ≥ {r['cutoff']} (5th "
+                  f"percentile of true matches). On this half it returned nothing for "
+                  f"{c['unanswerable_returning_nothing']} of {r['unanswerable']} claims whose abstract is not in the "
+                  f"corpus, but also for {c['answerable_returning_nothing']} of {r['queries']} answerable ones, and "
+                  f"lowered recall@1 to {pct(c['all']['recall@1'])} and recall@5 to {pct(c['all']['recall@5'])} (dev: "
+                  f"{dc['unanswerable_returning_nothing']} of {dev['unanswerable']} and "
+                  f"{dc['answerable_returning_nothing']} of {dev['queries']}). The tool therefore always returns its "
+                  f"closest files and the model judges the snippets. This was decided after the test run, on a trade "
+                  f"the dev half had already shown.", "",
+                  f"Indexing ran at {dev['chunks_per_second']}–{r['chunks_per_second']} chunks per second on the laptop "
+                  f"CPU while another evaluation was using it.", ""]
 
     confusion_png()
     OUT.write_text("\n".join(lines), encoding="utf-8")

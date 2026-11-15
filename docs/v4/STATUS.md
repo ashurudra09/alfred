@@ -44,9 +44,6 @@ checkout while a machine job runs.
 | 6 Write-up | blocked | 5 | |
 
 ## Waiting on the owner
-- Track 1B: the "nothing found" cut-off (0.346) rejects about a quarter of unanswerable claims and costs 2 points
-  of recall@1 and 4 of recall@5 on the held-out half. Keep it, or set it to 0 and let the model judge the snippets?
-  (Dev alone already showed this trade: 19 of 75 rejected for 2 points of recall@5.)
 - Track 1B: try 5 semantic-search queries (verify step).
 - Later: review ~30 benchmark tasks in step A7.
 
@@ -74,9 +71,9 @@ checkout while a machine job runs.
 | B4 Retrieval eval (first pass, superseded by B4') | done | 2026-11-15 | 235e086 | | 150 claims, now the dev half: keyword 74.7 / 85.3 / 0.797, embedding 91.3 / 96.0 / 0.938, fused 85.3 / 94.0 / 0.896 (R@1 / R@5 / MRR). Led to the plan amendments of 2026-11-15. |
 | B3' Ranking per amendment 1 | done | 2026-11-15 | this commit | `semantic.rank(mode="auto")` | embedding order; BM25 hits interleaved for chunks without a vector; BM25 for everything when Ollama is down. `fused` stays as an eval-only mode. |
 | B2' Cache + start-up indexing (amendment 4) | done | 2026-11-15 | this commit | `semantic._embed`, `semantic.index_all`, `tools/server.py` | `ALFRED_EMBED_CACHE=<sqlite file>` caches vectors by model + text (rollouts and evals should set it). The tool server indexes all known folders in a background thread (config `index_on_start`, default true; one indexer at a time via `semantic.LOCK`). Not throttled: on a big Documents folder it will use the CPU for a long time at the speeds below. |
-| B4' Dev/test split, prompts, cut-off (amendments 2, 3) | done | 2026-11-15 | this commit | `eval/testsets/retrieval_scifact_{dev,test}.jsonl` (300 abstracts, 150 claims, 75 unanswerable each; no shared claims, 30 shared abstracts), `eval/reports/retrieval_scifact_{dev,test}.json`, `RESULTS.md` | **Dev** (choices made here): prompts help (embedding MRR 0.938 with, 0.881 without) so they stay; cut-off by the fixed rule = **0.346**. **Test, run once** (R@1 / R@5 / MRR): keyword 75.3 / 88.7 / 0.811, embedding 89.3 / 97.3 / 0.929, fused 88.7 / 94.0 / 0.914, **shipped (embedding, cosine >= 0.346) 87.3 / 93.3 / 0.900**. Paraphrased half (70): keyword 52.9 / 75.7, embedding 81.4 / 95.7, fused 77.1 / 87.1, shipped 77.1 / 87.1. **The cut-off costs more than it gives:** it returns nothing for 16 of 75 unanswerable claims (dev 19 of 75) and for 6 of 150 answerable ones (dev 4), and takes 2 points of R@1 and 4 of R@5 off plain embedding. Left as the rule produced it; owner decision in Waiting. Indexing speed: 1.42 chunks/s (dev, prompts), 1.83 (dev, no prompts), 2.09 (test) with track 1A's baseline using the CPU; **no idle-machine measurement yet**. Query-time columns are noisy for the same reason. |
+| B4' Dev/test split, prompts, cut-off (amendments 2, 3) | done | 2026-11-15 | this commit | `eval/testsets/retrieval_scifact_{dev,test}.jsonl` (300 abstracts, 150 claims, 75 unanswerable each; no shared claims, 30 shared abstracts), `eval/reports/retrieval_scifact_{dev,test}.json`, `RESULTS.md` | **Dev** (choices made here): prompts help (embedding MRR 0.938 with, 0.881 without) so they stay; cut-off by the fixed rule = **0.346**. **Test, run once** (R@1 / R@5 / MRR): keyword 75.3 / 88.7 / 0.811, embedding 89.3 / 97.3 / 0.929, fused 88.7 / 94.0 / 0.914, embedding with the 0.346 cut-off 87.3 / 93.3 / 0.900. Paraphrased half (70): keyword 52.9 / 75.7, embedding 81.4 / 95.7, fused 77.1 / 87.1, with cut-off 77.1 / 87.1. **The cut-off costs more than it gives:** it returns nothing for 16 of 75 unanswerable claims (dev 19 of 75) and for 6 of 150 answerable ones (dev 4), and takes 2 points of R@1 and 4 of R@5 off plain embedding. **Owner removed the cut-off (amendment 7): `MIN_COS` = 0, shipped = the plain embedding row.** The experiment stays in the reports under `with_cutoff`. Indexing speed: 1.42 chunks/s (dev, prompts), 1.83 (dev, no prompts), 2.09 (test) with track 1A's baseline using the CPU; **no idle-machine measurement yet**. Query-time columns are noisy for the same reason. |
 | B5 Hand families to 1A | done | 2026-11-15 | this commit | the list below | |
-| Verify | todo | | | | pytest 159 passed (9 in `test_semantic.py`); `RESULTS.md` identical on a second `eval.results`; first-pass retrieval numbers reproduced exactly on the dev re-run. Left: owner tries 5 queries, cut-off decision, idle-machine indexing speed, merge into `v4`. |
+| Verify | todo | | | | pytest 159 passed (9 in `test_semantic.py`); `RESULTS.md` identical on a second `eval.results`; first-pass retrieval numbers reproduced exactly on the dev re-run. Left: owner tries 5 queries, idle-machine indexing speed, merge into `v4`. |
 
 **For track 1A (B5): semantic-search task families**, tagged `new_capability`, scored separately (v2/v3 never saw
 tool 26; give them contracts 1.2). Fixtures need Ollama running; record whether the embedder was up (risk 24).
@@ -87,7 +84,8 @@ tool 26; give them contracts 1.2). Fixtures need Ollama running; record whether 
 4. *look-alike choice*: same fixture, but the request names the file or quotes an exact phrase, so `search_files` /
    `search_file_contents` is right; check: the answer is correct (the tool used isn't scored as wrong if the answer
    is right). 1 call.
-5. *nothing-matches*: no fixture file is about the topic; check: the answer says so, no file is acted on. 1–2 calls.
+5. *nothing-matches*: no fixture file is about the topic. The tool has no cut-off (amendment 7), so it still lists
+   its closest files; check: the answer says none fits, no file is acted on. 1–2 calls.
 6. *stale-index*: the file was edited or created after an earlier search in the same task; check: the new content is
    found (incremental re-index). 2 calls.
 

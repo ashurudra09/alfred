@@ -8,7 +8,7 @@ starts (`index_all`), so a search of a big folder may say it is still indexing; 
 through the same walk as search_files (sensitive and hidden paths never seen) plus an extension allow-list and a
 size cap.
 
-Ranking (plan amendment 1, from eval/retrieval.py): embedding cosine, with matches under MIN_COS dropped. BM25
+Ranking (plan amendments 1 and 7, from eval/retrieval.py): embedding cosine, no cut-off. BM25
 keyword hits stand in for chunks that have no embedding yet (interleaved by reciprocal rank, Cormack et al. 2009)
 and for everything when Ollama is not running, which the result says.
 """
@@ -33,7 +33,8 @@ MAX_BYTES = 5_000_000
 CHUNK, MAX_CHUNKS = 1000, 20  # characters per chunk, chunks per file
 BUDGET = 20.0  # seconds of indexing per search
 RRF_K, POOL, TOP = 60, 50, 5  # fusion constant, candidates per ranker, files returned
-MIN_COS = 0.346  # embedding hits below this are dropped: 5th percentile of true matches on the SciFact dev half
+MIN_COS = 0.0  # embedding hits below this are dropped. 0 = off: 0.346 (dev-half rule) cost recall and rejected
+               # only ~1 in 4 unanswerable queries (eval/reports/retrieval_scifact_*.json), so the model judges
 LOCK = threading.Lock()  # one indexer at a time: a search skips its own update while the background one runs
 QUERY, DOC = "task: search result | query: {}", "title: {} | text: {}"  # embeddinggemma's retrieval prompts
 

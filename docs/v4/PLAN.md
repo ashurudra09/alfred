@@ -430,3 +430,12 @@ and indexing ran at about 2.4 chunks per second on a shared CPU.
 6. **Corrected numbers.** Track 1B machine time is 1–2 h, not 30 min. Step 3.1: v3's longest example was 3,978
    tokens and tool 26 adds about 85 to every Alfred example, leaving about 33 tokens under the 4,096 limit before
    real tool outputs are added; expect drops and count them.
+
+### 2026-11-15, after the dev/test retrieval runs (owner's decision)
+7. **No "nothing found" cut-off.** The rule in amendment 3 gave 0.346. On the held-out half it returned nothing for
+   16 of 75 unanswerable claims and for 6 of 150 answerable ones, and took 2 points of recall@1 and 4 of recall@5
+   off plain embedding ranking (dev: 19 of 75, 4 of 150). `MIN_COS` is 0: the tool returns its five closest files
+   and the model decides from the snippets whether any of them fits. The decision was made after the test run, on
+   a trade the dev half had already shown; the experiment stays in the reports and in `RESULTS.md`. Consequence for
+   tracks 1A and 2: in "nothing matches" tasks the tool still lists files, so the check is that the model says
+   none fits and acts on none.

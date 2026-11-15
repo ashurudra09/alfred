@@ -62,23 +62,6 @@
     "relevant_median": 0.55,
     "unanswerable_top_median": 0.392
   },
-  "shipped": {
-    "all": {
-      "n": 150,
-      "recall@1": 0.9,
-      "recall@5": 0.94,
-      "mrr": 0.9203030303030302
-    },
-    "paraphrased": {
-      "n": 74,
-      "recall@1": 0.8108108108108109,
-      "recall@5": 0.8783783783783784,
-      "mrr": 0.8452088452088452
-    },
-    "query_ms": 97,
-    "answerable_returning_nothing": 4,
-    "unanswerable_returning_nothing": 19
-  },
   "no_prompts": {
     "set": "dev",
     "prompts": false,
@@ -143,7 +126,7 @@
       "relevant_median": 0.575,
       "unanswerable_top_median": 0.475
     },
-    "shipped": {
+    "with_cutoff": {
       "all": {
         "n": 150,
         "recall@1": 0.8133333333333334,
@@ -160,5 +143,22 @@
       "answerable_returning_nothing": 4,
       "unanswerable_returning_nothing": 15
     }
+  },
+  "with_cutoff": {
+    "all": {
+      "n": 150,
+      "recall@1": 0.9,
+      "recall@5": 0.94,
+      "mrr": 0.9203030303030302
+    },
+    "paraphrased": {
+      "n": 74,
+      "recall@1": 0.8108108108108109,
+      "recall@5": 0.8783783783783784,
+      "mrr": 0.8452088452088452
+    },
+    "query_ms": 97,
+    "answerable_returning_nothing": 4,
+    "unanswerable_returning_nothing": 19
   }
 }

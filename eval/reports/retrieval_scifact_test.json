@@ -61,7 +61,7 @@
     "relevant_median": 0.557,
     "unanswerable_top_median": 0.378
   },
-  "shipped": {
+  "with_cutoff": {
     "all": {
       "n": 150,
       "recall@1": 0.8733333333333333,

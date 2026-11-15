@@ -101,10 +101,13 @@ Pinned `bfcl-eval==2026.3.23`, non-thinking mode, AST checker; Qwen3.5 handler i
 | Ranking | Recall@1 | Recall@5 | MRR | Paraphrased half: R@1 | R@5 | MRR | Query ms |
 |---|---|---|---|---|---|---|---|
 | keyword | 75.3% | 88.7% | 0.811 | 52.9% | 75.7% | 0.628 | 41 |
-| embedding | 89.3% | 97.3% | 0.929 | 81.4% | 95.7% | 0.875 | 296 |
+| **embedding (shipped)** | 89.3% | 97.3% | 0.929 | 81.4% | 95.7% | 0.875 | 296 |
 | fused | 88.7% | 94.0% | 0.914 | 77.1% | 87.1% | 0.823 | 151 |
-| **shipped**: embedding, cosine ≥ 0.346 | 87.3% | 93.3% | 0.900 | 77.1% | 87.1% | 0.812 | 97 |
 
 Keyword = SQLite FTS5 BM25, embedding = embeddinggemma cosine, fused = reciprocal rank fusion of the two ([eval/retrieval.py](eval/retrieval.py)). "Paraphrased" = the 70 claims sharing the fewest content words with their abstract (below the median 0.50). SciFact: claims CC BY 4.0, abstracts ODC-By 1.0.
 
-The method, the embedder prompts and the cut-off were chosen on a separate dev half (150 other claims; MRR there: keyword 0.797, embedding 0.938, fused 0.896; embedding without the prompts 0.881), then this half was run once. Cut-off rule: 5th percentile of the first relevant chunk's cosine on dev. With it, 6 of 150 answerable claims return nothing, and 16 of 75 claims whose abstract is not in the corpus return nothing (dev: 19 of 75); for the rest the model has to judge the snippets. Indexing ran at 1.42 chunks per second on the laptop CPU (857 chunks in 602 s, dev half).
+The method and the embedder prompts were chosen on a separate dev half (150 other claims; MRR there: keyword 0.797, embedding 0.938, fused 0.896; embedding without the prompts 0.881), then this half was run once.
+
+**A "nothing found" cut-off was tried and dropped.** Rule fixed on dev: cosine ≥ 0.346 (5th percentile of true matches). On this half it returned nothing for 16 of 75 claims whose abstract is not in the corpus, but also for 6 of 150 answerable ones, and lowered recall@1 to 87.3% and recall@5 to 93.3% (dev: 19 of 75 and 4 of 150). The tool therefore always returns its closest files and the model judges the snippets. This was decided after the test run, on a trade the dev half had already shown.
+
+Indexing ran at 1.42–2.09 chunks per second on the laptop CPU while another evaluation was using it.

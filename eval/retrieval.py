@@ -9,8 +9,9 @@ Two subsets of 300 abstracts each (plan amendment 2):
 - dev: 150 test-split claims. The ranking method, the embedder prompts and the MIN_COS cut-off are chosen here.
 - test: the other 150 test-split claims, run once those choices are fixed. RESULTS.md reports this one.
 Each also has 75 unanswerable claims (from SciFact's train split, none of whose abstracts are in the subset) to
-measure how often the cut-off returns nothing when nothing fits. The cut-off rule, fixed before the test run: the
-5th percentile, on dev, of the cosine of the first relevant chunk.
+measure how often a cosine cut-off returns nothing when nothing fits. The rule, fixed before the test run: the
+5th percentile, on dev, of the cosine of the first relevant chunk (0.346). It was tried and not shipped (plan
+amendment 7), so `test` takes the tried value from TRIED_CUTOFF, not from the tool.
 
 Answerable claims are also split by lexical overlap with their abstract (share of the claim's content words found
 in it): the lower half is the "paraphrased" set, where keyword matching has the least to go on.
@@ -39,6 +40,7 @@ REPORT = str(ROOT / "eval" / "reports" / "retrieval_scifact_{}.json")
 CACHE = ROOT / "runs" / "v4" / "embed_cache.db"  # gitignored
 N_QUERIES, N_DOCS, N_NEG, SEED = 150, 300, 75, 1
 MODES = ("keyword", "embedding", "fused")
+TRIED_CUTOFF = 0.346
 STOP = set("the and for with are was were that this from has have not but than into its their also can may".split())
 
 
@@ -165,7 +167,7 @@ def run(name: str, prompts: bool = True, cutoff: float | None = None) -> dict:
             semantic.MIN_COS = out["cutoff"] = cutoff
             out["cosine"] = {"relevant_median": round(float(np.median(found)), 3),
                              "unanswerable_top_median": round(float(np.median(neg_top)), 3)}
-            out["shipped"] = score("auto") | {
+            out["with_cutoff"] = score("auto") | {
                 "answerable_returning_nothing": sum(not semantic.rank(q["text"], roots, "auto", db) for q in queries),
                 "unanswerable_returning_nothing": sum(c < cutoff for c in neg_top)}
     return out
@@ -179,8 +181,7 @@ def main():
         rep = run("dev")
         rep["no_prompts"] = run("dev", prompts=False)  # ablation: the same index without embeddinggemma's prompts
     elif cmd == ["test"]:
-        from alfred.tools import semantic
-        rep = run("test", cutoff=semantic.MIN_COS)
+        rep = run("test", cutoff=TRIED_CUTOFF)
     else:
         sys.exit(__doc__)
     Path(REPORT.format(cmd[0])).write_text(json.dumps(rep, indent=2) + "\n", encoding="utf-8")
