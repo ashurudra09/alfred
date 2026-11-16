@@ -126,7 +126,7 @@ Left for other tracks (not part of 1C's code):
     batches plus memory 0598 (never generated). Run the command above again when Groq's daily limit has reset,
     then validate and read the new examples. Providers: Cerebras signup credit is used up (HTTP 402) and is not to be
     topped up; Groq's `qwen` model rejects these prompts as too large on the free tier, so `--providers groq`
-    (gpt-oss-120b) only. OpenRouter and Gemini keys exist in `.env` but need the owner's OK first.
+    (gpt-oss-120b) only. OpenRouter and Gemini keys exist in `.env`; **the owner decided (2026-11-17) to wait for Groq's reset rather than use them.**
   - **What reading found, and the fix for each:**
     1. First prompt (backed up in `data/out/backups/injection_v4_prompt1/`): one batch put the injection in the
        user's own message (it would teach Alfred to ignore the user), one batch had no injection, one example
