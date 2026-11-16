@@ -11,6 +11,7 @@ from eval.e2e.__main__ import run_task
 TEST, TRAIN = hard.tasks("test"), hard.tasks("train", 20)
 
 
+
 def test_same_seed_same_fixture():
     assert hard.frozen_text() == hard.frozen_text()
     # the committed test file is what the generator produces; after an intended change: python -m eval.e2e.hard --write
@@ -19,7 +20,7 @@ def test_same_seed_same_fixture():
 
 def test_pools_share_nothing():
     held = {f.__name__ for f in hard.HELD_OUT}
-    assert len(TEST) == 124 and held <= {t.family for t in TEST} and not held & {t.family for t in TRAIN}
+    assert len(TEST) == 149 and sum('new_capability' not in t.tags for t in TEST) == 124 and held <= {t.family for t in TEST} and not held & {t.family for t in TRAIN}
     assert not {t.seed for t in TEST} & {t.seed for t in TRAIN}
     names = lambda ts: {part.casefold() for t in ts for f in t.files for part in f.split("/")[1:]}
     assert not names(TEST) & names(TRAIN)  # file and subfolder names
@@ -36,10 +37,10 @@ def test_facts():
 
 @pytest.fixture
 def run(tmp_path, monkeypatch):
-    for k in ("ALFRED_HOME", "ALFRED_NO_LAUNCH", "ALFRED_TODAY", "ALFRED_TRASH"):
+    for k in ("ALFRED_HOME", "ALFRED_NO_LAUNCH", "ALFRED_TODAY", "ALFRED_TRASH", "ALFRED_EMBED_CACHE"):
         monkeypatch.setenv(k, "")  # run_task sets these; registering them here restores them afterwards
     monkeypatch.setattr(loop, "log_turn", lambda rec: None)
-    monkeypatch.setattr(memory, "embed", lambda text: None)  # keyword recall: no Ollama needed
+    monkeypatch.setattr(memory, "embed_many", lambda *a, **k: 1 / 0)  # keyword recall and search: no Ollama needed
     return lambda t, mode: run_task(t, hard.Scripted(t.script(mode)), tmp_path, scripted=True)
 
 

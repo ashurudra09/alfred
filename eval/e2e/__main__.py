@@ -33,7 +33,7 @@ from alfred.agent.loop import drive, run_turn
 from alfred.agent.mcp_client import LocalTools, McpTools
 from alfred.contracts.export import load
 from alfred.contracts.prompt import render_system_prompt
-from alfred.tools import journal, memory, productivity
+from alfred.tools import journal, memory, productivity, semantic
 from alfred.tools.guards import known_folders, now
 from eval.e2e import hard
 from eval.e2e.tasks import BASE_FILES, FOLDERS, TASKS
@@ -112,8 +112,9 @@ def run_task(task, backend, base, config=None, scripted=False, root=None):
     home = setup(task, root, config)
     env = {"ALFRED_HOME": str(home), "ALFRED_NO_LAUNCH": "1"}
     if task.today:  # hard suite: pinned date, and deletes go to a sandbox instead of the real Recycle Bin
-        env |= {"ALFRED_TODAY": task.today, "ALFRED_TRASH": str(root / "trash")}
-    for k in ("ALFRED_TODAY", "ALFRED_TRASH"):
+        env |= {"ALFRED_TODAY": task.today, "ALFRED_TRASH": str(root / "trash"),
+                "ALFRED_EMBED_CACHE": str(ROOT / "runs" / "embed_cache.sqlite")}
+    for k in ("ALFRED_TODAY", "ALFRED_TRASH", "ALFRED_EMBED_CACHE"):
         os.environ.pop(k, None)
     os.environ.update(env)
     for fact in task.memories:
@@ -180,7 +181,9 @@ def summary_md(r) -> str:
              f"- **Pass rate: {r['passed']}/{r['n']} ({100 * r['pass_rate']:.1f}%)**"]
     if hard_run:
         lines.append(f"- {r['trials']} trial(s) per task at temperature {r['temperature']}, tool list "
-                     f"{r['contracts'] or 'current'}; the task count includes every trial")
+                     f"{r['contracts'] or 'current'}; the task count includes every trial and leaves out the "
+                     f"`new_capability` (semantic search) tasks, which have their own row; embedding model "
+                     f"{'running' if r.get('embedder_up') else 'not running'}")
     if r["injection_n"]:
         lines.append(f"- Injection resistance: {r['injection_resisted']}/{r['injection_n']}")
     lines += [f"- Safety invariants: " + ", ".join(f"{k} = {v}" for k, v in r["invariants"].items()),
@@ -249,6 +252,8 @@ def main():
     ap.add_argument("--review", action="store_true")
     a = ap.parse_args()
     tasks = [t for t in (hard.tasks("test") if a.suite == "hard" else TASKS) if not a.only or t.id in a.only.split(",")]
+    if a.contracts:  # a model trained on an older tool list is not run on tasks that need a newer tool
+        tasks = [t for t in tasks if "new_capability" not in t.tags]
     if a.show or a.review:
         return review(tasks) if a.review else [show(t) for t in tasks] and None
     scripted, base = a.system in SCRIPTED, ROOT / "runs" / "e2e" / a.system
@@ -256,9 +261,10 @@ def main():
     config = {"temperature": a.temperature}
     if a.contracts:
         old = {t["name"] for t in load(a.contracts)["tools"]}
-        config["disabled_tools"] = [t["name"] for t in load()["tools"] if t["name"] not in old]
+        config |= {"contracts": a.contracts,
+                   "disabled_tools": [t["name"] for t in load()["tools"] if t["name"] not in old]}
     if scripted:
-        memory.embed = lambda text: None  # keyword recall: the checker validation needs no Ollama
+        memory.embed_many = lambda *a, **k: 1 / 0  # keyword recall and search: checker validation needs no Ollama
     else:
         backend = Backend(a.backend)
         if a.url:
@@ -295,11 +301,13 @@ def main():
     if len(results) < len(jobs):
         return print(f"{len(results)}/{len(jobs)} jobs done; the report is written when the other shards finish.")
     inj = [r for r in results if "injection" in r["tags"]]
+    core = [r for r in results if "new_capability" not in r["tags"]] or results  # tool-26 tasks: their own row
     tags = sorted({t for r in results for t in r["tags"]})
     report = {
-        "system": a.system, "suite": a.suite, "date": time.strftime("%Y-%m-%dT%H:%M:%S"), "n": len(results),
+        "system": a.system, "suite": a.suite, "date": time.strftime("%Y-%m-%dT%H:%M:%S"), "n": len(core),
+        "embedder_up": a.suite == "hard" and not scripted and semantic.embedder_up(),
         "trials": a.trials, "temperature": a.temperature, "contracts": a.contracts, "commit": commit,
-        "passed": sum(r["ok"] for r in results), "pass_rate": round(sum(r["ok"] for r in results) / len(results), 4),
+        "passed": sum(r["ok"] for r in core), "pass_rate": round(sum(r["ok"] for r in core) / len(core), 4),
         "injection_resisted": sum(r["ok"] for r in inj), "injection_n": len(inj),
         "invariants": {k: sum(r["invariants"][k] for r in results) for k in results[0]["invariants"]},
         "median_turn_secs": round(statistics.median(s for r in results for s in r["turn_secs"]), 2),

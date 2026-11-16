@@ -6,7 +6,8 @@ the confirm policy (only the requested change is approved), the expected end sta
 the scripted oracle and the scripted agents that must fail (null, wrong, extra).
 
 Two pools share the shared families but nothing else: seeds, file names, folder names and phrasings are disjoint.
-`test` also has held-out families that no training rollout uses. The families come from the failure classes in
+`test` also has held-out families that no training rollout uses. Semantic-search families (tool 26) are tagged
+`new_capability` and scored apart from the 124 core tasks. The families come from the failure classes in
 data/to_fix.md (issues 004, 006-008, 011-018).
 
   uv run python -m eval.e2e.hard --write     # regenerate eval/e2e/hard_test.jsonl and print its SHA-256
@@ -626,6 +627,132 @@ def bulk_rename(w):
                  [("move", f, f"{folder}/{pre}_{base(f)}") for f in files])]
 
 
+# --- semantic-search families (both pools; tagged new_capability and reported apart: v2/v3 never saw tool 26) ---
+# Each document: (how the user refers to it, its text, a question about it, the answer, an exact phrase in it).
+# The reference shares no content word with the text or the file name, so only search_by_meaning finds it.
+
+DOCS = {
+    "test": [
+        ("cutting our cloud bill", "We should switch the database servers to reserved instances and shut down idle "
+         "staging machines at night. Finance expects this to save about 4,200 a month. Owner: Priya.",
+         "How much a month is it expected to save?", 4200, "reserved instances"),
+        ("getting fitter before the summer", "Training plan: three runs a week, starting at 3 km and adding half a "
+         "kilometre every Sunday. Strength session on Wednesdays. Target race is the 10 km on 14 June.",
+         "Which weekday is the strength session?", "Wednesday", "strength session"),
+        ("what to feed the neighbours' pets while they are away", "Luna gets half a cup of dry kibble at 7 am and 6 pm. "
+         "Milo the tabby only eats the salmon pouches. The vet's number is on the fridge. The spare key is under the "
+         "blue flowerpot.", "Where is the spare key?", "flowerpot", "salmon pouches"),
+        ("fixing the leak in the bathroom", "Plumber visit booked with Hargreaves & Son for Thursday. The tap washer in "
+         "the upstairs sink needs replacing and the seal around the shower tray has perished. Quote: 185 including "
+         "parts.", "How much was the quote?", 185, "shower tray"),
+        ("our trip to Japan", "Flights land at Narita on the 3rd. Two nights in Asakusa, then the bullet train to "
+         "Kyoto. Daniel has the ryokan details. The rail passes must be collected at the airport.",
+         "Which city do we take the bullet train to?", "Kyoto", "bullet train"),
+        ("hiring a new developer", "Shortlist for the backend engineer role: Okafor, Lindqvist and Meyer. Technical "
+         "interviews are in week 12; the take-home exercise is the rate limiter task. The salary band tops out at 95k.",
+         "In which week are the technical interviews?", 12, "rate limiter"),
+        ("saving for retirement", "Pension contributions go up to 8% from April. Move the old workplace scheme into the "
+         "index fund once the transfer form arrives. Review the allocation every January with Farah.",
+         "Who do I review the allocation with?", "Farah", "index fund"),
+        ("learning to play the piano", "Lesson with Mrs Abernathy every Tuesday at 5. Practise the C major scales hands "
+         "together and the first page of the minuet. Metronome at 72.",
+         "What should the metronome be set to?", 72, "minuet")],
+    "train": [
+        ("organising the wedding", "Venue deposit paid to Larkfield Barn. The florist needs final numbers by the 20th: "
+         "84 guests. The band plays two sets; first dance is at 8:30. The seating chart is still missing table nine.",
+         "How many guests are coming?", 84, "seating chart"),
+        ("looking after the car", "MOT is due in March. The front tyres are down to 3 mm and the rear wiper blade is "
+         "split. The garage quoted 240 for the timing belt.", "What did the garage quote for the timing belt?", 240,
+         "wiper blade"),
+        ("growing vegetables", "Sow the tomatoes indoors in February and harden them off in May. Beans go along the "
+         "south fence. Slugs took the lettuces last year, so use copper tape on the raised beds.",
+         "What goes along the south fence?", "beans", "copper tape"),
+        ("moving to a new flat", "Removal van booked for the 28th with Castle & Reed. Meter readings to be taken at "
+         "noon. Keys are collected from the letting agent on Friday; the broadband engineer comes on Monday.",
+         "On which day are the keys collected?", "Friday", "letting agent"),
+        ("my kid's school stuff", "Parents' evening is on the 12th at 6 pm with Mr Okonkwo. The reading book must be "
+         "returned every Thursday. PE kit: navy shorts and white trainers. The science museum outing costs 14.",
+         "How much does the museum outing cost?", 14, "navy shorts"),
+        ("making the website faster", "Largest contentful paint is 4.1 s on mobile. Compress the hero image, lazy-load "
+         "the carousel and move the fonts to a CDN. Target is under 2.5 s by the next release.",
+         "What is the target?", 2.5, "hero image"),
+        ("my health check-up", "Blood pressure was 128 over 82. Cholesterol slightly raised; Dr Anand suggests oats and "
+         "a re-test in six months. Flu jab booked for October.", "Which doctor did I see?", "Anand", "flu jab"),
+        ("the book club", "Next read is The Remains of the Day; we meet at Sunita's on the last Thursday. Bring "
+         "snacks. The vote for January's title closes on the 15th.", "At whose place do we meet?", "Sunita",
+         "bring snacks")],
+}
+ABSENT = {"test": ["renewing my passport", "the roof insulation grant", "my chess openings"],
+          "train": ["adopting a dog", "the marathon in Berlin", "tax on the rental income"]}
+# ponytail: "says none fits" is a keyword test on the answer (as eval/score.py classifies text replies); the hard
+# part of the check is that nothing may be proposed.
+NONE_FITS = ("couldn't", "could not", "can't", "cannot", "didn't", "did not", "don't", "no ", "not ", "none",
+             "nothing", "unable")
+
+
+def _docs(w):
+    """Four of the pool's documents under one main folder, with neutral file names. Returns (folder, [(path, doc)])."""
+    top = w.top()
+    places = [w.folder(top, n=1), w.folder(top, n=1), top]
+    docs = w.rng.sample(DOCS[w.pool], 4)
+    return top, [(w.file(places[i % 3], w.pick("words"), ext=w.rng.choice(["md", "txt"]), text=d[1] + "\n"), d)
+                 for i, d in enumerate(docs)]
+
+
+def topic_find(w):
+    _, ((path, doc), *_) = _docs(w)
+    text = w.say(["Which file has my notes about {t}?", "I wrote something down about {t}. What is that file called?"],
+                 ["name the document where I kept notes on {t}", "there's a write-up of mine on {t}; tell me its filename"],
+                 t=doc[0])
+    return [Turn(text, [("search_by_meaning", {"query": doc[0]})], facts=[base(path)])]
+
+
+def topic_then_act(w):
+    top, ((path, doc), *_) = _docs(w)
+    dest, kind = w.top(top), w.cycle("move", "recycle", "copy")
+    op = ("recycle", path) if kind == "recycle" else (kind, path, f"{dest}/{base(path)}")
+    text = {
+        "move": w.say(["Find my notes about {t} and move that file to {dest}.",
+                       "The file where I wrote about {t} should be moved to {dest}."],
+                      ["my write-up on {t} belongs in {dest}, shift it there",
+                       "look for the document on {t} and relocate it into {dest}"], t=doc[0], dest=dest),
+        "recycle": w.say(["Find my notes about {t} and delete that file.",
+                          "I no longer need the file where I wrote about {t}. Send it to the recycle bin."],
+                         ["my write-up on {t} can go, trash it", "look for the document on {t} and bin it"], t=doc[0]),
+        "copy": w.say(["Find my notes about {t} and put a copy of that file in {dest}.",
+                       "Copy the file where I wrote about {t} to {dest}."],
+                      ["my write-up on {t} needs a duplicate in {dest}",
+                       "look for the document on {t} and clone it into {dest}"], t=doc[0], dest=dest)}[kind]
+    return [Turn(text, [("search_by_meaning", {"query": doc[0]})], [op])]
+
+
+def topic_then_read(w):
+    _, ((path, doc), *_) = _docs(w)
+    text = w.say(["{q} I wrote it down in my notes about {t}.", "Check my notes about {t}. {q}"],
+                 ["from my write-up on {t}: {q}", "{q} (it should be in the document I keep on {t})"], q=doc[2], t=doc[0])
+    return [Turn(text, [("search_by_meaning", {"query": doc[0]}), ("read_file", {"path": P(path)})], facts=[doc[3]])]
+
+
+def exact_phrase(w):  # the look-alike: a quoted phrase is a job for search_file_contents; only the answer is scored
+    top, ((path, doc), *_) = _docs(w)
+    text = w.say(["Which file in {top} contains the exact phrase '{p}'?",
+                  "One of my files in {top} has the words '{p}' in it. Which one?"],
+                 ["search {top} for the literal text '{p}' and name the file", "'{p}' appears in a file under {top}; which"],
+                 top=top, p=doc[4])
+    return [Turn(text, [("search_file_contents", {"text": doc[4], "folder": top})], facts=[base(path)])]
+
+
+def nothing_matches(w):  # the tool always lists its closest files; none is about this, so none may be touched
+    top, _ = _docs(w)
+    topic, dest = w.rng.choice(ABSENT[w.pool]), w.top(top)
+    text = w.say(["Find my notes about {t} and move that file to {dest}.",
+                  "The file where I wrote about {t} should be moved to {dest}."],
+                 ["my write-up on {t} belongs in {dest}, shift it there",
+                  "look for the document on {t} and relocate it into {dest}"], t=topic, dest=dest)
+    return [Turn(text, [("search_by_meaning", {"query": topic})], facts=[NONE_FITS])]
+
+
+SEMANTIC = [topic_find, topic_then_act, topic_then_read, exact_phrase, nothing_matches]
 SHARED = [find_then_act, read_then_compute, pick_extreme, all_except, filtered_bulk, memory_then_act, two_part,
           recover_empty, ask_then_act, decline_then_continue, notes_and_reminders, count_and_size]
 HELD_OUT = [compare_files, act_on_list, deadline_reminder, conditional_act, bulk_rename]
@@ -636,16 +763,18 @@ def build(fn, pool: str, seed: int) -> HardTask:
     steps = fn(w)
     spare = [w.file(t) for t in FOLDERS for _ in range(2)][0]  # clutter in the main folders
     return HardTask(f"{fn.__name__}-{seed:04d}", [], None, files=w.files, base=False, today=w.today.isoformat(),
-                    tags=["held_out" if fn in HELD_OUT else "shared", fn.__name__], mtimes=w.mtimes,
+                    tags=["held_out" if fn in HELD_OUT else "new_capability" if fn in SEMANTIC else "shared", fn.__name__], mtimes=w.mtimes,
                     memories=w.memories, notes=w.notes, family=fn.__name__, pool=pool, seed=seed, steps=steps,
                     spare=spare)
 
 
 def tasks(pool: str = "test", per_family: int | None = None) -> list[HardTask]:
-    """test: 7 per shared family and 8 per held-out family (124). train: shared families only, other seeds."""
+    """test: 7 per shared family, 8 per held-out family (124), then 5 per semantic-search family (25).
+    train: shared and semantic-search families only, other seeds."""
     if pool == "train":
-        return [build(fn, pool, TRAIN_SEED0 + i) for fn in SHARED for i in range(per_family or 25)]
-    return [build(fn, pool, i) for fns, n in ((SHARED, 7), (HELD_OUT, 8)) for fn in fns for i in range(per_family or n)]
+        return [build(fn, pool, TRAIN_SEED0 + i) for fn in SHARED + SEMANTIC for i in range(per_family or 25)]
+    return [build(fn, pool, i) for fns, n in ((SHARED, 7), (HELD_OUT, 8), (SEMANTIC, 5)) for fn in fns
+            for i in range(per_family or n)]
 
 
 def frozen_text() -> str:
