@@ -1,4 +1,11 @@
 {
+ "hard:owner": {
+  "all_except-0000": "6b896c1079b5",
+  "filtered_bulk-0000": "ffe6c99cdfc4",
+  "find_then_act-0000": "820ee605ff21",
+  "pick_extreme-0000": "9a8c873150cc",
+  "read_then_compute-0000": "71fd15eacb66"
+ },
  "indomain": {
   "ask-01": "b0a7ad2c411b",
   "ask-02": "db20d55ff8e7",
