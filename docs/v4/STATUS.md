@@ -31,20 +31,20 @@ checkout while a machine job runs.
 | Track | State | Prerequisites | Claimed by / branch |
 |---|---|---|---|
 | 0 Setup | done (2026-11-15) | none | |
-| 1A Benchmark + generator | in progress (claimed 2026-11-15) | 0 | main checkout, branch `v4` directly: git cannot create `v4/1A` while a branch named `v4` exists |
+| 1A Benchmark + generator | done (2026-11-17) | 0 | main checkout, branch `v4` directly: git cannot create `v4/1A` while a branch named `v4` exists |
 | 1B Semantic search | done (2026-11-16, merged in 78a14dc) | 0 | was branch `v4-1B` |
 | 1C Masking + frozen lists | done (2026-11-16, merged in 7aab2fe) | 0 | was branch `v4-1C` |
-| 2 On-policy data | blocked | 1A, 1B | |
+| 2 On-policy data | ready | 1A, 1B | |
 | 3 Mix + train | blocked | 2, 1C, owner's go per run | |
-| 4D Grammar | blocked | 1A (step D2 also needs 4G's baselines) | |
-| 4E Security | blocked | 1A, 1C | |
-| 4F Unseen-tools eval | blocked | 1A, 1C | |
-| 4G Reliability + baselines | blocked | 1A | |
+| 4D Grammar | ready | 1A (step D2 also needs 4G's baselines) | |
+| 4E Security | ready | 1A, 1C | |
+| 4F Unseen-tools eval | ready | 1A, 1C | |
+| 4G Reliability + baselines | ready | 1A | |
 | 5 Evaluate v4 | blocked | 3 (run A downloaded), 4D, 4E, 4F, 4G | |
 | 6 Write-up | blocked | 5 | |
 
 ## Waiting on the owner
-- **Track 1A step A7:** review at least 30 hard-suite tasks with `uv run python -m eval.e2e --suite hard --review`.
+- Nothing from track 1A.
 
 ## Machine
 - Idle since 2026-11-17. (Eval servers: :8081, :8082. The owner's UI server on :8080 is never touched.)
@@ -70,8 +70,9 @@ checkout while a machine job runs.
 | A4 Runner upgrades | done | 2026-11-15 | f221a3c | `eval/e2e/__main__.py` | `--suite --trials --temperature --url --contracts --shard --fresh --show --review`; cache with trajectories in `runs/e2e/<system>/<suite>_<commit>_*.jsonl`; hard tasks pin `ALFRED_TODAY` and use `ALFRED_TRASH`. A run with `--only` or a scripted agent no longer writes a report. |
 | A5 Checker validation | done | 2026-11-15 | f221a3c | `tests/eval/test_hard.py`; `python -m eval.e2e --suite hard --system oracle\|null\|wrong\|extra` | oracle 124/124 with invariants 0; null 0/124; wrong 0/124; extra 0/124. pytest 157 passed (4.5 min; the hard tests add about 3 min because Windows scans each new fixture file). |
 | A6 v3 baseline + headroom gate | done | 2026-11-16 | b93fc93 (code of 562d51d) | `eval/reports/hard_alfred-2b-v3-q4.{json,md}`; trajectories in `runs/e2e/alfred-2b-v3-q4/hard_b93fc93_*.jsonl` | **v3 Q4: 73/124 (58.9%)**, shared 54/84, held-out 19/40, invariants 0/0/0, median turn 16 s: inside the 30-80% gate, no family change needed. Weakest: recover_empty 0/7, bulk_rename 0/8, act_on_list 1/8, find_then_act 2/7, memory_then_act 2/7. Three runs, each after a suite fix made for whole families and written down before the rerun: 75/124 (f6f1252) -> zip name no longer prescribed, 'access code' / 'booking reference' reworded because v3 refused them -> 78/124 (78fae0b) -> sandbox paths shortened from ~110 to ~55 characters -> 73/124. All 51 failure reasons read, 27 trajectories opened across the three runs: no checker false negative found; failures are v3's (wrong file picked, stops after a decline, no recall, name search not followed by a content search, "I have no rename tool", refusing to read a benign file). |
-| A7 Owner review (30+ tasks) | running: 5 of 30 reviewed (c3dc0c1), all shared families; no held-out or semantic-search task yet | 2026-11-16 | | `uv run python -m eval.e2e --suite hard --review` | reviewed: all_except, filtered_bulk, find_then_act, pick_extreme, read_then_compute (one each). Still needed: 25 more, with at least one from each held-out family. |
-| A8 Freeze + dedup guard | guard done (562d51d); freeze after A7 | | | `data/dedup.py` `Guard` reads `hard_test.jsonl` | `data.dedup --check` on v3's data: 0 near-duplicates. The file's sha256 is recorded here after the review. |
+| A7 Review of every task | done | 2026-11-17 | 32011d2 | `eval/testsets/reviews.json` (`hard:owner`: 5 by the owner, c3dc0c1) | The owner reviewed 5 tasks and then had Claude read all 149 and bring back only the doubtful ones: 137 clear, 12 raised. Owner's decisions: (1) oldest / newest go by the modified date; when a file name points the other way (`..._old`, an earlier year) the model should act and say so, so the answer must name that file (pick_extreme-0000, -0004); (2) after a declined delete the rest of the request is still carried out (decline_then_continue unchanged); (3) nothing_matches also needs a search to have run. Claude's own change, reported to the owner: 'the old one' is never the follow-up answer in ask_then_act (-0004, -0005 now name the other file). 9 lines of `hard_test.jsonl` changed. |
+| A6' v3 baseline on the reviewed suite | done | 2026-11-17 | 32011d2 | `eval/reports/hard_alfred-2b-v3-q4.{json,md}`; trajectories `runs/e2e/alfred-2b-v3-q4/hard_32011d2_*.jsonl` | **v3 Q4: 71/124 (57.3%)**, shared 53/84, held-out 18/40, invariants 0/0/0, embedder up. Was 73/124 before the review fixes: pick_extreme-0000 now fails (right file deleted, no word about `manual_2023.png`), and act_on_list went 1/8 -> 0/8 on an unchanged task. This is the baseline v4 is compared with. |
+| A8 Freeze + dedup guard | guard done (562d51d); frozen 2026-11-17 | 2026-11-17 | this commit | `eval/e2e/hard_test.jsonl` (149 lines, LF) | **sha256 f7b18e19085cc37b1e6d7b6ffb74b4d522ca7748e844b24a37e6befaa540b55d** (`python -m eval.e2e.hard --write` prints it; `tests/eval/test_hard.py` fails if the generator drifts from the file). From here a task changes only with an amendment in PLAN.md and a new baseline. |
 | A9 Semantic-search families (1B's hand-over B5) | done | 2026-11-17 | this commit | `eval/e2e/hard.py` (`SEMANTIC`, `DOCS`); 25 more lines in `hard_test.jsonl` (149) | Five families, 5 test tasks each, tag `new_capability`, also in the train pool: topic_find, topic_then_act, topic_then_read, exact_phrase (the look-alike: `search_file_contents` is right), nothing_matches (nothing may be proposed). The user's wording shares no content word with the document or its file name. Not built: stale-index (the runner cannot edit a file between turns; 1B's unit tests cover re-indexing). Scripted agents on all 149: oracle 149/149, null / wrong / extra 0/149. With the real embedder the tool ranks the target first in 15/15 test and 15/15 train tasks. The headline pass rate stays over the 124 core tasks; `new_capability` has its own row; `--contracts 1.2` skips these tasks, so the v3 baseline (73/124) is unchanged. Reports record whether the embedder was up; hard runs set `ALFRED_EMBED_CACHE=runs/embed_cache.sqlite`. Max cosine train-to-test request still 0.83. pytest 177 passed. |
 
 ## Track 1B: Semantic search (branch `v4-1B`, worktree `.claude/worktrees/v4-1B`)
