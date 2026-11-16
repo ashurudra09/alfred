@@ -32,7 +32,7 @@ checkout while a machine job runs.
 |---|---|---|---|
 | 0 Setup | done (2026-11-15) | none | |
 | 1A Benchmark + generator | in progress (claimed 2026-11-15) | 0 | main checkout, branch `v4` directly: git cannot create `v4/1A` while a branch named `v4` exists |
-| 1B Semantic search | in progress (claimed 2026-11-15, branch `v4-1B`) | 0 | worktree `.claude/worktrees/v4-1B` (`v4/1B` is impossible while `v4` exists) |
+| 1B Semantic search | done (2026-11-16, merged in 78a14dc) | 0 | was branch `v4-1B` |
 | 1C Masking + frozen lists | done (2026-11-16, merged in 7aab2fe) | 0 | was branch `v4-1C` |
 | 2 On-policy data | blocked | 1A, 1B | |
 | 3 Mix + train | blocked | 2, 1C, owner's go per run | |
