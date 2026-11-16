@@ -241,9 +241,18 @@ def correct(a):
                                            {"content": fix["content"]})}
             # a later round may go back before an earlier fix, which is then no longer part of the trajectory
             fixes = [f for f in fixes if f["index"] < k] + [{"index": k, "why": fix.get("why", ""), "turn": new}]
+            # `correct` runs once per round, so the replays of earlier rounds are kept on disk
+            memo = OUT / "replay" / (hashlib.sha256(json.dumps([task.id, turns[:k], new], sort_keys=True).encode())
+                                     .hexdigest()[:24] + ".json")
             try:
-                r = run_task(task, Prefixed(turns[:k] + [new], student), None, student_config(task.tags),
-                             root=sandbox(task))
+                if memo.exists():
+                    r = json.loads(memo.read_text(encoding="utf-8"))
+                else:
+                    r = run_task(task, Prefixed(turns[:k] + [new], student), None, student_config(task.tags),
+                                 root=sandbox(task))
+                    if not any(x.startswith(LOOP_MADE[0]) for x in r["answers"]):  # never keep a server failure
+                        memo.parent.mkdir(exist_ok=True)
+                        memo.write_text(json.dumps(r, ensure_ascii=False), encoding="utf-8")
             except Exception as e:  # e.g. the teacher's turn has a shape the loop cannot take
                 print(f"  {task.id}: {type(e).__name__}: {str(e)[:200]}", flush=True)
                 break
