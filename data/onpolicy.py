@@ -3,6 +3,7 @@ and what it actually did is kept or queued for correction. Method after SCoRe (s
 earliest error); see docs/references.md.
 
   uv run python -m data.onpolicy rollout --n 25 --url http://127.0.0.1:8081/v1 [--shard 0/2]   # steps 2.1, 2.2
+  uv run python -m data.onpolicy rollout --teacher [--limit N]                                 # tool-26 tasks, teacher drives
   uv run python -m data.onpolicy triage                                                        # step 2.3
   uv run python -m data.onpolicy correct --url http://127.0.0.1:8081/v1 [--limit N]            # steps 2.4, 2.5
   uv run python -m data.onpolicy convert                                                       # step 2.6 -> data/out/v4/onpolicy.jsonl
@@ -45,6 +46,7 @@ OUT = ROOT / "data" / "out" / "v4"
 STUDENT_CONTRACTS = "1.2"  # v3 was trained on the 25-tool list; tool 26 is hidden from it
 FAMILIES = [f.__name__ for f in hard.SHARED + hard.SEMANTIC]
 # Replies the loop writes itself, without asking the model: not the student's turns, and nothing to train on.
+STAGES = ("student", "fixed", "teacher")  # student passed; student after the teacher's fix; teacher did all of it
 LOOP_MADE = ("Sorry, the model backend failed", "I couldn't make a valid tool call", "I stopped after")
 
 
@@ -84,23 +86,27 @@ def kept(r: dict) -> bool:
 
 
 def rollout(a):
-    """Student rollouts. Tasks that need tool 26 are left to the teacher (step 2.2, `teacher_exec`)."""
-    tasks = [t for t in hard.tasks("train", a.n) if "new_capability" not in t.tags]
-    backend = local(a.url)
+    """Student rollouts. Tasks that need tool 26, which the student has never seen, are done by the teacher
+    through the same loop and tools (--teacher, stage `teacher`) and accepted by the same check."""
+    stage = "teacher" if a.teacher else "student"
+    tasks = [t for t in hard.tasks("train", a.n) if ("new_capability" in t.tags) == a.teacher]
+    backend, config = (Backend("groq"), {"temperature": 0.0}) if a.teacher else (local(a.url), student_config())
     commit = subprocess.run(["git", "rev-parse", "--short", "HEAD"], capture_output=True, text=True).stdout.strip()
     i, n = map(int, a.shard.split("/"))
     OUT.mkdir(parents=True, exist_ok=True)
-    done, mine = rows("student"), tasks[i::n]
+    done, mine = rows(stage), tasks[i::n][: a.limit]
     for j, t in enumerate(mine, 1):
         if t.id in done:
             continue
         try:
-            r = run_task(t, backend, None, student_config(), root=sandbox(t))
+            r = run_task(t, backend, None, config, root=sandbox(t))
         except Exception as e:  # a tool server that did not start must not end an overnight run; the task is retried on a rerun
             print(f"[{j}/{len(mine)}] ERROR {t.id} {type(e).__name__}: {str(e)[:200]}", flush=True)
             continue
-        r |= {"stage": "student", "root": str(sandbox(t)), "commit": commit, "embedder_up": semantic.embedder_up()}
-        with (OUT / f"student_{i}of{n}.jsonl").open("a", encoding="utf-8") as f:
+        r |= {"stage": stage, "root": str(sandbox(t)), "commit": commit, "embedder_up": semantic.embedder_up()}
+        if a.teacher and any(x.startswith(LOOP_MADE[0]) for x in r["answers"]):  # the free quota ran out mid-task
+            return print("teacher backend failed (quota?); run again after the daily reset")
+        with (OUT / f"{stage}_{i}of{n}.jsonl").open("a", encoding="utf-8") as f:
             f.write(json.dumps(r, ensure_ascii=False) + "\n")
         print(f"[{j}/{len(mine)}] {'PASS' if kept(r) else 'FAIL'} {t.id} {r['turn_secs']} {r['calls']} "
               f"{r['reason'] or ''}", flush=True)
@@ -254,11 +260,11 @@ def correct(a):
 
 def replay(a):
     """Phase 2's verification: every kept trajectory, replayed with no model from an empty sandbox, passes again."""
-    good = [r for stage in ("student", "fixed") for r in rows(stage).values() if kept(r)][: a.limit]
+    good = [r for stage in STAGES for r in rows(stage).values() if kept(r)][: a.limit]
     bad = []
     for r in good:
-        again = run_task(task_of(r["id"]), Prefixed(assistant_turns(r), None), None, student_config(),
-                         root=sandbox(task_of(r["id"])))
+        again = run_task(task_of(r["id"]), Prefixed(assistant_turns(r), None), None,
+                         {} if r["stage"] == "teacher" else student_config(), root=sandbox(task_of(r["id"])))
         if not kept(again) or again["answers"] != r["answers"]:
             bad.append(r["id"])
             print(f"NOT REPRODUCED {r['id']} ({r['stage']}): {again['reason']}", flush=True)
@@ -285,7 +291,7 @@ def examples(r: dict) -> list[Example]:
 
 
 def convert(_=None):
-    good = [r for stage in ("student", "fixed") for r in rows(stage).values() if kept(r)]
+    good = [r for stage in STAGES for r in rows(stage).values() if kept(r) and r["embedder_up"]]
     n, why, out = 0, Counter(), []
     for r in good:
         for ex in examples(r):
@@ -306,7 +312,7 @@ def convert(_=None):
 
 
 def triage(_=None):
-    rs = list(rows("student").values())
+    rs = [*rows("student").values(), *rows("teacher").values()]
     by = Counter((r["tags"][1], kept(r)) for r in rs)
     print(f"{len(rs)} rollouts: {sum(map(kept, rs))} kept, {len(rs) - sum(map(kept, rs))} to correct; "
           f"invariant hits {sum(any(r['invariants'].values()) for r in rs)}; "
@@ -329,6 +335,7 @@ if __name__ == "__main__":
     ap.add_argument("--n", type=int, default=25, help="tasks per family (25 = the 300-task pilot)")
     ap.add_argument("--url", help="the eval server, e.g. http://127.0.0.1:8081/v1")
     ap.add_argument("--shard", default="0/1")
-    ap.add_argument("--limit", type=int, help="correct or replay at most N tasks")
+    ap.add_argument("--limit", type=int, help="at most N tasks")
+    ap.add_argument("--teacher", action="store_true", help="rollout: the tool-26 tasks, driven by the teacher")
     a = ap.parse_args()
     {"rollout": rollout, "correct": correct, "triage": triage, "replay": replay, "convert": convert}[a.cmd](a)
