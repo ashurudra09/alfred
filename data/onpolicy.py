@@ -33,6 +33,7 @@ import random
 import re
 import subprocess
 import sys
+import time
 from collections import Counter
 
 from openai import OpenAI
@@ -44,7 +45,7 @@ from alfred.tools import semantic
 from data.gen.prompts import USERS
 from data.validate import check
 from eval.e2e import hard
-from eval.e2e.__main__ import run_task
+from eval.e2e.__main__ import run_task as _run_task
 
 OUT = ROOT / "data" / "out" / "v4"
 STUDENT_CONTRACTS = "1.2"  # v3 was trained on the 25-tool list; tool 26 is hidden from it
@@ -52,6 +53,18 @@ FAMILIES = [f.__name__ for f in hard.SHARED + hard.SEMANTIC]
 # Replies the loop writes itself, without asking the model: not the student's turns, and nothing to train on.
 STAGES = ("student", "fixed")  # the student passed by itself; the student after the teacher's fixes
 LOOP_MADE = ("Sorry, the model backend failed", "I couldn't make a valid tool call", "I stopped after")
+
+
+def run_task(*args, **kw):
+    """`run_task`, waiting for the sandbox: a task run twice in a row finds the folder still held by the tool
+    server of the run before (Windows, WinError 32) for a moment."""
+    for attempt in range(10):
+        try:
+            return _run_task(*args, **kw)
+        except PermissionError:
+            if attempt == 9:
+                raise
+            time.sleep(3)
 
 
 def student_config(tags=()) -> dict:
