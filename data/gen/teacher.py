@@ -112,9 +112,13 @@ def main():
     ap.add_argument("--limit", type=int, help="generate at most N missing batches")
     ap.add_argument("--providers", default=",".join(p[0] for p in PROVIDERS))
     ap.add_argument("--sample", action="store_true", help="one missing batch per scenario (teacher pilot)")
+    ap.add_argument("--scenario", help="only this scenario's batches, written to synthetic_<scenario>.jsonl (v4 "
+                                       "additions, so v3's synthetic.jsonl is left as it is)")
     a = ap.parse_args()
     CACHE.mkdir(parents=True, exist_ok=True)
     specs = pilot(batches()) if a.pilot else batches()
+    if a.scenario:
+        specs = [s for s in specs if s["scenario"] == a.scenario]
     todo = sorted((s for s in specs if not cached(s)), key=lambda s: PRIORITY.index(s["scenario"]))
     if a.sample:
         todo = list({s["scenario"]: s for s in reversed(todo)}.values())
@@ -148,7 +152,8 @@ def main():
     if a.sample:
         recs = [r for r in recs if r["spec"]["id"] in {s["id"] for s in todo}]
     examples = [e for rec in recs for e in to_examples(rec)]
-    out = OUT / ("synthetic_pilot.jsonl" if a.pilot else "synthetic_sample.jsonl" if a.sample else "synthetic.jsonl")
+    out = OUT / ("synthetic_pilot.jsonl" if a.pilot else "synthetic_sample.jsonl" if a.sample else
+                 f"synthetic_{a.scenario}.jsonl" if a.scenario else "synthetic.jsonl")
     with out.open("w", encoding="utf-8") as f:
         for e in examples:
             f.write((e.model_dump_json() if isinstance(e, Example) else json.dumps(e)) + "\n")

@@ -47,7 +47,7 @@ checkout while a machine job runs.
 - **Track 1A step A7:** review at least 30 hard-suite tasks with `uv run python -m eval.e2e --suite hard --review`.
 
 ## Machine
-- Idle since 2026-11-16 02:10. (Eval servers: :8081, :8082. The owner's UI server on :8080 is never touched.)
+- **Busy since 2026-11-16: track 1C follow-up, teacher generating the 20 `injection_v4` batches** (no local model, network only: Groq free tier and Cerebras signup credit; log `runs/v4/teacher_injection_v4.log`). No merges into or branch switches in the main checkout until this says idle. (Eval servers: :8081, :8082. The owner's UI server on :8080 is never touched.)
 
 ## Track 0: Setup
 
