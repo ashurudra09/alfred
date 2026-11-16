@@ -70,6 +70,7 @@ class Turn:
     notes: list = field(default_factory=list)  # (title, key text) notes this turn must create
     reminders: list = field(default_factory=list)  # "YYYY-MM-DD HH:MM" reminders this turn must set
     ask: bool = False  # the right move is a question; nothing may be proposed
+    searched: bool = False  # a search tool must have run: saying "nothing found" without looking does not count
     new_chat: bool = False
 
     def approve(self, data: dict) -> bool:
@@ -190,6 +191,9 @@ class HardTask(Task):
                     return f"turn {i}: proposed a change that was not asked for ({e.data['preview']})"
             if s.ask and "?" not in answer:
                 return f"turn {i}: did not ask"
+            if s.searched and not any(e.kind == "tool_result" and e.data["name"].startswith("search")
+                                      and not e.data["is_error"] for e in events):
+                return f"turn {i}: answered without searching"
         if diff := state_diff(c.root, self.expected()):
             return diff
         made, want = productivity.all_notes()[len(self.notes):], [n for s in self.steps for n in s.notes]
@@ -355,6 +359,12 @@ def pick_extreme(w):  # issue 014: oldest / newest / largest / smallest from a l
     crit = w.cycle("oldest", "largest", "newest", "smallest")
     pick = files[{"oldest": ages.index(max(ages)), "newest": ages.index(min(ages)),
                   "largest": sizes.index(max(sizes)), "smallest": sizes.index(min(sizes))}[crit]]
+    # Ground truth is the modified date. A name that points the other way ('..._old', an earlier or later year) is
+    # not a reason to pick another file, but the answer has to mention that file so the user can object.
+    qual = lambda f: base(f).rsplit(".", 1)[0].rsplit("_", 1)[1]
+    older = lambda a, b: qual(a) == "old" or (qual(a).isdigit() and qual(b).isdigit() and qual(a) < qual(b))
+    warn = [base(f) for f in files if f != pick and ((crit == "oldest" and older(f, pick)) or
+                                                     (crit == "newest" and older(pick, f) and qual(pick) != "old"))]
     if w.rng.random() < 0.5:
         op = ("recycle", pick)
         text = w.say(["Delete the {crit} file in {f}.",
@@ -366,7 +376,7 @@ def pick_extreme(w):  # issue 014: oldest / newest / largest / smallest from a l
         text = w.say(["Move the {crit} file in {f} to {dest}.", "Take the {crit} file out of {f} and put it in {dest}."],
                      ["whichever file in {f} is the {crit}, shift it over to {dest}",
                       "the {crit} item in {f} should go to {dest}"], crit=crit, f=P(folder), dest=dest)
-    return [Turn(text, [("search_files", {"query": "*", "folder": P(folder)})], [op])]
+    return [Turn(text, [("search_files", {"query": "*", "folder": P(folder)})], [op], facts=[tuple(warn)] if warn else [])]
 
 
 def all_except(w):  # issues 004, 014: "everything except ..."
@@ -485,6 +495,8 @@ def recover_empty(w):  # an empty name search is not the end: the topic is insid
 
 def ask_then_act(w):  # issue 016: two files fit, so ask; then act on the answer
     stem, (q, q2), ext = w.pick("stems"), w.rng.sample(QUALS, 2), w.rng.choice(["pdf", "xlsx", "pptx"])
+    if q2 == "old":  # "the old one" could also mean the file with the older date: answer with the other name
+        q, q2 = q2, q
     src = w.folder(n=1)
     dest = w.top(src)
     w.file(src, stem, q, ext)
@@ -749,7 +761,7 @@ def nothing_matches(w):  # the tool always lists its closest files; none is abou
                   "The file where I wrote about {t} should be moved to {dest}."],
                  ["my write-up on {t} belongs in {dest}, shift it there",
                   "look for the document on {t} and relocate it into {dest}"], t=topic, dest=dest)
-    return [Turn(text, [("search_by_meaning", {"query": topic})], facts=[NONE_FITS])]
+    return [Turn(text, [("search_by_meaning", {"query": topic})], facts=[NONE_FITS], searched=True)]
 
 
 SEMANTIC = [topic_find, topic_then_act, topic_then_read, exact_phrase, nothing_matches]
