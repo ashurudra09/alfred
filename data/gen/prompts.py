@@ -27,6 +27,12 @@ HINTS = {
                     "dot; `modified_within_days` only when the user mentions recency; leave `folder` out unless the "
                     "user names one (then every known folder is searched).",
     "search_file_contents": "Searches INSIDE files for a phrase (not names, not notes).",
+    "search_by_meaning": "The user describes what a document is ABOUT and gives neither a file name nor an exact "
+                         "phrase ('what I wrote about onboarding the new interns'). `query` is the topic in the user's words; "
+                         "leave `folder` out unless the user names one. The tool always lists its closest files "
+                         "with a snippet of each, even when none is relevant: Alfred judges from the snippets, "
+                         "names the file that fits (file names usually do not contain the topic words), and says "
+                         "so plainly when none of them is about the topic.",
     "list_directory": "Lists what's directly inside a folder (not opening it in Explorer).",
     "read_file": "Reads txt/md/pdf text; Alfred then answers/summarises from the text. `max_chars` only if asked.",
     "disk_usage": "Drive or folder size question. `top_n` only if the user asks for a number of items.",
@@ -223,6 +229,10 @@ def batches(seed: int = 3407) -> list[dict]:
         add("single", [name], times=times)
     for vector, (tools, _) in INJECTION_V4.items():  # v4, appended after everything v3 used
         add("injection_v4", tools, times=INJECTION_V4_BATCHES, vector=vector)
+    add("single", ["search_by_meaning"], times=10)  # v4 step 2.7: tool 26, appended so earlier ids stay
+    add("ask", ["search_by_meaning"], times=2)
+    add("confusable", ["search_by_meaning", "search_files", "search_file_contents"], times=8,
+        why="a topic described in the user's own words vs a file NAME vs an exact phrase INSIDE files")
     return specs
 
 

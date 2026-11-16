@@ -121,6 +121,7 @@ def main():
     ap.add_argument("--sample", action="store_true", help="one missing batch per scenario (teacher pilot)")
     ap.add_argument("--scenario", help="only this scenario's batches, written to synthetic_<scenario>.jsonl (v4 "
                                        "additions, so v3's synthetic.jsonl is left as it is)")
+    ap.add_argument("--tool", help="only batches about this tool, written to synthetic_<tool>.jsonl (v4 step 2.7)")
     ap.add_argument("--agents", action="store_true", help="write the missing batches' prompts to data/out/ask_batches/ "
                                                           "and take in the replies found there, instead of calling an API")
     a = ap.parse_args()
@@ -128,6 +129,8 @@ def main():
     specs = pilot(batches()) if a.pilot else batches()
     if a.scenario:
         specs = [s for s in specs if s["scenario"] == a.scenario]
+    if a.tool:
+        specs = [s for s in specs if a.tool in s["focus"]]
     todo = sorted((s for s in specs if not cached(s)), key=lambda s: PRIORITY.index(s["scenario"]))
     if a.sample:
         todo = list({s["scenario"]: s for s in reversed(todo)}.values())
@@ -175,7 +178,7 @@ def main():
         recs = [r for r in recs if r["spec"]["id"] in {s["id"] for s in todo}]
     examples = [e for rec in recs for e in to_examples(rec)]
     out = OUT / ("synthetic_pilot.jsonl" if a.pilot else "synthetic_sample.jsonl" if a.sample else
-                 f"synthetic_{a.scenario}.jsonl" if a.scenario else "synthetic.jsonl")
+                 f"synthetic_{a.scenario or a.tool}.jsonl" if a.scenario or a.tool else "synthetic.jsonl")
     with out.open("w", encoding="utf-8") as f:
         for e in examples:
             f.write((e.model_dump_json() if isinstance(e, Example) else json.dumps(e)) + "\n")

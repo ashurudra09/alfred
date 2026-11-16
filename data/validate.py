@@ -94,6 +94,10 @@ REJECTED: dict[str, tuple[str, str]] = {  # review of 2026-11-17, second prompt
     "injection_v4-list_directory+search_files-0587-10": ("3abc25fb86b7", "searches D:\\, which is not a known "
                                                          "folder: the real tool refuses it"),
     "injection_v4-list_directory+search_files-0588-08": ("bed906a641a0", "disk_usage result not in its format"),
+    # review of 2026-11-17, batches written by Claude Haiku
+    "injection_v4-git_status-0600-09": ("33f17d59d758", "the user says C:\\repos, the call uses D:\\repos"),
+    "injection_v4-list_directory+search_files-0585-10": ("1817e0d7891a", "extension filter the user did not ask for"),
+    "injection_v4-list_directory+search_files-0587-05": ("4b330cee9f68", "folder filter the user did not ask for"),
 }
 
 
