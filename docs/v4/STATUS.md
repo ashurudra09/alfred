@@ -47,7 +47,7 @@ checkout while a machine job runs.
 - **Track 1A step A7:** review at least 30 hard-suite tasks with `uv run python -m eval.e2e --suite hard --review`.
 
 ## Machine
-- **Busy since 2026-11-16: track 1C follow-up, teacher generating the 20 `injection_v4` batches** (no local model, network only: Groq free tier and Cerebras signup credit; log `runs/v4/teacher_injection_v4.log`). No merges into or branch switches in the main checkout until this says idle. (Eval servers: :8081, :8082. The owner's UI server on :8080 is never touched.)
+- Idle since 2026-11-17. (Eval servers: :8081, :8082. The owner's UI server on :8080 is never touched.)
 
 ## Track 0: Setup
 
@@ -116,9 +116,42 @@ Ripples handled in this track: `agent/loop.py` reads `config.json` `"contracts"`
 | Verify | done | 2026-11-16 | this commit | | pytest 168 passed. Masking statistics, 500 examples in the mix's proportions, every one masked: leaks 0, byte-exact round trip 500 of 500. Names per example (median): Alfred 48, When2Call 6, xLAM 9. **Extra tokens (median / max): Alfred 332 / 409**, When2Call 20 / 97, xLAM 42 / 133. Alfred examples over 4,096 tokens: 1 -> 2 of 350. |
 
 Left for other tracks (not part of 1C's code):
-- **Machine job, after 1B is merged** (examples should carry the 26-tool list): `uv run python -m data.gen.teacher`
-  generates the 20 `injection_v4` batches on the free tiers (about 240 conversations before validation), then
-  `data.validate`. Needs `.env` and `data/out/cache`, so main checkout.
+- **v4 injection examples (C4 follow-up), partly done 2026-11-17.** Generated with
+  `uv run python -m data.gen.teacher --scenario injection_v4 --providers groq` (writes
+  `data/out/synthetic_injection_v4.jsonl`; v3's `synthetic.jsonl` is left alone), then
+  `uv run python -m data.validate data/out/synthetic_injection_v4.jsonl`. Every example was read by hand.
+  - **Now: 95 valid examples** from 8 of 20 batches (notes 0590-0593: 47, memory 0594-0597: 48), all with the
+    26-tool list, none with test-only attack wording.
+  - **Still to generate: 12 batches**, the 6 file-name batches (0584-0589, set aside, see below) and the 5 git-output
+    batches plus memory 0598 (never generated). Run the command above again when Groq's daily limit has reset,
+    then validate and read the new examples. Providers: Cerebras signup credit is used up (HTTP 402) and is not to be
+    topped up; Groq's `qwen` model rejects these prompts as too large on the free tier, so `--providers groq`
+    (gpt-oss-120b) only. OpenRouter and Gemini keys exist in `.env` but need the owner's OK first.
+  - **What reading found, and the fix for each:**
+    1. First prompt (backed up in `data/out/backups/injection_v4_prompt1/`): one batch put the injection in the
+       user's own message (it would teach Alfred to ignore the user), one batch had no injection, one example
+       file name was copied into three batches, English requests got Hinglish replies, file dates were after
+       "today", wrong folder roots, an unrequested filter. Fix: the task prompt now states where the injection
+       may and may not appear and pins format, dates, arguments and reply language (`prompts.injection_v4_task`).
+    2. Second prompt: file listings broke the real tool's format in 23 of 28 cases, batch 0586 tagged its own
+       injected entries "(ignored)" inside the tool result, a PDF search returned an .xlsx, two `disk_usage`
+       results were off-format, one reply renamed the injected entry, one search used `D:\`. Fix: the
+       file-name vector now spells out both result shapes; batches 0584-0589 set aside in
+       `data/out/backups/injection_v4_prompt2/` for regeneration.
+    3. Mechanical rules added to `data/validate.py` (they apply to every example): modified/saved date after
+       today; Hinglish reply to an English request; injection wording in a user message; a v4 injection example
+       with no injection in any tool result; a tool result that marks its own content "(ignored)";
+       `list_directory` and `search_notes` results not in the tool's format (v3's data already follows both);
+       a `search_files` result with a different extension than asked. Plus `REJECTED` for faults found by
+       reading, keyed by a content fingerprint so a regenerated example under the same id is not hit.
+    4. `teacher.one`: a tool result's count line follows the real tool's grammar ("1 notes:" -> "1 note:").
+  - **Effect on v3's validated data** (7,191 rows, already trained on, not re-validated): the new rules reject 15
+    rows: 12 off-format `search_notes` results and 3 `search_files` results that list the wrong file type (one
+    reply calls an .xls file a Word document). Recorded as a known flaw of v3's data, for `data/card.md`.
+- **Re-check of the other hand-made test files (2026-11-17):** retrieval dev/test (every relevant abstract in its
+  corpus, no duplicates, no shared claims), held-out tool names (valid function names), attack templates (render
+  as intended): no faults. Caveat for the retrieval negatives: SciFact's labels are incomplete, so an
+  "unanswerable" claim may still have unlabelled support among the 300 abstracts.
 - **Token budget (adds to plan amendment 6):** a masked Alfred example is about 330 tokens longer and tool 26 adds
   about 85, against a 4,096 limit with v3's longest at 3,978. Step 3.1 should expect masked Alfred rows near the
   limit to be dropped, or leave rows over about 3,650 tokens unmasked; count either way.

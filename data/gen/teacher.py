@@ -10,6 +10,7 @@ import hashlib
 import json
 import os
 import queue
+import re
 import sys
 import threading
 import time
@@ -88,6 +89,12 @@ def generate(spec: dict, worker: tuple) -> dict:
     return {"spec": spec, "provider": provider, "model": model, "conversations": [], "failed": True}
 
 
+def one(m: dict) -> str:
+    """Message text; a tool result's count line in the real tool's grammar ("1 notes:" -> "1 note:")."""
+    text = m.get("content") or ""
+    return re.sub(r"^1 (file|note|item)s\b", r"1 \1", text) if m.get("role") == "tool" else text
+
+
 def to_examples(rec: dict) -> list[Example | dict]:
     """Teacher conversations -> Examples. Unparseable ones come back as {"id", "error"} for the validator to count."""
     spec, out = rec["spec"], []
@@ -95,7 +102,7 @@ def to_examples(rec: dict) -> list[Example | dict]:
     for k, conv in enumerate(rec["conversations"]):
         eid = f"{spec['id']}-{k:02d}"
         try:
-            msgs = [Message.model_validate({**m, "content": m.get("content") or ""}) for m in conv["messages"]]
+            msgs = [Message.model_validate({**m, "content": one(m)}) for m in conv["messages"]]
             calls = any(m.tool_calls for m in msgs)
             cat = CATEGORY.get(spec["scenario"]) or ("tool_call" if calls else "direct")
             out.append(Example(id=eid, source="synthetic", category=cat, messages=[sys_msg, *msgs],

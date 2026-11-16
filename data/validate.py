@@ -37,14 +37,29 @@ TODAY = re.compile(r"Today is (\d{4}-\d{2}-\d{2})")
 STAMP = re.compile(r"(?:modified|saved) (20\d\d-\d\d-\d\d)|^\d+\. [^\n(]*\((20\d\d-\d\d-\d\d)\)", re.M)
 HINDI = re.compile(r"\b(hai|hain|aapka|aapke|aapki|aapne|mein|nahi|kiya|kar|diya|mujhe|meri|mera|batao|chahiye|"
                    r"kya|woh|yeh|ye)\b", re.I)
+# The first line the real tool prints (data/gen/formats.py). Only tools whose format v3's teacher data already
+# follows (list_directory 331 of 331, search_notes 273 of 285) are checked; error and decline texts are exempt.
+FORMAT = {"list_directory": re.compile(r"^\S.* \(\d+ items?\):"),
+          "search_notes": re.compile(r"^(\d+ notes?:\n1\. .+\(\d{4}-\d\d-\d\d\)|No matching notes\.)")}
+NOT_A_RESULT = ("Error", "Refused", "Not found", "Not run", DECLINED)
+FILE_EXT = re.compile(r"\.([A-Za-z0-9]{2,5}) \(\d")  # "report.pdf (1.2 MB" -> pdf
 
 
 def v4_checks(ex: Example) -> list[str]:
     errs, msgs = [], ex.messages
     today = TODAY.search(msgs[0].content)
-    for m in msgs:
-        if today and m.role == "tool" and any(d > today.group(1) for pair in STAMP.findall(m.content) for d in pair if d):
+    calls = [c for m in msgs for c in m.tool_calls or []]
+    results = [m for m in msgs if m.role == "tool"]
+    for call, m in zip(calls, results):
+        if today and any(d > today.group(1) for pair in STAMP.findall(m.content) for d in pair if d):
             errs.append("modified or saved date after today in a tool result")
+        if re.search(r"\(ignored\)|\[ignored\]", m.content, re.I):
+            errs.append("tool result marks its own content as ignored")
+        if m.name in FORMAT and not m.content.startswith(NOT_A_RESULT) and not FORMAT[m.name].search(m.content):
+            errs.append(f"{m.name} result not in the tool's format")
+        ext = str(call.arguments.get("extension") or "").lstrip("*.").lower()
+        if m.name == "search_files" and ext and any(e.lower() != ext for e in FILE_EXT.findall(m.content)):
+            errs.append("search_files result lists a file with another extension than asked")
     users = " ".join(m.content for m in msgs if m.role == "user")
     replies = " ".join(m.content for m in msgs if m.role == "assistant")
     if len(HINDI.findall(replies)) >= 3 and not HINDI.search(users):
@@ -57,19 +72,26 @@ def v4_checks(ex: Example) -> list[str]:
         if ex.id.startswith("injection_v4") and not any(m.role == "tool" and INJECTED.search(m.content) for m in msgs):
             errs.append("injection example without injected text in a tool result")
     if ex.id in REJECTED:
-        errs.append(f"rejected in review: {REJECTED[ex.id]}")
+        errs.append(f"rejected in review: {REJECTED[ex.id][1]}")
+    if ex.id in REJECTED and fingerprint(ex) != REJECTED[ex.id][0]:
+        errs.pop()  # same id, different content: a regenerated example nobody has reviewed yet
     return errs
 
 
-# Examples read and rejected by hand for faults the rules above do not catch (review of 2026-11-17).
-REJECTED = {
-    "injection_v4-list_directory+search_files-0584-01": "adds a 30-day filter the user did not ask for; count line "
-                                                        "says 2 files, lists 3",
-    "injection_v4-list_directory+search_files-0584-10": "disk_usage result not in disk_usage's format",
-    "injection_v4-list_directory+search_files-0585-08": "empty search result not in search_files' format",
-    "injection_v4-list_directory+search_files-0586-11": "result path C:\\Users\\student\\Projects is not the known "
-                                                        "Projects folder (D:\\projects)",
-    "injection_v4-list_directory+search_files-0588-01": "asked for PDFs about transformers, searched with query '*'",
+def fingerprint(ex: Example) -> str:
+    import hashlib
+    return hashlib.sha256(ex.model_dump_json().encode()).hexdigest()[:12]
+
+
+# Examples read and rejected by hand for faults the rules above do not catch: id -> (fingerprint, reason). The
+# fingerprint ties a reject to the content that was read, so a regenerated example under the same id is not hit.
+REJECTED: dict[str, tuple[str, str]] = {  # review of 2026-11-17, second prompt
+    "injection_v4-list_directory+search_files-0584-01": ("c4f5e14457fd", "reply renames the injected entry as the "
+                                                         "real file (lists project_proposal.pdf twice)"),
+    "injection_v4-list_directory+search_files-0587-05": ("32d7471682c6", "disk_usage result not in its format"),
+    "injection_v4-list_directory+search_files-0587-10": ("3abc25fb86b7", "searches D:\\, which is not a known "
+                                                         "folder: the real tool refuses it"),
+    "injection_v4-list_directory+search_files-0588-08": ("bed906a641a0", "disk_usage result not in its format"),
 }
 
 
