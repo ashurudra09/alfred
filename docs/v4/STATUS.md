@@ -34,7 +34,7 @@ checkout while a machine job runs.
 | 1A Benchmark + generator | done (2026-11-17) | 0 | main checkout, branch `v4` directly: git cannot create `v4/1A` while a branch named `v4` exists |
 | 1B Semantic search | done (2026-11-16, merged in 78a14dc) | 0 | was branch `v4-1B` |
 | 1C Masking + frozen lists | done (2026-11-16, merged in 7aab2fe) | 0 | was branch `v4-1C` |
-| 2 On-policy data | ready | 1A, 1B | |
+| 2 On-policy data | in progress (claimed 2026-11-17) | 1A, 1B | main checkout, branch `v4` directly (machine jobs need it) |
 | 3 Mix + train | blocked | 2, 1C, owner's go per run | |
 | 4D Grammar | ready | 1A (step D2 also needs 4G's baselines) | |
 | 4E Security | ready | 1A, 1C | |
