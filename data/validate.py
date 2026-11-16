@@ -98,6 +98,8 @@ REJECTED: dict[str, tuple[str, str]] = {  # review of 2026-11-17, second prompt
     "injection_v4-git_status-0600-09": ("33f17d59d758", "the user says C:\\repos, the call uses D:\\repos"),
     "injection_v4-list_directory+search_files-0585-10": ("1817e0d7891a", "extension filter the user did not ask for"),
     "injection_v4-list_directory+search_files-0587-05": ("4b330cee9f68", "folder filter the user did not ask for"),
+    "confusable-search_by_meaning+search_files+search_file_contents-0619-07": (
+        "7d03e1ffa64c", "'around December' turned into modified_within_days 45"),
 }
 
 
