@@ -45,7 +45,6 @@ checkout while a machine job runs.
 
 ## Waiting on the owner
 - **Track 1A step A7:** review at least 30 hard-suite tasks with `uv run python -m eval.e2e --suite hard --review`.
-- Later: try 5 semantic-search queries in track 1B.
 
 ## Machine
 - Idle since 2026-11-16 02:10. (Eval servers: :8081, :8082. The owner's UI server on :8080 is never touched.)
@@ -74,6 +73,37 @@ checkout while a machine job runs.
 | A7 Owner review (30+ tasks) | todo, waiting on the owner | | | `uv run python -m eval.e2e --suite hard --review` | tasks come one family after another, so the first 34 cover every family twice; y = right, s = skip and tell Claude what is wrong |
 | A8 Freeze + dedup guard | guard done (562d51d); freeze after A7 | | | `data/dedup.py` `Guard` reads `hard_test.jsonl` | `data.dedup --check` on v3's data: 0 near-duplicates. sha256 of the LF file now: 540d30b5...4305, final value recorded after the review. |
 | B5 hand-over: semantic-search families | todo | | | | after track 1B step B1 freezes the tool |
+
+## Track 1B: Semantic search (branch `v4-1B`, worktree `.claude/worktrees/v4-1B`)
+
+| Step | State | Date | Commit | Artifacts | Numbers / notes |
+|---|---|---|---|---|---|
+| B1 Contract 1.3 `search_by_meaning(query, folder=None)` | done | 2026-11-15 | 82a9eff | `contracts/tools.py`, `tools.json` (26 tools, v1.3), `data/gen/formats.py` | read-only, group files. Prompt + tools 2525 tokens (was ~2440); guard raised to 2600. Tool list frozen from here: 1A may add its families. |
+| B2 Index `tools/semantic.py` | done | 2026-11-15 | 82a9eff | `ALFRED_HOME/semantic.db`; `tests/tools/test_semantic.py` (6 tests) | FTS5 + vectors per 1,000-char chunk (max 20 per file); incremental by mtime, 20 s indexing budget per call, deleted files purged; `files.walk` guards + extension allow-list + 5 MB cap. Embedder moved to `memory.embed_many`, used by recall, semantic, `data/dedup.py`. |
+| B3 RRF ranking + fallback | done | 2026-11-15 | 82a9eff | `semantic.rank(mode=fused/keyword/embedding)` | RRF k=60, 50 candidates per ranker, top 5 files; result says when it fell back to keywords or is still indexing. `MIN_COS` = 0 until B4 calibrates it. |
+| B4 Retrieval eval (first pass, superseded by B4') | done | 2026-11-15 | 235e086 | | 150 claims, now the dev half: keyword 74.7 / 85.3 / 0.797, embedding 91.3 / 96.0 / 0.938, fused 85.3 / 94.0 / 0.896 (R@1 / R@5 / MRR). Led to the plan amendments of 2026-11-15. |
+| B3' Ranking per amendment 1 | done | 2026-11-15 | this commit | `semantic.rank(mode="auto")` | embedding order; BM25 hits interleaved for chunks without a vector; BM25 for everything when Ollama is down. `fused` stays as an eval-only mode. |
+| B2' Cache + start-up indexing (amendment 4) | done | 2026-11-15 | this commit | `semantic._embed`, `semantic.index_all`, `tools/server.py` | `ALFRED_EMBED_CACHE=<sqlite file>` caches vectors by model + text (rollouts and evals should set it). The tool server indexes all known folders in a background thread (config `index_on_start`, default true; one indexer at a time via `semantic.LOCK`). Not throttled: on a big Documents folder it will use the CPU for a long time at the speeds below. |
+| B4' Dev/test split, prompts, cut-off (amendments 2, 3) | done | 2026-11-15 | this commit | `eval/testsets/retrieval_scifact_{dev,test}.jsonl` (300 abstracts, 150 claims, 75 unanswerable each; no shared claims, 30 shared abstracts), `eval/reports/retrieval_scifact_{dev,test}.json`, `RESULTS.md` | **Dev** (choices made here): prompts help (embedding MRR 0.938 with, 0.881 without) so they stay; cut-off by the fixed rule = **0.346**. **Test, run once** (R@1 / R@5 / MRR): keyword 75.3 / 88.7 / 0.811, embedding 89.3 / 97.3 / 0.929, fused 88.7 / 94.0 / 0.914, embedding with the 0.346 cut-off 87.3 / 93.3 / 0.900. Paraphrased half (70): keyword 52.9 / 75.7, embedding 81.4 / 95.7, fused 77.1 / 87.1, with cut-off 77.1 / 87.1. **The cut-off costs more than it gives:** it returns nothing for 16 of 75 unanswerable claims (dev 19 of 75) and for 6 of 150 answerable ones (dev 4), and takes 2 points of R@1 and 4 of R@5 off plain embedding. **Owner removed the cut-off (amendment 7): `MIN_COS` = 0, shipped = the plain embedding row.** The experiment stays in the reports under `with_cutoff`. Indexing speed: 1.42 chunks/s (dev, prompts), 1.83 (dev, no prompts), 2.09 (test) with track 1A's baseline using the CPU; **no idle-machine measurement yet**. Query-time columns are noisy for the same reason. |
+| B5 Hand families to 1A | done | 2026-11-15 | this commit | the list below | |
+| Verify | done | 2026-11-16 | 6190181 + owner check | `tests/tools/test_server.py` | Branch now contains `v4` (1A's suite) and 1C: pytest 177 passed on the combination, so merging into `v4` is a fast-forward of content with no conflicts left. `RESULTS.md` identical on a second `eval.results`. **Idle-machine indexing speed: 3.0 chunks/s** (857 chunks in 286 s, no other job running, 12 logical CPUs at 65% during the run; 1.4-2.1 with another eval running), so the 20 s budget per search embeds about 60 chunks. The tool is now also called through the real stdio server in the test suite. That check found a bug, fixed here: a search made while the start-up indexer held the lock returned nothing ('still indexing') at once, which every eval task would have hit because each starts a fresh server; the search now waits its turn (at most one 20 s budget). `data/gen/prompts.py`: the per-tool batch loop is pinned to the 25 tools of contracts 1.2 so tool 26 does not shift the ids of cached teacher batches; its own batches are step 2.7.  **Owner check (2026-11-16): 5 of 5 queries passed** on the owner's own files, run through the tool directly from the worktree: paraphrase on a text file, paraphrase on a PDF or Word file, an exact name or code, a nothing-fits query (five files listed, none relevant, as intended without a cut-off), and a newly created file found on the first query after saving. Details stayed with the owner. |
+
+**For track 1A (B5): semantic-search task families**, tagged `new_capability`, scored separately (v2/v3 never saw
+tool 26; give them contracts 1.2). Fixtures need Ollama running; record whether the embedder was up (risk 24).
+1. *find-by-topic*: a file whose name and wording share nothing with the request ("the doc about cutting cloud costs"
+   → `infra_notes_q3.md` that talks about reserved instances); check: the answer names that path. 1 call.
+2. *find-by-topic-then-act*: as 1, then open / move / zip it; check: end state; confirmation only for the asked change. 2 calls.
+3. *find-by-topic-then-read*: as 1, then read it and answer a fact from it. 2 calls.
+4. *look-alike choice*: same fixture, but the request names the file or quotes an exact phrase, so `search_files` /
+   `search_file_contents` is right; check: the answer is correct (the tool used isn't scored as wrong if the answer
+   is right). 1 call.
+5. *nothing-matches*: no fixture file is about the topic. The tool has no cut-off (amendment 7), so it still lists
+   its closest files; check: the answer says none fits, no file is acted on. 1–2 calls.
+6. *stale-index*: the file was edited or created after an earlier search in the same task; check: the new content is
+   found (incremental re-index). 2 calls.
+
+Ripples handled in this track: `agent/loop.py` reads `config.json` `"contracts"` (set `"1.2"` to keep v2/v3 on their
+25 tools in the UI; without it the UI now sends 26); `data/v3.py` pinned to contracts 1.2.
 
 ## Track 1C: Masking + frozen lists (branch `v4-1C`, worktree `.claude/worktrees/v4-1C`)
 

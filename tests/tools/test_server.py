@@ -17,12 +17,14 @@ async def session_calls(env):
         listing = await s.call_tool("list_directory", {"path": "Downloads"})
         refused = await s.call_tool("read_file", {"path": "Documents\\.env"})
         bad_args = await s.call_tool("port_in_use", {"port": 70000})
-        return tools, ok, listing, refused, bad_args
+        meaning = await s.call_tool("search_by_meaning", {"query": "low-rank adapters for fine-tuning", "folder": "Downloads"})
+        return tools, ok, listing, refused, bad_args, meaning
 
 
 def test_server_over_stdio(sandbox):
     env = {**os.environ, "ALFRED_HOME": str(sandbox["home"])}
-    tools, ok, listing, refused, bad_args = asyncio.run(session_calls(env))
+    tools, ok, listing, refused, bad_args, meaning = asyncio.run(session_calls(env))
+    assert not meaning.isError and "notes.txt" in meaning.content[0].text  # embedding, or keywords without Ollama
     ref = {t["name"]: t for t in load()["tools"]}
     assert [t.name for t in tools] == list(ref)
     for t in tools:

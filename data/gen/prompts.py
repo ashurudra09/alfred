@@ -20,6 +20,7 @@ EXTRA = [("Projects", "D:\\projects"), ("Code", "C:\\Users\\{u}\\code"), ("Work"
          ("College", "D:\\college"), ("Music", "C:\\Users\\{u}\\Music"), ("Videos", "C:\\Users\\{u}\\Videos")]
 CONFIRM = [n for n, r in REGISTRY.items() if r["needs_confirmation"]]
 REQUIRED = {t["name"]: t["inputSchema"].get("required", []) for t in load()["tools"]}
+REQUIRED_1_2 = [t["name"] for t in load("1.2")["tools"]]
 
 HINTS = {
     "search_files": "Matches file NAMES only. `query` is the name fragment ('*' for any name); `extension` without the "
@@ -185,8 +186,8 @@ def batches(seed: int = 3407) -> list[dict]:
                           "focus": list(focus), "user": u, "folders": folders, "date": day.isoformat(),
                           "styles": styles, "n": PER_BATCH, **extra})
 
-    for name in REGISTRY:
-        add("single", [name], times=10)
+    for name in REQUIRED_1_2:  # the 25 tools of contracts 1.2 only: a tool added later gets its batches appended
+        add("single", [name], times=10)  # below (step 2.7), so earlier batch ids and their cached responses stay
         add("ask", [name], times=2)
     for name in CONFIRM:
         add("declined", [name], times=2)

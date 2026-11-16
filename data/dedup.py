@@ -10,30 +10,15 @@ Usage: uv run python -m data.dedup --check     # checks data/out/train.jsonl + v
 import json
 import re
 import sys
-import urllib.request
 from pathlib import Path
 
-import numpy as np
-
 from alfred.contracts.schemas import Example
+from alfred.tools.memory import embed_many as embed
 from eval.run import load_set
 
 THRESHOLD = 0.9
 NGRAM = 8
 HARD = Path(__file__).parents[1] / "eval" / "e2e" / "hard_test.jsonl"
-EMBED_URL, MODEL ="http://127.0.0.1:11434/api/embed", "embeddinggemma"
-
-
-def embed(texts: list[str]) -> np.ndarray:
-    """Unit-normalised embeddings, one row per text."""
-    out = []
-    for i in range(0, len(texts), 64):
-        req = urllib.request.Request(EMBED_URL, json.dumps({"model": MODEL, "input": texts[i:i + 64]}).encode(),
-                                     {"Content-Type": "application/json"})
-        with urllib.request.urlopen(req, timeout=600) as r:
-            out += json.load(r)["embeddings"]
-    v = np.array(out, dtype=np.float32)
-    return v / np.maximum(np.linalg.norm(v, axis=1, keepdims=True), 1e-9)
 
 
 def ngrams(text: str) -> set[tuple]:

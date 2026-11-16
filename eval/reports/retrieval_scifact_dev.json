@@ -1,0 +1,164 @@
+{
+  "set": "dev",
+  "prompts": true,
+  "documents": 300,
+  "chunks": 857,
+  "queries": 150,
+  "unanswerable": 75,
+  "index_seconds": 602.4,
+  "chunks_embedded_fresh": 857,
+  "overlap_median": 0.556,
+  "modes": {
+    "keyword": {
+      "all": {
+        "n": 150,
+        "recall@1": 0.7466666666666667,
+        "recall@5": 0.8533333333333334,
+        "mrr": 0.7974573324279206
+      },
+      "paraphrased": {
+        "n": 74,
+        "recall@1": 0.5135135135135135,
+        "recall@5": 0.7162162162162162,
+        "mrr": 0.6080216197863256
+      },
+      "query_ms": 70
+    },
+    "embedding": {
+      "all": {
+        "n": 150,
+        "recall@1": 0.9133333333333333,
+        "recall@5": 0.96,
+        "mrr": 0.9381909445330497
+      },
+      "paraphrased": {
+        "n": 74,
+        "recall@1": 0.8378378378378378,
+        "recall@5": 0.918918918918919,
+        "mrr": 0.881468130810236
+      },
+      "query_ms": 395
+    },
+    "fused": {
+      "all": {
+        "n": 150,
+        "recall@1": 0.8533333333333334,
+        "recall@5": 0.94,
+        "mrr": 0.8959824884648784
+      },
+      "paraphrased": {
+        "n": 74,
+        "recall@1": 0.7027027027027027,
+        "recall@5": 0.8783783783783784,
+        "mrr": 0.7891536928342131
+      },
+      "query_ms": 181
+    }
+  },
+  "chunks_per_second": 1.42,
+  "cutoff_rule": "5th percentile of the first relevant chunk's cosine on this set",
+  "cutoff": 0.346,
+  "cosine": {
+    "relevant_median": 0.55,
+    "unanswerable_top_median": 0.392
+  },
+  "no_prompts": {
+    "set": "dev",
+    "prompts": false,
+    "documents": 300,
+    "chunks": 857,
+    "queries": 150,
+    "unanswerable": 75,
+    "index_seconds": 467.3,
+    "chunks_embedded_fresh": 857,
+    "overlap_median": 0.556,
+    "modes": {
+      "keyword": {
+        "all": {
+          "n": 150,
+          "recall@1": 0.7466666666666667,
+          "recall@5": 0.8533333333333334,
+          "mrr": 0.7974573324279206
+        },
+        "paraphrased": {
+          "n": 74,
+          "recall@1": 0.5135135135135135,
+          "recall@5": 0.7162162162162162,
+          "mrr": 0.6080216197863256
+        },
+        "query_ms": 26
+      },
+      "embedding": {
+        "all": {
+          "n": 150,
+          "recall@1": 0.8266666666666667,
+          "recall@5": 0.94,
+          "mrr": 0.881152775730175
+        },
+        "paraphrased": {
+          "n": 74,
+          "recall@1": 0.7162162162162162,
+          "recall@5": 0.8918918918918919,
+          "mrr": 0.7979448156692739
+        },
+        "query_ms": 7125
+      },
+      "fused": {
+        "all": {
+          "n": 150,
+          "recall@1": 0.8333333333333334,
+          "recall@5": 0.9266666666666666,
+          "mrr": 0.8762900306321358
+        },
+        "paraphrased": {
+          "n": 74,
+          "recall@1": 0.6891891891891891,
+          "recall@5": 0.8513513513513513,
+          "mrr": 0.7672545665966719
+        },
+        "query_ms": 92
+      }
+    },
+    "chunks_per_second": 1.83,
+    "cutoff_rule": "5th percentile of the first relevant chunk's cosine on this set",
+    "cutoff": 0.424,
+    "cosine": {
+      "relevant_median": 0.575,
+      "unanswerable_top_median": 0.475
+    },
+    "with_cutoff": {
+      "all": {
+        "n": 150,
+        "recall@1": 0.8133333333333334,
+        "recall@5": 0.92,
+        "mrr": 0.862074074074074
+      },
+      "paraphrased": {
+        "n": 74,
+        "recall@1": 0.6891891891891891,
+        "recall@5": 0.8513513513513513,
+        "mrr": 0.760960960960961
+      },
+      "query_ms": 44,
+      "answerable_returning_nothing": 4,
+      "unanswerable_returning_nothing": 15
+    }
+  },
+  "with_cutoff": {
+    "all": {
+      "n": 150,
+      "recall@1": 0.9,
+      "recall@5": 0.94,
+      "mrr": 0.9203030303030302
+    },
+    "paraphrased": {
+      "n": 74,
+      "recall@1": 0.8108108108108109,
+      "recall@5": 0.8783783783783784,
+      "mrr": 0.8452088452088452
+    },
+    "query_ms": 97,
+    "answerable_returning_nothing": 4,
+    "unanswerable_returning_nothing": 19
+  }
+}

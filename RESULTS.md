@@ -95,3 +95,19 @@ Log-likelihood scoring as in the official lm-eval task, Qwen3.5 chat template ([
 | **unweighted mean** | | **72.1%** | **77.2%** | **77.8%** |
 
 Pinned `bfcl-eval==2026.3.23`, non-thinking mode, AST checker; Qwen3.5 handler in [eval/bfcl/run.py](eval/bfcl/run.py). Not comparable to the vendor's 43.6 (full BFCL v4, thinking mode).
+
+## Semantic file search: retrieval only, no LLM (300 SciFact abstracts, 150 expert claims, held-out half)
+
+| Ranking | Recall@1 | Recall@5 | MRR | Paraphrased half: R@1 | R@5 | MRR | Query ms |
+|---|---|---|---|---|---|---|---|
+| keyword | 75.3% | 88.7% | 0.811 | 52.9% | 75.7% | 0.628 | 41 |
+| **embedding (shipped)** | 89.3% | 97.3% | 0.929 | 81.4% | 95.7% | 0.875 | 296 |
+| fused | 88.7% | 94.0% | 0.914 | 77.1% | 87.1% | 0.823 | 151 |
+
+Keyword = SQLite FTS5 BM25, embedding = embeddinggemma cosine, fused = reciprocal rank fusion of the two ([eval/retrieval.py](eval/retrieval.py)). "Paraphrased" = the 70 claims sharing the fewest content words with their abstract (below the median 0.50). SciFact: claims CC BY 4.0, abstracts ODC-By 1.0.
+
+The method and the embedder prompts were chosen on a separate dev half (150 other claims; MRR there: keyword 0.797, embedding 0.938, fused 0.896; embedding without the prompts 0.881), then this half was run once.
+
+**A "nothing found" cut-off was tried and dropped.** Rule fixed on dev: cosine ≥ 0.346 (5th percentile of true matches). On this half it returned nothing for 16 of 75 claims whose abstract is not in the corpus, but also for 6 of 150 answerable ones, and lowered recall@1 to 87.3% and recall@5 to 93.3% (dev: 19 of 75 and 4 of 150). The tool therefore always returns its closest files and the model judges the snippets. This was decided after the test run, on a trade the dev half had already shown.
+
+Indexing ran at 1.42–2.09 chunks per second on the laptop CPU while another evaluation was using it.
