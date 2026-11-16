@@ -163,6 +163,16 @@ def tool_lines(contracts=None) -> str:
     return "\n".join(out)
 
 
+# The checker's wording, spelled out: the first teacher replies took "the answer lacks" for "the wrong file".
+LACKS = """
+("The answer lacks X" means: the files are as they should be, so the tool calls were right; what is wrong is the \
+text reply that ends that user turn, which has to contain X. A number: the reply must state that figure exactly, \
+unrounded. A file name: the reply must mention that file. When the user asks for the oldest or newest file, Alfred \
+goes by the modified date; if another file's name suggests the opposite (it ends in _old, or carries an earlier or \
+later year), Alfred still acts on the date and says so in the reply, naming that other file. Here the name is \
+visible in the earlier tool result, so it may be used.)"""
+
+
 def teacher_prompt(r: dict) -> str:
     return f"""Below is a transcript of Alfred, an assistant that works on a Windows laptop through tools. Alfred did \
 not complete the task. Find the EARLIEST assistant turn that is wrong and write the turn Alfred should have produced \
@@ -178,7 +188,7 @@ Transcript (tool results are real):
 {transcript(r)}
 
 Why the task failed, from an automatic check of the files and the answers afterwards:
-{r["reason"] or "a safety rule was broken: " + json.dumps(r["invariants"])}
+{r["reason"] or "a safety rule was broken: " + json.dumps(r["invariants"])}{LACKS if "the answer lacks" in (r["reason"] or "") else ""}
 
 Rules for your turn:
 - The turns before it stay exactly as they are, so it must follow from what the transcript shows up to that point.
