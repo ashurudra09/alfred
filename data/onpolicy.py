@@ -5,6 +5,7 @@ earliest error); see docs/references.md.
   uv run python -m data.onpolicy rollout --n 25 --url http://127.0.0.1:8081/v1 [--shard 0/2]   # steps 2.1, 2.2
   uv run python -m data.onpolicy triage                                                        # step 2.3
   uv run python -m data.onpolicy correct --url http://127.0.0.1:8081/v1 [--limit N]            # steps 2.4, 2.5
+  uv run python -m data.onpolicy convert                                                       # step 2.6 -> data/out/v4/onpolicy.jsonl
   uv run python -m data.onpolicy replay                                                        # verification, no model
 
 Rollouts are appended to data/out/v4/student_<i>of<n>.jsonl (one row per task, full trajectory) and resume by task
@@ -21,6 +22,8 @@ import argparse
 import hashlib
 import json
 import os
+import random
+import re
 import subprocess
 import sys
 import time
@@ -30,8 +33,11 @@ from openai import OpenAI
 
 from alfred.agent.backends import ROOT, Backend, RawCall, Result
 from alfred.contracts.export import load, openai_tools
+from alfred.contracts.schemas import Example, Message
 from alfred.tools import semantic
+from data.gen.prompts import USERS
 from data.gen.teacher import PROVIDERS
+from data.validate import check
 from eval.e2e import hard
 from eval.e2e.__main__ import run_task
 
@@ -169,7 +175,10 @@ Why the task failed, from an automatic check of the files and the answers afterw
 Rules for your turn:
 - The turns before it stay exactly as they are, so it must follow from what the transcript shows up to that point.
 - It is either tool calls or a text reply to the user, never both.
-- Use only paths, names and values that appear in the user's messages or in earlier tool results.
+- Use only paths, names and values that appear in the user's messages or in earlier tool results. The failure \
+reason above tells you what went wrong; Alfred never sees it, so a folder or file name that appears only there must \
+not be used. When Alfred does not know where something is, it searches all folders.
+- Leave optional arguments out instead of setting them to null.
 - Do only what the user asked for. A change is confirmed by the user in the app, so just make the call; do not ask \
 "shall I?" in text. If the request is unclear, or two things fit it, the right turn is a question to the user.
 - A reply that ends a request states what was found or done, including every figure or name the user asked for.
@@ -222,6 +231,8 @@ def correct(a):
             k = fix.get("index")
             if not isinstance(k, int) or not 0 <= k < len(turns) or not (fix.get("tool_calls") or fix.get("content")):
                 break
+            for c in fix.get("tool_calls") or []:  # the teacher writes null for "not given"; the schemas have no null
+                c["arguments"] = {k: v for k, v in c["arguments"].items() if v is not None}
             new = {"role": "assistant", **({"tool_calls": fix["tool_calls"]} if fix.get("tool_calls") else
                                            {"content": fix["content"]})}
             # a later round may go back before an earlier fix, which is then no longer part of the trajectory
@@ -254,6 +265,46 @@ def replay(a):
     print(f"replayed {len(good)} kept trajectories: {len(good) - len(bad)} pass again, {len(bad)} do not")
 
 
+# --- conversion (step 2.6) ---
+
+def examples(r: dict) -> list[Example]:
+    """A kept row as training Examples, one per chat. The sandbox folder becomes C:\\Users\\<name>, so no path of
+    this machine reaches the data; the recorded system prompt is kept, the tool list is the current one (26)."""
+    user = random.Random(r["id"]).choice(USERS)
+    # the row as JSON text, where a backslash is written twice; forward-slash spellings are covered too
+    text, home = json.dumps(r["trajectory"], ensure_ascii=False), json.dumps(f"C:\\Users\\{user}")[1:-1]
+    for root in (json.dumps(r["root"])[1:-1], r["root"].replace("\\", "/")):
+        text = re.sub(re.escape(root), lambda _: home, text, flags=re.I)
+    out = []
+    for n, chat in enumerate(json.loads(text)):
+        msgs = [Message(role="system", content=chat["system"]), *map(Message.model_validate, chat["messages"])]
+        calls = sum(len(m.tool_calls or []) for m in msgs)
+        out.append(Example(id=f"onpolicy-{r['id']}-{n}", source="onpolicy", messages=msgs, tools=openai_tools(),
+                           category="multi_step" if calls > 1 else "tool_call" if calls else "direct"))
+    return out
+
+
+def convert(_=None):
+    good = [r for stage in ("student", "fixed") for r in rows(stage).values() if kept(r)]
+    n, why, out = 0, Counter(), []
+    for r in good:
+        for ex in examples(r):
+            n += 1
+            errs = check(ex)
+            dump = ex.model_dump_json()
+            if any(m.role == "assistant" and m.content.startswith(LOOP_MADE) for m in ex.messages):
+                errs.append("contains a reply written by the loop, not the model")
+            if re.search(r"interview prep|runs.{1,2}sb|" + re.escape(os.environ.get("USERNAME", "ashur")), dump, re.I):
+                errs.append("a path of this machine is left in the example")
+            why.update(errs)
+            if not errs:
+                out.append(dump)
+    (OUT / "onpolicy.jsonl").write_text("\n".join(out) + "\n", encoding="utf-8")
+    print(f"{len(good)} kept trajectories -> {n} examples, {len(out)} valid -> {OUT / 'onpolicy.jsonl'}")
+    for err, k in why.most_common():
+        print(f"  {k:5}  {err}")
+
+
 def triage(_=None):
     rs = list(rows("student").values())
     by = Counter((r["tags"][1], kept(r)) for r in rs)
@@ -274,10 +325,10 @@ def triage(_=None):
 if __name__ == "__main__":
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     ap = argparse.ArgumentParser()
-    ap.add_argument("cmd", choices=["rollout", "triage", "correct", "replay"])
+    ap.add_argument("cmd", choices=["rollout", "triage", "correct", "replay", "convert"])
     ap.add_argument("--n", type=int, default=25, help="tasks per family (25 = the 300-task pilot)")
     ap.add_argument("--url", help="the eval server, e.g. http://127.0.0.1:8081/v1")
     ap.add_argument("--shard", default="0/1")
     ap.add_argument("--limit", type=int, help="correct or replay at most N tasks")
     a = ap.parse_args()
-    {"rollout": rollout, "correct": correct, "triage": triage, "replay": replay}[a.cmd](a)
+    {"rollout": rollout, "correct": correct, "triage": triage, "replay": replay, "convert": convert}[a.cmd](a)
