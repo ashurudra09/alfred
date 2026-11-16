@@ -47,7 +47,7 @@ checkout while a machine job runs.
 - Nothing from track 1A.
 
 ## Machine
-- Idle since 2026-11-17. (Eval servers: :8081, :8082. The owner's UI server on :8080 is never touched.)
+- **Busy since 2026-11-17 01:25:** track 2 pilot rollouts, commit f314699. v3 Q4 on :8081 (llama-server PID 15536, shard 0/2) and :8082 (PID 15288, shard 1/2); logs `runs/v4/onpolicy_pilot_{0,1}.log`, rows in `data/out/v4/student_*.jsonl`. Resumable: run the same command again. Stop only those two PIDs when it is done. (The owner's UI server on :8080 is never touched.)
 
 ## Track 0: Setup
 
@@ -159,6 +159,20 @@ Left for other tracks (not part of 1C's code):
 - **Finding for track 4E (E6):** `backends.wrap_tool_output` does not escape a literal `</tool_output>` or Qwen chat
   markup inside a tool result, so the `fake_user_turn` family can close the untrusted wrapper. Not fixed here: the
   plan says measure first, then bring the fix to the owner.
+
+## Track 2: On-policy data (main checkout, branch `v4`)
+
+| Step | State | Date | Commit | Artifacts | Numbers / notes |
+|---|---|---|---|---|---|
+| 2.1 Train tasks | pilot instantiated | 2026-11-17 | f314699 | `hard.tasks("train", 25)` | 300 shared-family tasks (25 per family) + 125 semantic-search tasks. Each has its own pinned date from the generator; the user name is given at conversion (2.6), where sandbox paths are rewritten. **To decide when scaling:** at 150 per family the generator gives 1,839 distinct request texts for 2,775 turns, so near-duplicate requests will have to be counted and capped. |
+| 2.2 Student rollouts | **running** (pilot, 300 tasks) | 2026-11-17 | f314699 | `data/onpolicy.py rollout`; `data/out/v4/student_{0,1}of2.jsonl`; `runs/v4/onpolicy_pilot_*.log` | v3 Q4, prompt 1.2, 25 tools, temperature 0, real MCP tool server, one fixed sandbox per task (`runs/sb/<family>_<seed>`). About 15 s per task per server. `teacher_exec` for the 125 tool-26 tasks: not started. |
+| 2.3 Triage | code done | 2026-11-17 | f314699 | `data/onpolicy.py triage` | kept = the task's check passes and all three invariants are 0. Numbers when the pilot ends. |
+| 2.4 Correction | code done, **not run** | 2026-11-17 | this commit | `data/onpolicy.py correct`; teacher cache `data/out/v4/cache/` | Teacher (gpt-oss-120b, Groq free tier) gets Alfred's instructions, the 25 tools one line each, the transcript with real results and the checker's reason (about 1,500 tokens), and returns the earliest wrong turn and its replacement. Replay = the recorded turns fed back through the real loop and tools in a fresh sandbox (`Prefixed`), then the student continues; up to 3 rounds. Runs that hit a model-server failure are never counted as results. |
+| 2.5 Acceptance by execution | code done | 2026-11-17 | this commit | `fixed_*.jsonl` | Every corrected task is written with its final verdict; only check-passing, invariant-free ones are kept. Oracle fallback (at most 10%): not built. |
+| 2.6 Conversion to `Example` | todo | | | | |
+| 2.7 Tool-26 batches | todo | | | | Needs Groq quota, as do 2.4, `teacher_exec` and the 12 injection_v4 batches left from 1C. |
+| 2.8 Audit | todo | | | | |
+| Verify | replay built | 2026-11-17 | this commit | `data/onpolicy.py replay` | With no model: the first 6 kept pilot trajectories pass again from an empty sandbox with identical answers. To be run over everything kept. |
 
 ## Notes for whoever works next
 - Track branches cannot be named `v4/<track>` (git refuses while a branch `v4` exists); 1B uses `v4-1B`.
