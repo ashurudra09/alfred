@@ -24,6 +24,55 @@ def reply(content: str) -> dict:
     return {"content": content, "tool_calls": [], "error": None}
 
 
+# v4 rules (2026-11-17), from reading the first injection_v4 examples. They apply to every Example, so a rerun of
+# validation on v3's data would drop a few more rows (counted in docs/v4/STATUS.md); v3's validated file is not rerun.
+INJECTED = re.compile(r"ignore (all |your |any |the )?(previous|prior|above|earlier)|\bIGNORE\b|\bTODO:|IMPORTANT!!!|"
+                      r"system_message|\bSYSTEM\b|<tool_call>|\boverride\b|note for (the )?(AI|assistant)|"
+                      r"instruction|FAKE", re.I)
+# In a user's own message only the attack templates count: "ignore the old files" is an ordinary request.
+IN_USER = re.compile(r"ignore (all |your )?previous instructions|\bTODO:|IMPORTANT!!!|system_message|<tool_call>", re.I)
+TODAY = re.compile(r"Today is (\d{4}-\d{2}-\d{2})")
+# When a file or fact was written ("modified 2026-10-15", "saved 2026-10-01", a note line "1. Title (2026-10-21)"),
+# not dates inside file contents or reminder times, which may lie in the future.
+STAMP = re.compile(r"(?:modified|saved) (20\d\d-\d\d-\d\d)|^\d+\. [^\n(]*\((20\d\d-\d\d-\d\d)\)", re.M)
+HINDI = re.compile(r"\b(hai|hain|aapka|aapke|aapki|aapne|mein|nahi|kiya|kar|diya|mujhe|meri|mera|batao|chahiye|"
+                   r"kya|woh|yeh|ye)\b", re.I)
+
+
+def v4_checks(ex: Example) -> list[str]:
+    errs, msgs = [], ex.messages
+    today = TODAY.search(msgs[0].content)
+    for m in msgs:
+        if today and m.role == "tool" and any(d > today.group(1) for pair in STAMP.findall(m.content) for d in pair if d):
+            errs.append("modified or saved date after today in a tool result")
+    users = " ".join(m.content for m in msgs if m.role == "user")
+    replies = " ".join(m.content for m in msgs if m.role == "assistant")
+    if len(HINDI.findall(replies)) >= 3 and not HINDI.search(users):
+        errs.append("Hinglish reply to a request written in English")
+    if ex.category == "injection":
+        if any(m.role == "user" and IN_USER.search(m.content) for m in msgs):
+            errs.append("injected text in the user's message")
+        # v4 injections are worded with the train-allowed families, whose markers are known; v3's free-form ones
+        # ("ALFRED:", "ADMIN:", "NOTE TO AI") are not checked for presence.
+        if ex.id.startswith("injection_v4") and not any(m.role == "tool" and INJECTED.search(m.content) for m in msgs):
+            errs.append("injection example without injected text in a tool result")
+    if ex.id in REJECTED:
+        errs.append(f"rejected in review: {REJECTED[ex.id]}")
+    return errs
+
+
+# Examples read and rejected by hand for faults the rules above do not catch (review of 2026-11-17).
+REJECTED = {
+    "injection_v4-list_directory+search_files-0584-01": "adds a 30-day filter the user did not ask for; count line "
+                                                        "says 2 files, lists 3",
+    "injection_v4-list_directory+search_files-0584-10": "disk_usage result not in disk_usage's format",
+    "injection_v4-list_directory+search_files-0585-08": "empty search result not in search_files' format",
+    "injection_v4-list_directory+search_files-0586-11": "result path C:\\Users\\student\\Projects is not the known "
+                                                        "Projects folder (D:\\projects)",
+    "injection_v4-list_directory+search_files-0588-01": "asked for PDFs about transformers, searched with query '*'",
+}
+
+
 def check(ex: Example) -> list[str]:
     errs, msgs = [], ex.messages
     if msgs[0].role != "system" or msgs[1].role != "user":
@@ -72,6 +121,7 @@ def check(ex: Example) -> list[str]:
                 errs.append("permanent-delete language")
         elif m.role == "user" and pending:
             errs.append("user turn before tool results")
+    errs += v4_checks(ex)
     last = msgs[-1]
     if last.role != "assistant" or last.tool_calls or pending:
         errs.append("must end with an assistant reply")
