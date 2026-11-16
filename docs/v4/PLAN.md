@@ -439,3 +439,17 @@ and indexing ran at about 2.4 chunks per second on a shared CPU.
    a trade the dev half had already shown; the experiment stays in the reports and in `RESULTS.md`. Consequence for
    tracks 1A and 2: in "nothing matches" tasks the tool still lists files, so the check is that the model says
    none fits and acts on none.
+
+### 2026-11-17, teacher for phase 2 (owner's decision)
+8. **Claude Haiku replaces the Groq teacher for the rest of v4's new data.** Groq's free tier gives gpt-oss-120b
+   200,000 tokens per rolling day; phase 2 at pilot size needs about 1.8M (nine days), and the owner does not have
+   that time. From here the corrections of step 2.4, the tool-26 batches of step 2.7 and the 11 injection batches
+   left from track 1C are written by Claude Haiku, run as agents under the owner's Claude subscription (no API
+   billing), as v3's additions were. This replaces the decision "Claude never writes v4 training data". Unchanged:
+   acceptance by execution (2.5), the validator, every generated example is read, and the 104 injection examples
+   already made by gpt-oss-120b stay. To state in `data/card.md` and the write-up: which examples a Claude model
+   wrote, and that the test sets were drafted by Claude as well, so the teacher is no longer independent of them
+   (the 8-gram / cosine guard still applies).
+9. **Step 2.2, tool-26 tasks.** Instead of the teacher driving these tasks through the loop, the student (v3) is
+   given the 26-tool list and its trajectories go through the same correction as every other task: one mechanism,
+   and what is corrected is what the student actually does with a tool it has not seen.

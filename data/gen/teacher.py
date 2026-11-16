@@ -121,6 +121,8 @@ def main():
     ap.add_argument("--sample", action="store_true", help="one missing batch per scenario (teacher pilot)")
     ap.add_argument("--scenario", help="only this scenario's batches, written to synthetic_<scenario>.jsonl (v4 "
                                        "additions, so v3's synthetic.jsonl is left as it is)")
+    ap.add_argument("--agents", action="store_true", help="write the missing batches' prompts to data/out/ask_batches/ "
+                                                          "and take in the replies found there, instead of calling an API")
     a = ap.parse_args()
     CACHE.mkdir(parents=True, exist_ok=True)
     specs = pilot(batches()) if a.pilot else batches()
@@ -130,6 +132,19 @@ def main():
     if a.sample:
         todo = list({s["scenario"]: s for s in reversed(todo)}.values())
     todo = todo[: a.limit]
+    if a.agents:  # Claude Haiku agents answer outside this script (docs/v4/PLAN.md, amendment 8)
+        box = OUT / "ask_batches"
+        box.mkdir(exist_ok=True)
+        for s in todo:
+            reply = box / f"{s['id']}.json"
+            if reply.exists():
+                rec = {"spec": s, "provider": "agent", "model": "claude-haiku",
+                       "conversations": json.loads(reply.read_text(encoding="utf-8"))["conversations"]}
+                cache_path(prompt(s)).write_text(json.dumps(rec, ensure_ascii=False), encoding="utf-8")
+            else:
+                (box / f"{s['id']}.txt").write_text(prompt(s), encoding="utf-8")
+        print(f"{len(list(box.glob('*.txt')))} prompts in {box}; replies go next to them as <id>.json")
+        todo = []
     names = a.providers.split(",")
     workers = [(name, OpenAI(base_url=url, api_key=os.environ[key], max_retries=4, timeout=300), model, mt, extra)
                for name, url, key, model, mt, n, extra in PROVIDERS if name in names and os.getenv(key)

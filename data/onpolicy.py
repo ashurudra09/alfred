@@ -3,7 +3,7 @@ and what it actually did is kept or queued for correction. Method after SCoRe (s
 earliest error); see docs/references.md.
 
   uv run python -m data.onpolicy rollout --n 25 --url http://127.0.0.1:8081/v1 [--shard 0/2]   # steps 2.1, 2.2
-  uv run python -m data.onpolicy rollout --teacher [--limit N]                                 # tool-26 tasks, teacher drives
+  uv run python -m data.onpolicy rollout --tool26 --url ...                                    # the semantic-search tasks, 26 tools
   uv run python -m data.onpolicy triage                                                        # step 2.3
   uv run python -m data.onpolicy correct --url http://127.0.0.1:8081/v1 [--limit N]            # steps 2.4, 2.5
   uv run python -m data.onpolicy convert                                                       # step 2.6 -> data/out/v4/onpolicy.jsonl
@@ -15,8 +15,14 @@ id. A task passes triage only if its own check passes and every safety invariant
 Correction: the teacher reads a failed trajectory (real tool results, the checker's reason) and names the earliest
 wrong assistant turn plus a replacement. The turns before it are replayed in a fresh sandbox, the replacement is
 executed for real and the student carries on; up to three rounds. The outcome goes to fixed_<i>of<n>.jsonl whether
-or not it passes: acceptance is the task's check, never the teacher's opinion. Teacher replies are cached by prompt
-hash in data/out/v4/cache/.
+or not it passes: acceptance is the task's check, never the teacher's opinion.
+
+The teacher is Claude Haiku, run as agents outside this script (owner's decision of 2026-11-17, PLAN amendment 8):
+`correct` writes each prompt it needs to data/out/v4/ask/<hash>.txt and skips that task; an agent writes the reply
+to <hash>.json next to it; the next `correct` picks it up. So `correct` is run once per round, three times at most.
+
+Tasks that need tool 26 (--tool26): the student has never seen that tool, so it is given the 26-tool list and its
+trajectories go through the same correction, instead of the teacher driving the whole task.
 """
 
 import argparse
@@ -27,7 +33,6 @@ import random
 import re
 import subprocess
 import sys
-import time
 from collections import Counter
 
 from openai import OpenAI
@@ -37,7 +42,6 @@ from alfred.contracts.export import load, openai_tools
 from alfred.contracts.schemas import Example, Message
 from alfred.tools import semantic
 from data.gen.prompts import USERS
-from data.gen.teacher import PROVIDERS
 from data.validate import check
 from eval.e2e import hard
 from eval.e2e.__main__ import run_task
@@ -46,11 +50,13 @@ OUT = ROOT / "data" / "out" / "v4"
 STUDENT_CONTRACTS = "1.2"  # v3 was trained on the 25-tool list; tool 26 is hidden from it
 FAMILIES = [f.__name__ for f in hard.SHARED + hard.SEMANTIC]
 # Replies the loop writes itself, without asking the model: not the student's turns, and nothing to train on.
-STAGES = ("student", "fixed", "teacher")  # student passed; student after the teacher's fix; teacher did all of it
+STAGES = ("student", "fixed")  # the student passed by itself; the student after the teacher's fixes
 LOOP_MADE = ("Sorry, the model backend failed", "I couldn't make a valid tool call", "I stopped after")
 
 
-def student_config() -> dict:
+def student_config(tags=()) -> dict:
+    if "new_capability" in tags:  # these tasks cannot be done without tool 26
+        return {"temperature": 0.0}
     old = {t["name"] for t in load(STUDENT_CONTRACTS)["tools"]}
     return {"temperature": 0.0, "contracts": STUDENT_CONTRACTS,
             "disabled_tools": [t["name"] for t in load()["tools"] if t["name"] not in old]}
@@ -86,11 +92,9 @@ def kept(r: dict) -> bool:
 
 
 def rollout(a):
-    """Student rollouts. Tasks that need tool 26, which the student has never seen, are done by the teacher
-    through the same loop and tools (--teacher, stage `teacher`) and accepted by the same check."""
-    stage = "teacher" if a.teacher else "student"
-    tasks = [t for t in hard.tasks("train", a.n) if ("new_capability" in t.tags) == a.teacher]
-    backend, config = (Backend("groq"), {"temperature": 0.0}) if a.teacher else (local(a.url), student_config())
+    stage = "student"
+    tasks = [t for t in hard.tasks("train", a.n) if ("new_capability" in t.tags) == a.tool26]
+    backend = local(a.url)
     commit = subprocess.run(["git", "rev-parse", "--short", "HEAD"], capture_output=True, text=True).stdout.strip()
     i, n = map(int, a.shard.split("/"))
     OUT.mkdir(parents=True, exist_ok=True)
@@ -99,13 +103,11 @@ def rollout(a):
         if t.id in done:
             continue
         try:
-            r = run_task(t, backend, None, config, root=sandbox(t))
+            r = run_task(t, backend, None, student_config(t.tags), root=sandbox(t))
         except Exception as e:  # a tool server that did not start must not end an overnight run; the task is retried on a rerun
             print(f"[{j}/{len(mine)}] ERROR {t.id} {type(e).__name__}: {str(e)[:200]}", flush=True)
             continue
         r |= {"stage": stage, "root": str(sandbox(t)), "commit": commit, "embedder_up": semantic.embedder_up()}
-        if a.teacher and any(x.startswith(LOOP_MADE[0]) for x in r["answers"]):  # the free quota ran out mid-task
-            return print("teacher backend failed (quota?); run again after the daily reset")
         with (OUT / f"{stage}_{i}of{n}.jsonl").open("a", encoding="utf-8") as f:
             f.write(json.dumps(r, ensure_ascii=False) + "\n")
         print(f"[{j}/{len(mine)}] {'PASS' if kept(r) else 'FAIL'} {t.id} {r['turn_secs']} {r['calls']} "
@@ -150,10 +152,10 @@ def transcript(r: dict) -> str:
     return "\n".join(out)
 
 
-def tool_lines() -> str:
-    """The student's tools, one line each: name(arg: type, optional?: type): description."""
+def tool_lines(contracts=None) -> str:
+    """The tools the student had, one line each: name(arg: type, optional?: type): description."""
     out = []
-    for t in openai_tools(load(STUDENT_CONTRACTS)):
+    for t in openai_tools(load(contracts)):
         f, p = t["function"], t["function"]["parameters"]
         args = ", ".join(f"{k}{'' if k in p.get('required', []) else '?'}: {v.get('type', 'any')}"
                          for k, v in p.get("properties", {}).items())
@@ -170,7 +172,7 @@ Alfred's instructions:
 {r["trajectory"][0]["system"]}
 
 Alfred's tools:
-{tool_lines()}
+{tool_lines(student_config(r["tags"]).get("contracts"))}
 
 Transcript (tool results are real):
 {transcript(r)}
@@ -194,33 +196,18 @@ Return one JSON object: {{"index": <number of the wrong assistant turn>, "why": 
 place of "tool_calls" for a text reply."""
 
 
-_teacher = []
-
-
 def ask(text: str) -> dict | None:
-    """The teacher's JSON reply, cached by prompt hash. None when the free quota is used up (the run stops)."""
-    path = OUT / "cache" / (hashlib.sha256(text.encode()).hexdigest()[:24] + ".json")
-    if path.exists():
-        return json.loads(path.read_text(encoding="utf-8"))["reply"]
-    _, url, key, model, _, _, extra = PROVIDERS[0]  # gpt-oss-120b on Groq's free tier
-    if not _teacher:
-        _teacher.append(OpenAI(base_url=url, api_key=os.environ[key], max_retries=4, timeout=300))
-    for attempt in range(3):
+    """The teacher's reply to this prompt, or None after writing the prompt out for the agents to answer."""
+    path = OUT / "ask" / (hashlib.sha256(text.encode()).hexdigest()[:24] + ".txt")
+    if path.with_suffix(".json").exists():
         try:
-            res = _teacher[0].chat.completions.create(
-                model=model, messages=[{"role": "user", "content": text}], temperature=0.2, max_tokens=1500,
-                response_format={"type": "json_object"}, extra_body=extra)
-            reply = json.loads(res.choices[0].message.content)
-            path.parent.mkdir(parents=True, exist_ok=True)
-            path.write_text(json.dumps({"reply": reply, "model": model, "prompt": text,
-                                        "tokens": res.usage.total_tokens}, ensure_ascii=False), encoding="utf-8")
-            return reply
-        except Exception as e:
-            print(f"  teacher attempt {attempt + 1}: {type(e).__name__}: {str(e)[:600]}", flush=True)
-            if "per day" in str(e) or "402" in str(e):
-                return None
-            time.sleep(20 * (attempt + 1))
-    return {}  # no usable reply: this task is dropped and counted
+            reply = json.loads(path.with_suffix(".json").read_text(encoding="utf-8"))
+            return reply if isinstance(reply, dict) else {}
+        except ValueError:
+            return {}  # no usable reply: this task is dropped and counted
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(text, encoding="utf-8")
+    return None
 
 
 def correct(a):
@@ -229,33 +216,40 @@ def correct(a):
     done = rows("fixed")
     todo = [r for r in rows("student").values() if not kept(r) and r["id"] not in done][i::n][: a.limit]
     for j, r in enumerate(todo, 1):
-        task, fixes, first = task_of(r["id"]), [], r["reason"]
+        task, fixes, first, waiting = task_of(r["id"]), [], r["reason"], False
         for _ in range(3):
             fix, turns = ask(teacher_prompt(r)), assistant_turns(r)
             if fix is None:
-                return print("teacher quota used up; run again after the daily reset")
+                waiting = True
+                break
             k = fix.get("index")
             if not isinstance(k, int) or not 0 <= k < len(turns) or not (fix.get("tool_calls") or fix.get("content")):
                 break
             for c in fix.get("tool_calls") or []:  # the teacher writes null for "not given"; the schemas have no null
-                c["arguments"] = {k: v for k, v in c["arguments"].items() if v is not None}
+                c["arguments"] = {x: v for x, v in c["arguments"].items() if v is not None}
             new = {"role": "assistant", **({"tool_calls": fix["tool_calls"]} if fix.get("tool_calls") else
                                            {"content": fix["content"]})}
             # a later round may go back before an earlier fix, which is then no longer part of the trajectory
             fixes = [f for f in fixes if f["index"] < k] + [{"index": k, "why": fix.get("why", ""), "turn": new}]
             try:
-                r = run_task(task, Prefixed(turns[:k] + [new], student), None, student_config(), root=sandbox(task))
+                r = run_task(task, Prefixed(turns[:k] + [new], student), None, student_config(task.tags),
+                             root=sandbox(task))
             except Exception as e:  # e.g. the teacher's turn has a shape the loop cannot take
                 print(f"  {task.id}: {type(e).__name__}: {str(e)[:200]}", flush=True)
                 break
             if kept(r):
                 break
+        if waiting:
+            print(f"[{j}/{len(todo)}] WAITING {task.id}: round {len(fixes) + 1} needs the teacher", flush=True)
+            continue
         r |= {"stage": "fixed", "fixes": fixes, "first_reason": first, "root": str(sandbox(task)),
-              "embedder_up": semantic.embedder_up()}
+              "teacher": "claude-haiku", "embedder_up": semantic.embedder_up()}
         with (OUT / f"fixed_{i}of{n}.jsonl").open("a", encoding="utf-8") as f:
             f.write(json.dumps(r, ensure_ascii=False) + "\n")
         print(f"[{j}/{len(todo)}] {'FIXED' if kept(r) else 'DROPPED'} {task.id} at turns {[f['index'] for f in fixes]} "
               f"{'' if kept(r) else r['reason']}", flush=True)
+    todo = [f for f in (OUT / "ask").glob("*.txt") if not f.with_suffix(".json").exists()]
+    print(f"{len(todo)} prompts in {OUT / 'ask'} wait for the teacher")
 
 
 def replay(a):
@@ -264,7 +258,7 @@ def replay(a):
     bad = []
     for r in good:
         again = run_task(task_of(r["id"]), Prefixed(assistant_turns(r), None), None,
-                         {} if r["stage"] == "teacher" else student_config(), root=sandbox(task_of(r["id"])))
+                         student_config(r["tags"]), root=sandbox(task_of(r["id"])))
         if not kept(again) or again["answers"] != r["answers"]:
             bad.append(r["id"])
             print(f"NOT REPRODUCED {r['id']} ({r['stage']}): {again['reason']}", flush=True)
@@ -312,7 +306,7 @@ def convert(_=None):
 
 
 def triage(_=None):
-    rs = [*rows("student").values(), *rows("teacher").values()]
+    rs = list(rows("student").values())
     by = Counter((r["tags"][1], kept(r)) for r in rs)
     print(f"{len(rs)} rollouts: {sum(map(kept, rs))} kept, {len(rs) - sum(map(kept, rs))} to correct; "
           f"invariant hits {sum(any(r['invariants'].values()) for r in rs)}; "
@@ -336,6 +330,6 @@ if __name__ == "__main__":
     ap.add_argument("--url", help="the eval server, e.g. http://127.0.0.1:8081/v1")
     ap.add_argument("--shard", default="0/1")
     ap.add_argument("--limit", type=int, help="at most N tasks")
-    ap.add_argument("--teacher", action="store_true", help="rollout: the tool-26 tasks, driven by the teacher")
+    ap.add_argument("--tool26", action="store_true", help="rollout: the semantic-search tasks, with 26 tools")
     a = ap.parse_args()
     {"rollout": rollout, "correct": correct, "triage": triage, "replay": replay, "convert": convert}[a.cmd](a)
