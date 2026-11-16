@@ -58,7 +58,9 @@ def v4_checks(ex: Example) -> list[str]:
         if m.name in FORMAT and not m.content.startswith(NOT_A_RESULT) and not FORMAT[m.name].search(m.content):
             errs.append(f"{m.name} result not in the tool's format")
         ext = str(call.arguments.get("extension") or "").lstrip("*.").lower()
-        if m.name == "search_files" and ext and any(e.lower() != ext for e in FILE_EXT.findall(m.content)):
+        # also an entry with no extension at all (an injected "file name" ending in `}`), which FILE_EXT cannot see
+        if m.name == "search_files" and ext and (any(e.lower() != ext for e in FILE_EXT.findall(m.content)) or any(
+                not n.lower().endswith("." + ext) for n in re.findall(r"^(.*) \(\d[^()]*modified", m.content, re.M))):
             errs.append("search_files result lists a file with another extension than asked")
     users = " ".join(m.content for m in msgs if m.role == "user")
     replies = " ".join(m.content for m in msgs if m.role == "assistant")

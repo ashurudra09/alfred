@@ -44,7 +44,16 @@ checkout while a machine job runs.
 | 6 Write-up | blocked | 5 | |
 
 ## Waiting on the owner
-- Nothing from track 1A.
+- **Teacher quota decides the size of phase 2 (found 2026-11-17).** Groq's free tier gives gpt-oss-120b **200,000
+  tokens per rolling day** (the 429 says so: limit 200000, used 199965 at 01:20). Measured or estimated cost: a
+  correction about 1,700 tokens per round; a teacher-driven tool-26 task about 9,000 (three calls, each carrying the
+  prompt and 26 schemas); a generator batch about 9,000. At the pilot's size that is roughly 0.4M (corrections for
+  about 135 failed tasks) + 1.1M (125 tool-26 tasks) + 0.2M (step 2.7) + 0.1M (the 11 injection batches left) =
+  **about 1.8M tokens, nine days of quota**; scaling the rollouts to 1,500 tasks adds about 1.9M more. Choices:
+  (a) stay at pilot size and cut the tool-26 tasks to about 40 (step 2.7's batches already give the tool its 200
+  examples): about 0.9M, 4-5 days; (b) a second free source of the same open-weight model, which must first be
+  confirmed free; (c) wait out the full amount. Until the owner answers, quota is spent in this order: corrections
+  for the pilot, then the injection batches.
 
 ## Machine
 - **Busy since 2026-11-17 01:12:** track 2 pilot rollouts, commit f314699. v3 Q4 on :8081 (llama-server PID 15536, shard 0/2) and :8082 (PID 15288, shard 1/2); logs `runs/v4/onpolicy_pilot_{0,1}.log`, rows in `data/out/v4/student_*.jsonl`. Resumable: run the same command again. Stop only those two PIDs when it is done. (The owner's UI server on :8080 is never touched.)
@@ -121,10 +130,14 @@ Left for other tracks (not part of 1C's code):
   `uv run python -m data.gen.teacher --scenario injection_v4 --providers groq` (writes
   `data/out/synthetic_injection_v4.jsonl`; v3's `synthetic.jsonl` is left alone), then
   `uv run python -m data.validate data/out/synthetic_injection_v4.jsonl`. Every example was read by hand.
-  - **Now: 95 valid examples** from 8 of 20 batches (notes 0590-0593: 47, memory 0594-0597: 48), all with the
-    26-tool list, none with test-only attack wording.
-  - **Still to generate: 12 batches**, the 6 file-name batches (0584-0589, set aside, see below) and the 5 git-output
-    batches plus memory 0598 (never generated). Run the command above again when Groq's daily limit has reset,
+  - **Now: 104 valid examples** from 9 of 20 batches (file names 0584: 9 of 12, notes 0590-0593: 47, memory
+    0594-0597: 48), all with the 26-tool list, none with test-only attack wording. Batch 0584 was regenerated and
+    read on 2026-11-17 (third prompt): listings are in the tool's format now; 3 extension searches list an injected
+    entry that has no such extension, which the validator's extension rule missed because the entry ends in `}`
+    (rule tightened, the 3 are rejected). Not changed, for the owner to know: these injected "file names" contain
+    `:` and `"`, which Windows does not allow in a real file name.
+  - **Still to generate: 11 batches**, 5 file-name batches (0585-0589, set aside, see below) and the 5 git-output
+    batches plus memory 0598 (never generated). The run of 2026-11-17 01:19 got one batch before the daily limit. Run the command above again when Groq's daily limit has reset,
     then validate and read the new examples. Providers: Cerebras signup credit is used up (HTTP 402) and is not to be
     topped up; Groq's `qwen` model rejects these prompts as too large on the free tier, so `--providers groq`
     (gpt-oss-120b) only. OpenRouter and Gemini keys exist in `.env`; **the owner decided (2026-11-17) to wait for Groq's reset rather than use them.**
