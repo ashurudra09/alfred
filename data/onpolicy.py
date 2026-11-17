@@ -7,6 +7,7 @@ earliest error); see docs/references.md.
   uv run python -m data.onpolicy triage                                                        # step 2.3
   uv run python -m data.onpolicy correct --url http://127.0.0.1:8081/v1 [--limit N]            # steps 2.4, 2.5
   uv run python -m data.onpolicy convert                                                       # step 2.6 -> data/out/v4/onpolicy.jsonl
+  uv run python -m data.onpolicy judge                                                         # step 2.8: transcripts for review
   uv run python -m data.onpolicy replay                                                        # verification, no model
 
 Rollouts are appended to data/out/v4/student_<i>of<n>.jsonl (one row per task, full trajectory) and resume by task
@@ -95,9 +96,15 @@ def local(url):
 def rows(stage: str) -> dict:
     """Finished tasks of a stage. A run in which the model server failed is not a result: it is left out, so a
     rerun does that task again."""
-    return {r["id"]: r for f in sorted(OUT.glob(f"{stage}_*.jsonl"))
-            for r in map(json.loads, f.read_text(encoding="utf-8").splitlines())
-            if not any(x.startswith(LOOP_MADE[0]) for x in r["answers"])}
+    out = {}
+    for f in sorted(OUT.glob(f"{stage}_*.jsonl")):
+        for r in map(json.loads, f.read_text(encoding="utf-8").splitlines()):
+            if any(x.startswith(LOOP_MADE[0]) for x in r["answers"]):
+                continue
+            # a task corrected again after the review has two rows: the kept one counts
+            if r["id"] not in out or kept(r) or not kept(out[r["id"]]):
+                out[r["id"]] = r
+    return out
 
 
 def wrong_search(r: dict) -> bool:
@@ -108,11 +115,33 @@ def wrong_search(r: dict) -> bool:
             and "search_by_meaning" not in r["calls"])
 
 
+def turns_key(r: dict) -> str:
+    return hashlib.sha256(json.dumps(assistant_turns(r), sort_keys=True).encode()).hexdigest()[:24]
+
+
+_flags: dict = {}
+
+
+def flagged(r: dict) -> str | None:
+    """Why the review (step 2.8, `judge`) turned this trajectory down, if it did. The task's check looks at the
+    files and at required facts, not at whether the closing reply is true: a trajectory can pass it and still end
+    with "I moved X" for a file that was never moved. A flagged trajectory goes back to correction."""
+    if not _flags:
+        _flags[""] = ""
+        for f in (OUT / "judge").glob("*.json"):
+            for key, v in json.loads(f.read_text(encoding="utf-8")).items():
+                if not v.get("ok", True):
+                    _flags[key] = v.get("why") or "the final reply is not supported by the tool results"
+    return _flags.get(turns_key(r))
+
+
 def kept(r: dict) -> bool:
-    return r["ok"] and not any(r["invariants"].values()) and not wrong_search(r)
+    return r["ok"] and not any(r["invariants"].values()) and not wrong_search(r) and not flagged(r)
 
 
 def reason(r: dict) -> str:
+    if r["ok"] and flagged(r):
+        return "a reviewer read the transcript and found a reply that the tool results do not support: " + flagged(r)
     return r["reason"] or ("a safety rule was broken: " + json.dumps(r["invariants"]) if any(r["invariants"].values())
                            else "the request describes what a document is about, with no file name and no exact "
                                 "phrase: that needs search_by_meaning, which was never called")
@@ -269,7 +298,7 @@ def ask(text: str) -> dict | None:
 def correct(a):
     student = local(a.url)
     i, n = map(int, a.shard.split("/"))
-    done = rows("fixed")
+    done = {k: r for k, r in rows("fixed").items() if kept(r) or not flagged(r)}  # flagged: correct it again
     todo = [r for r in rows("student").values() if not kept(r) and r["id"] not in done][i::n][: a.limit]
     for j, r in enumerate(todo, 1):
         task, fixes, first, waiting = task_of(r["id"]), [], r["reason"], False
@@ -340,6 +369,10 @@ def examples(r: dict) -> list[Example]:
     text, home = json.dumps(r["trajectory"], ensure_ascii=False), json.dumps(f"C:\\Users\\{user}")[1:-1]
     for root in (json.dumps(r["root"])[1:-1], r["root"].replace("\\", "/")):
         text = re.sub(re.escape(root), lambda _: home, text, flags=re.I)
+    # Memories seeded before the first turn are stamped with the real day of the run, not the task's pinned day
+    # (memory.remember does not read ALFRED_TODAY): in the data they were saved on the pinned day.
+    if today := re.search(r"Today is (\d{4}-\d\d-\d\d)", text):
+        text = re.sub(r"\(saved \d{4}-\d\d-\d\d\)", f"(saved {today.group(1)})", text)
     out = []
     for n, chat in enumerate(json.loads(text)):
         msgs = [Message(role="system", content=chat["system"]), *map(Message.model_validate, chat["messages"])]
@@ -370,6 +403,25 @@ def convert(_=None):
         print(f"  {k:5}  {err}")
 
 
+# --- review of what the check cannot see (step 2.8) ---
+
+def judge(a):
+    """Write every kept, not yet reviewed trajectory to data/out/v4/judge/<n>.txt, 20 per file, for the agents.
+    They answer in <n>.json: {"<key>": {"ok": true|false, "why": "..."}}."""
+    box = OUT / "judge"
+    box.mkdir(exist_ok=True)
+    seen = {k for f in box.glob("*.json") for k in json.loads(f.read_text(encoding="utf-8"))}
+    asked = {k for f in box.glob("*.txt") if not f.with_suffix(".json").exists()
+             for k in re.findall(r"^=== (\w+)", f.read_text(encoding="utf-8"), re.M)}
+    todo = [r for stage in STAGES for r in rows(stage).values() if kept(r) and turns_key(r) not in seen | asked]
+    n = len(list(box.glob("*.txt")))
+    for i in range(0, len(todo), 20):
+        text = "\n\n".join(f"=== {turns_key(r)}\n{transcript(r).replace(r['root'], '~')}" for r in todo[i:i + 20])
+        (box / f"{n + i // 20:03d}.txt").write_text(text, encoding="utf-8")
+    print(f"{len(todo)} trajectories written for review, {len(seen)} reviewed before, "
+          f"{sum(1 for k in _flags if k)} flagged")
+
+
 def triage(_=None):
     rs = list(rows("student").values())
     by = Counter((r["tags"][1], kept(r)) for r in rs)
@@ -390,11 +442,11 @@ def triage(_=None):
 if __name__ == "__main__":
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     ap = argparse.ArgumentParser()
-    ap.add_argument("cmd", choices=["rollout", "triage", "correct", "replay", "convert"])
+    ap.add_argument("cmd", choices=["rollout", "triage", "correct", "replay", "convert", "judge"])
     ap.add_argument("--n", type=int, default=25, help="tasks per family (25 = the 300-task pilot)")
     ap.add_argument("--url", help="the eval server, e.g. http://127.0.0.1:8081/v1")
     ap.add_argument("--shard", default="0/1")
     ap.add_argument("--limit", type=int, help="at most N tasks")
     ap.add_argument("--tool26", action="store_true", help="rollout: the semantic-search tasks, with 26 tools")
     a = ap.parse_args()
-    {"rollout": rollout, "correct": correct, "triage": triage, "replay": replay, "convert": convert}[a.cmd](a)
+    {"rollout": rollout, "correct": correct, "triage": triage, "replay": replay, "convert": convert, "judge": judge}[a.cmd](a)
