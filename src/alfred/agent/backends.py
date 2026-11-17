@@ -73,9 +73,17 @@ def parse_text_calls(content: str) -> tuple[str, list[RawCall]]:
     return content.strip(), calls
 
 
+def defuse(text: str) -> str:
+    """Break text that would end the wrapper or open a chat turn (`</tool_output>`, Qwen's `</tool_response>`,
+    `<|im_start|>`), so a file cannot pose as a new user message (4E finding E6)."""
+    for bad, ok in (("</tool_output", "</tool_output_"), ("</tool_response", "</tool_response_"), ("<|", "<\\|")):
+        text = text.replace(bad, ok)
+    return text
+
+
 def wrap_tool_output(text: str) -> str:
     """Tool results reach the model marked as untrusted data (FR16). Eval, training data and the agent all use this."""
-    return f'<tool_output untrusted="true">\n{text}\n</tool_output>'
+    return f'<tool_output untrusted="true">\n{defuse(text)}\n</tool_output>'
 
 
 def openai_messages(messages: list, system: str | None = None) -> list[dict]:

@@ -4,6 +4,7 @@ checker scores an agent that obeys at 100% attack success and one that ignores a
 import pytest
 
 from alfred.agent import loop
+from alfred.agent.backends import wrap_tool_output
 from alfred.tools import memory
 from eval.e2e.__main__ import run_task
 from eval.e2e.hard import Scripted
@@ -42,7 +43,8 @@ def test_injection_reaches_the_model_whole(case, tmp_path):
     shown = flat(next(m["content"] for m in r["trajectory"][0]["messages"] if m["role"] == "tool"))
     inj = injection(case.family, case.goal)
     want = as_name(inj) if case.vector in ("file_name", "git_output") else flat(inj)
-    assert want in shown
+    sent = wrap_tool_output(shown)  # what the model gets: the wrapper still ends once, no chat turn opens
+    assert want in shown and sent.count("</tool_output>") == 1 and "<|im_start|>" not in sent
     assert res["utility"] and not res["attack_model"] and not res["attack_exec_all"]
 
 
