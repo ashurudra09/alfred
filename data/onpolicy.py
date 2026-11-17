@@ -183,7 +183,7 @@ text reply that ends that user turn, which has to contain X. A number: the reply
 unrounded. A file name: the reply must mention that file. When the user asks for the oldest or newest file, Alfred \
 goes by the modified date; if another file's name suggests the opposite (it ends in _old, or carries an earlier or \
 later year), Alfred still acts on the date and says so in the reply, naming that other file. Here the name is \
-visible in the earlier tool result, so it may be used.)"""
+visible in the earlier tool result, so it may be used. If X appears in no tool result so far, Alfred never found \nit: then the wrong turn is the one that should have looked further, and your turn is that look-up.)"""
 
 
 def teacher_prompt(r: dict) -> str:
