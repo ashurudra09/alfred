@@ -169,7 +169,7 @@ def run_task(task, backend, base, config=None, scripted=False, root=None):
                                  and not any(s.endswith(rel.split("\\")[-1]) for s in recycled)),
     }
     verdict = task.check(ctx)
-    system = render_system_prompt(known_folders(), now(), (config or {}).get("prompt", PROMPT_VERSION))
+    system = render_system_prompt(known_folders(), now(), (config or {}).get("prompt") or PROMPT_VERSION)
     return {"id": task.id, "tags": task.tags, "ok": verdict is True, "reason": None if verdict is True else verdict,
             "invariants": inv, "calls": ctx.calls, "answers": answers, "turn_secs": [round(s, 2) for s in secs],
             "trajectory": [{"system": system, "messages": [m.model_dump(exclude_none=True) for m in chats.history(c)]}
@@ -255,26 +255,30 @@ def main():
     ap.add_argument("--system", help="a label for the served model, or a scripted agent: " + ", ".join(SCRIPTED))
     ap.add_argument("--backend", default="local")
     ap.add_argument("--only")
-    ap.add_argument("--suite", default="e2e", choices=["e2e", "hard"])
+    ap.add_argument("--suite", default="e2e", choices=["e2e", "hard", "unseen"])
     ap.add_argument("--trials", type=int, default=1)
     ap.add_argument("--temperature", type=float, default=0.0)
     ap.add_argument("--vary", default="sampling", choices=["sampling", "phrasing"],
                     help="what differs between trials: sampling (use --temperature 0.7) or the request's phrasing")
     ap.add_argument("--url", help="OpenAI-compatible base URL of the eval server, e.g. http://127.0.0.1:8081/v1")
     ap.add_argument("--contracts", help="tool-list version the model was trained on (e.g. 1.2): later tools are hidden")
+    ap.add_argument("--prompt", help="system-prompt version the model was trained on (v2: 1.1; default: current)")
     ap.add_argument("--shard", default="0/1", help="i/n: run every n-th job starting at i")
     ap.add_argument("--fresh", action="store_true", help="ignore results cached for this commit")
     ap.add_argument("--show", action="store_true")
     ap.add_argument("--review", action="store_true")
     a = ap.parse_args()
-    tasks = [t for t in (hard.tasks("test") if a.suite == "hard" else TASKS) if not a.only or t.id in a.only.split(",")]
+    from eval.unseen import e2e as unseen
+    pool = {"hard": lambda: hard.tasks("test"), "unseen": unseen.tasks, "e2e": lambda: TASKS}[a.suite]()
+    tasks = [t for t in pool if not a.only or t.id in a.only.split(",")]
     if a.contracts:  # a model trained on an older tool list is not run on tasks that need a newer tool
         tasks = [t for t in tasks if "new_capability" not in t.tags]
     if a.show or a.review:
         return review(tasks) if a.review else [show(t) for t in tasks] and None
     scripted, base = a.system in SCRIPTED, ROOT / "runs" / "e2e" / a.system
     commit = subprocess.run(["git", "rev-parse", "--short", "HEAD"], capture_output=True, text=True).stdout.strip()
-    config = {"temperature": a.temperature}
+    config = {"temperature": a.temperature} | ({"mcp_servers": unseen.SERVERS} if a.suite == "unseen" else {}) | \
+        ({"prompt": a.prompt} if a.prompt else {})
     if a.contracts:
         old = {t["name"] for t in load(a.contracts)["tools"]}
         config |= {"contracts": a.contracts,
@@ -287,7 +291,8 @@ def main():
             backend.client = OpenAI(base_url=a.url, api_key="none", max_retries=8, timeout=600)
     i, n = map(int, a.shard.split("/"))
     vary = "_phrasing" if a.vary == "phrasing" else ""
-    run_key = f"{a.suite}_{commit}_t{a.temperature}_c{a.contracts or 'current'}{vary}"
+    run_key = (f"{a.suite}_{commit}_t{a.temperature}_c{a.contracts or 'current'}" + (f"_p{a.prompt}" if a.prompt else "")
+               + vary)
     cache = base / f"{run_key}_{i}of{n}.jsonl"
     base.mkdir(parents=True, exist_ok=True)
     if a.fresh or scripted:
@@ -300,7 +305,7 @@ def main():
 
     # Hard suite: short sandboxes (runs/sb/<pid>/<job>), removed at the end. Tool results carry full paths, and a real
     # C:\Users\<name>\Documents is about 25 characters; under runs/e2e/<system>/<task>/ the model had to copy 110.
-    box = ROOT / "runs" / "sb" / str(os.getpid()) if a.suite == "hard" else None
+    box = ROOT / "runs" / "sb" / str(os.getpid()) if a.suite in ("hard", "unseen") else None
     if a.vary == "phrasing" and a.suite != "hard":
         ap.error("--vary phrasing needs --suite hard")
     if a.vary == "phrasing":  # trial k asks with the k-th alternative phrasing (hard suite only)
@@ -312,7 +317,8 @@ def main():
     for j, (t, k) in enumerate(jobs[i::n], 1):
         if (t.id, k) in done:
             continue
-        r = run_task(t, hard.Scripted(t.script(a.system)) if scripted else backend, base, config, scripted, box and box / str(j))
+        r = run_task(t, hard.Scripted(t.script(a.system)) if scripted else backend, base, config,
+                     scripted and a.suite != "unseen", box and box / str(j))  # unseen: the real servers, always
         r["trial"] = k
         with cache.open("a", encoding="utf-8") as f:
             f.write(json.dumps(r, ensure_ascii=False) + "\n")
@@ -330,8 +336,8 @@ def main():
     report = {
         "system": a.system, "suite": a.suite, "date": time.strftime("%Y-%m-%dT%H:%M:%S"), "n": len(core),
         "embedder_up": a.suite == "hard" and not scripted and semantic.embedder_up(),
-        "trials": a.trials, "vary": a.vary, "temperature": a.temperature,
-        "pass_hat": pass_hat([r for r in core], a.trials), "contracts": a.contracts, "commit": commit,
+        "trials": a.trials, "vary": a.vary, "temperature": a.temperature, "pass_hat": pass_hat(core, a.trials),
+        "contracts": a.contracts, "prompt": a.prompt, "commit": commit,
         "passed": sum(r["ok"] for r in core), "pass_rate": round(sum(r["ok"] for r in core) / len(core), 4),
         "injection_resisted": sum(r["ok"] for r in inj), "injection_n": len(inj),
         "invariants": {k: sum(r["invariants"][k] for r in results) for k in results[0]["invariants"]},

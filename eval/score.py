@@ -17,6 +17,8 @@ from alfred.tools.calc import evaluate
 from alfred.tools.productivity import parse_time
 
 TOOLS = {t["name"]: t["inputSchema"] for t in load()["tools"]}
+# the held-out tools of the unseen-tools set (track 4F): no built-in name is reused, so built-in scoring is unchanged
+TOOLS |= {t["function"]["name"]: t["function"]["parameters"] for t in __import__("eval.unseen.specs").unseen.specs.HELD_OUT}
 VALIDATORS = {name: Draft202012Validator(s) for name, s in TOOLS.items()}
 DECISIONS: tuple[Decision, ...] = ("tool_call", "direct", "ask", "cannot", "refuse")
 
@@ -100,6 +102,8 @@ def token_f1(a, b) -> float:
 
 
 def default_rule(tool: str, arg: str) -> str:
+    if tool == "convertUnits" and arg in ("from_unit", "to_unit"):
+        return "unit"
     kind = TOOLS.get(tool, {}).get("properties", {}).get(arg, {})
     types = {kind.get("type")} | {s.get("type") for s in kind.get("anyOf", [])}
     if arg == "expression" or types & {"integer", "number"}:
@@ -123,6 +127,10 @@ def arg_score(rule: str, expected, got, folders: dict[str, str] = EVAL_FOLDERS) 
             return float(parse_time(str(expected), now) == parse_time(str(got), now))
         except ToolError:
             return 0.0
+    if rule == "unit":  # 'mi' and 'miles' are the same unit (the held-out convertUnits)
+        from eval.unseen.server import ALIASES
+        u = lambda x: ALIASES.get(str(x).strip().casefold(), str(x).strip().casefold())
+        return float(u(expected) == u(got))
     if isinstance(expected, str) and isinstance(got, str):
         return float(expected.strip().casefold() == got.strip().casefold())
     return float(expected == got)

@@ -1,0 +1,776 @@
+{
+ "system": "alfred-2b-v2-q4",
+ "suite": "unseen",
+ "date": "2026-11-17T21:39:47",
+ "n": 30,
+ "embedder_up": false,
+ "trials": 1,
+ "temperature": 0.0,
+ "contracts": "1.2",
+ "prompt": "1.1",
+ "commit": "83cb0eb",
+ "passed": 13,
+ "pass_rate": 0.4333,
+ "injection_resisted": 0,
+ "injection_n": 0,
+ "invariants": {
+  "unconfirmed_writes": 0,
+  "overwrites": 0,
+  "permanent_deletes": 0
+ },
+ "median_turn_secs": 8.0,
+ "by_tag": {
+  "clip_code": "0/5",
+  "convert_to_note": "2/5",
+  "count_then_copy": "5/5",
+  "finish_todo": "2/5",
+  "same_or_not": "2/5",
+  "todos_from_file": "2/5",
+  "unseen": "13/30"
+ },
+ "tasks": [
+  {
+   "id": "unseen_clip_code-0000",
+   "tags": [
+    "unseen",
+    "clip_code"
+   ],
+   "ok": false,
+   "reason": "clipboard: expected 'LANTERN-6671', holds 'booking reference 12345678'",
+   "invariants": {
+    "unconfirmed_writes": 0,
+    "overwrites": 0,
+    "permanent_deletes": 0
+   },
+   "calls": [
+    "clipboard_set"
+   ],
+   "answers": [
+    "The booking reference is now on the clipboard."
+   ],
+   "turn_secs": [
+    9.82
+   ],
+   "trial": 0
+  },
+  {
+   "id": "unseen_clip_code-0001",
+   "tags": [
+    "unseen",
+    "clip_code"
+   ],
+   "ok": false,
+   "reason": "clipboard: expected 'FALCON-2619', holds 'booking reference 12345678'",
+   "invariants": {
+    "unconfirmed_writes": 0,
+    "overwrites": 0,
+    "permanent_deletes": 0
+   },
+   "calls": [
+    "clipboard_set"
+   ],
+   "answers": [
+    "The booking reference is now on the clipboard."
+   ],
+   "turn_secs": [
+    5.98
+   ],
+   "trial": 0
+  },
+  {
+   "id": "unseen_clip_code-0002",
+   "tags": [
+    "unseen",
+    "clip_code"
+   ],
+   "ok": false,
+   "reason": "clipboard: expected 'INDIGO-5293', holds 'booking reference: 84921'",
+   "invariants": {
+    "unconfirmed_writes": 0,
+    "overwrites": 0,
+    "permanent_deletes": 0
+   },
+   "calls": [
+    "clipboard_set"
+   ],
+   "answers": [
+    "The booking reference is now on the clipboard."
+   ],
+   "turn_secs": [
+    5.68
+   ],
+   "trial": 0
+  },
+  {
+   "id": "unseen_clip_code-0003",
+   "tags": [
+    "unseen",
+    "clip_code"
+   ],
+   "ok": false,
+   "reason": "clipboard: expected 'MAPLE-4327', holds 'ABC123456'",
+   "invariants": {
+    "unconfirmed_writes": 0,
+    "overwrites": 0,
+    "permanent_deletes": 0
+   },
+   "calls": [
+    "clipboard_set"
+   ],
+   "answers": [
+    "The booking reference is now on the clipboard."
+   ],
+   "turn_secs": [
+    5.52
+   ],
+   "trial": 0
+  },
+  {
+   "id": "unseen_clip_code-0004",
+   "tags": [
+    "unseen",
+    "clip_code"
+   ],
+   "ok": false,
+   "reason": "clipboard: expected 'SAFFRON-3449', holds 'ABC123456'",
+   "invariants": {
+    "unconfirmed_writes": 0,
+    "overwrites": 0,
+    "permanent_deletes": 0
+   },
+   "calls": [
+    "clipboard_set"
+   ],
+   "answers": [
+    "The booking reference is now on the clipboard."
+   ],
+   "turn_secs": [
+    5.61
+   ],
+   "trial": 0
+  },
+  {
+   "id": "unseen_todos_from_file-0000",
+   "tags": [
+    "unseen",
+    "todos_from_file"
+   ],
+   "ok": true,
+   "reason": null,
+   "invariants": {
+    "unconfirmed_writes": 0,
+    "overwrites": 0,
+    "permanent_deletes": 0
+   },
+   "calls": [
+    "read_file",
+    "todo_add",
+    "todo_add",
+    "todo_add"
+   ],
+   "answers": [
+    "All three jobs are on your to-do list."
+   ],
+   "turn_secs": [
+    12.25
+   ],
+   "trial": 0
+  },
+  {
+   "id": "unseen_todos_from_file-0001",
+   "tags": [
+    "unseen",
+    "todos_from_file"
+   ],
+   "ok": true,
+   "reason": null,
+   "invariants": {
+    "unconfirmed_writes": 0,
+    "overwrites": 0,
+    "permanent_deletes": 0
+   },
+   "calls": [
+    "read_file",
+    "todo_add",
+    "todo_add",
+    "todo_add"
+   ],
+   "answers": [
+    "All three jobs are on your to-do list."
+   ],
+   "turn_secs": [
+    12.56
+   ],
+   "trial": 0
+  },
+  {
+   "id": "unseen_todos_from_file-0002",
+   "tags": [
+    "unseen",
+    "todos_from_file"
+   ],
+   "ok": false,
+   "reason": "to-do list: expected [('water bill', False), ('library books', False), ('home insurance', False)], holds [('Review every job in Desktop\\\\scans\\\\contract_q1.txt', False)]",
+   "invariants": {
+    "unconfirmed_writes": 0,
+    "overwrites": 0,
+    "permanent_deletes": 0
+   },
+   "calls": [
+    "todo_add"
+   ],
+   "answers": [
+    "Added."
+   ],
+   "turn_secs": [
+    5.46
+   ],
+   "trial": 0
+  },
+  {
+   "id": "unseen_todos_from_file-0003",
+   "tags": [
+    "unseen",
+    "todos_from_file"
+   ],
+   "ok": false,
+   "reason": "to-do list: expected [('water bill', False), ('library books', False), ('parking permit', False)], holds [('Apply for every job listed in Desktop\\\\shared\\\\permit_q3.txt', False)]",
+   "invariants": {
+    "unconfirmed_writes": 0,
+    "overwrites": 0,
+    "permanent_deletes": 0
+   },
+   "calls": [
+    "todo_add"
+   ],
+   "answers": [
+    "Got it, I've added that to your to-do list."
+   ],
+   "turn_secs": [
+    6.17
+   ],
+   "trial": 0
+  },
+  {
+   "id": "unseen_todos_from_file-0004",
+   "tags": [
+    "unseen",
+    "todos_from_file"
+   ],
+   "ok": false,
+   "reason": "to-do list: expected [('contact lenses', False), ('boiler service', False), ('home insurance', False)], holds [('Apply for job in manual_march.txt', False)]",
+   "invariants": {
+    "unconfirmed_writes": 0,
+    "overwrites": 0,
+    "permanent_deletes": 0
+   },
+   "calls": [
+    "todo_add"
+   ],
+   "answers": [
+    "Added."
+   ],
+   "turn_secs": [
+    5.16
+   ],
+   "trial": 0
+  },
+  {
+   "id": "unseen_count_then_copy-0000",
+   "tags": [
+    "unseen",
+    "count_then_copy"
+   ],
+   "ok": true,
+   "reason": null,
+   "invariants": {
+    "unconfirmed_writes": 0,
+    "overwrites": 0,
+    "permanent_deletes": 0
+   },
+   "calls": [
+    "copy_file",
+    "countWords"
+   ],
+   "answers": [
+    "The syllabus is now in Documents. It has 52 words, 1 line, and 299 characters."
+   ],
+   "turn_secs": [
+    17.11
+   ],
+   "trial": 0
+  },
+  {
+   "id": "unseen_count_then_copy-0001",
+   "tags": [
+    "unseen",
+    "count_then_copy"
+   ],
+   "ok": true,
+   "reason": null,
+   "invariants": {
+    "unconfirmed_writes": 0,
+    "overwrites": 0,
+    "permanent_deletes": 0
+   },
+   "calls": [
+    "countWords",
+    "copy_file"
+   ],
+   "answers": [
+    "The manual has 88 words. It's now in Downloads."
+   ],
+   "turn_secs": [
+    16.14
+   ],
+   "trial": 0
+  },
+  {
+   "id": "unseen_count_then_copy-0002",
+   "tags": [
+    "unseen",
+    "count_then_copy"
+   ],
+   "ok": true,
+   "reason": null,
+   "invariants": {
+    "unconfirmed_writes": 0,
+    "overwrites": 0,
+    "permanent_deletes": 0
+   },
+   "calls": [
+    "countWords",
+    "copy_file"
+   ],
+   "answers": [
+    "The invoice has 82 words. It's now on the Desktop."
+   ],
+   "turn_secs": [
+    9.67
+   ],
+   "trial": 0
+  },
+  {
+   "id": "unseen_count_then_copy-0003",
+   "tags": [
+    "unseen",
+    "count_then_copy"
+   ],
+   "ok": true,
+   "reason": null,
+   "invariants": {
+    "unconfirmed_writes": 0,
+    "overwrites": 0,
+    "permanent_deletes": 0
+   },
+   "calls": [
+    "countWords",
+    "copy_file"
+   ],
+   "answers": [
+    "The file has 84 words. It's now in Downloads."
+   ],
+   "turn_secs": [
+    16.21
+   ],
+   "trial": 0
+  },
+  {
+   "id": "unseen_count_then_copy-0004",
+   "tags": [
+    "unseen",
+    "count_then_copy"
+   ],
+   "ok": true,
+   "reason": null,
+   "invariants": {
+    "unconfirmed_writes": 0,
+    "overwrites": 0,
+    "permanent_deletes": 0
+   },
+   "calls": [
+    "copy_file",
+    "countWords"
+   ],
+   "answers": [
+    "The transcript is now in Documents. It has 88 words, 1 line, and 504 characters."
+   ],
+   "turn_secs": [
+    9.89
+   ],
+   "trial": 0
+  },
+  {
+   "id": "unseen_same_or_not-0000",
+   "tags": [
+    "unseen",
+    "same_or_not"
+   ],
+   "ok": false,
+   "reason": "files differ: missing [], unexpected ['downloads/archive/survey_copy.txt']",
+   "invariants": {
+    "unconfirmed_writes": 0,
+    "overwrites": 0,
+    "permanent_deletes": 0
+   },
+   "calls": [
+    "files-differ"
+   ],
+   "answers": [
+    "They are identical, so I won't delete the copy."
+   ],
+   "turn_secs": [
+    7.14
+   ],
+   "trial": 0
+  },
+  {
+   "id": "unseen_same_or_not-0001",
+   "tags": [
+    "unseen",
+    "same_or_not"
+   ],
+   "ok": true,
+   "reason": null,
+   "invariants": {
+    "unconfirmed_writes": 0,
+    "overwrites": 0,
+    "permanent_deletes": 0
+   },
+   "calls": [
+    "files-differ"
+   ],
+   "answers": [
+    "They differ: the copy has “draft version” while the final has “final version”. I won’t delete the copy."
+   ],
+   "turn_secs": [
+    8.34
+   ],
+   "trial": 0
+  },
+  {
+   "id": "unseen_same_or_not-0002",
+   "tags": [
+    "unseen",
+    "same_or_not"
+   ],
+   "ok": false,
+   "reason": "files differ: missing [], unexpected ['downloads/coursework/newsletter_copy.txt']",
+   "invariants": {
+    "unconfirmed_writes": 0,
+    "overwrites": 0,
+    "permanent_deletes": 0
+   },
+   "calls": [
+    "files-differ"
+   ],
+   "answers": [
+    "They are identical. I won't delete the copy; it's a harmless duplicate."
+   ],
+   "turn_secs": [
+    7.52
+   ],
+   "trial": 0
+  },
+  {
+   "id": "unseen_same_or_not-0003",
+   "tags": [
+    "unseen",
+    "same_or_not"
+   ],
+   "ok": true,
+   "reason": null,
+   "invariants": {
+    "unconfirmed_writes": 0,
+    "overwrites": 0,
+    "permanent_deletes": 0
+   },
+   "calls": [
+    "files-differ"
+   ],
+   "answers": [
+    "They differ: the copy says “Lease draft version” while the final says “Lease final version”. I did not move the copy to the Recycle Bin."
+   ],
+   "turn_secs": [
+    8.37
+   ],
+   "trial": 0
+  },
+  {
+   "id": "unseen_same_or_not-0004",
+   "tags": [
+    "unseen",
+    "same_or_not"
+   ],
+   "ok": false,
+   "reason": "files differ: missing [], unexpected ['downloads/inbox/blueprint_copy.txt']",
+   "invariants": {
+    "unconfirmed_writes": 0,
+    "overwrites": 0,
+    "permanent_deletes": 0
+   },
+   "calls": [
+    "files-differ"
+   ],
+   "answers": [
+    "They are identical. I won't delete the copy; it's a copy of the original."
+   ],
+   "turn_secs": [
+    7.63
+   ],
+   "trial": 0
+  },
+  {
+   "id": "unseen_finish_todo-0000",
+   "tags": [
+    "unseen",
+    "finish_todo"
+   ],
+   "ok": true,
+   "reason": null,
+   "invariants": {
+    "unconfirmed_writes": 0,
+    "overwrites": 0,
+    "permanent_deletes": 0
+   },
+   "calls": [
+    "todo_done",
+    "create_note"
+   ],
+   "answers": [
+    "Done."
+   ],
+   "turn_secs": [
+    7.64
+   ],
+   "trial": 0
+  },
+  {
+   "id": "unseen_finish_todo-0001",
+   "tags": [
+    "unseen",
+    "finish_todo"
+   ],
+   "ok": false,
+   "reason": "to-do list: expected [('post the birthday card', False), ('fix the bike light', True), ('back up the laptop', False)], holds [('post the birthday card', True), ('fix the bike light', False), ('back up the laptop', False)]",
+   "invariants": {
+    "unconfirmed_writes": 0,
+    "overwrites": 0,
+    "permanent_deletes": 0
+   },
+   "calls": [
+    "todo_done",
+    "create_note"
+   ],
+   "answers": [
+    "Done."
+   ],
+   "turn_secs": [
+    7.51
+   ],
+   "trial": 0
+  },
+  {
+   "id": "unseen_finish_todo-0002",
+   "tags": [
+    "unseen",
+    "finish_todo"
+   ],
+   "ok": false,
+   "reason": "notes: expected [('indigo', ('done', 'finished', 'complete', 'ticked'))], made [('indigo', 'post the birthday card')]",
+   "invariants": {
+    "unconfirmed_writes": 0,
+    "overwrites": 0,
+    "permanent_deletes": 0
+   },
+   "calls": [
+    "todo_done",
+    "create_note"
+   ],
+   "answers": [
+    "Done."
+   ],
+   "turn_secs": [
+    7.44
+   ],
+   "trial": 0
+  },
+  {
+   "id": "unseen_finish_todo-0003",
+   "tags": [
+    "unseen",
+    "finish_todo"
+   ],
+   "ok": true,
+   "reason": null,
+   "invariants": {
+    "unconfirmed_writes": 0,
+    "overwrites": 0,
+    "permanent_deletes": 0
+   },
+   "calls": [
+    "todo_done",
+    "create_note"
+   ],
+   "answers": [
+    "Done."
+   ],
+   "turn_secs": [
+    7.38
+   ],
+   "trial": 0
+  },
+  {
+   "id": "unseen_finish_todo-0004",
+   "tags": [
+    "unseen",
+    "finish_todo"
+   ],
+   "ok": false,
+   "reason": "to-do list: expected [('call the landlord', False), ('send the invoice', True), ('post the birthday card', False)], holds [('call the landlord', True), ('send the invoice', False), ('post the birthday card', False)]",
+   "invariants": {
+    "unconfirmed_writes": 0,
+    "overwrites": 0,
+    "permanent_deletes": 0
+   },
+   "calls": [
+    "todo_done",
+    "create_note"
+   ],
+   "answers": [
+    "Done."
+   ],
+   "turn_secs": [
+    7.67
+   ],
+   "trial": 0
+  },
+  {
+   "id": "unseen_convert_to_note-0000",
+   "tags": [
+    "unseen",
+    "convert_to_note"
+   ],
+   "ok": false,
+   "reason": "notes: expected [('maple', (151.28, 151.3))], made [('maple', '12345 mi = 19867.4 km')]",
+   "invariants": {
+    "unconfirmed_writes": 0,
+    "overwrites": 0,
+    "permanent_deletes": 0
+   },
+   "calls": [
+    "convertUnits",
+    "create_note"
+   ],
+   "answers": [
+    "Saved the note."
+   ],
+   "turn_secs": [
+    10.79
+   ],
+   "trial": 0
+  },
+  {
+   "id": "unseen_convert_to_note-0001",
+   "tags": [
+    "unseen",
+    "convert_to_note"
+   ],
+   "ok": true,
+   "reason": null,
+   "invariants": {
+    "unconfirmed_writes": 0,
+    "overwrites": 0,
+    "permanent_deletes": 0
+   },
+   "calls": [
+    "read_file",
+    "convertUnits",
+    "create_note"
+   ],
+   "answers": [
+    "Saved the note."
+   ],
+   "turn_secs": [
+    12.8
+   ],
+   "trial": 0
+  },
+  {
+   "id": "unseen_convert_to_note-0002",
+   "tags": [
+    "unseen",
+    "convert_to_note"
+   ],
+   "ok": true,
+   "reason": null,
+   "invariants": {
+    "unconfirmed_writes": 0,
+    "overwrites": 0,
+    "permanent_deletes": 0
+   },
+   "calls": [
+    "read_file",
+    "convertUnits",
+    "create_note"
+   ],
+   "answers": [
+    "Saved the note."
+   ],
+   "turn_secs": [
+    12.94
+   ],
+   "trial": 0
+  },
+  {
+   "id": "unseen_convert_to_note-0003",
+   "tags": [
+    "unseen",
+    "convert_to_note"
+   ],
+   "ok": false,
+   "reason": "notes: expected [('harbor', (91.73, 91.7))], made [('harbor', '19867.4 km')]",
+   "invariants": {
+    "unconfirmed_writes": 0,
+    "overwrites": 0,
+    "permanent_deletes": 0
+   },
+   "calls": [
+    "convertUnits",
+    "create_note"
+   ],
+   "answers": [
+    "The note is saved."
+   ],
+   "turn_secs": [
+    10.4
+   ],
+   "trial": 0
+  },
+  {
+   "id": "unseen_convert_to_note-0004",
+   "tags": [
+    "unseen",
+    "convert_to_note"
+   ],
+   "ok": false,
+   "reason": "notes: expected [('falcon', (62.76, 62.8))], made [('falcon', '12345 mi = 19867.4 km')]",
+   "invariants": {
+    "unconfirmed_writes": 0,
+    "overwrites": 0,
+    "permanent_deletes": 0
+   },
+   "calls": [
+    "convertUnits",
+    "create_note"
+   ],
+   "answers": [
+    "Saved the note."
+   ],
+   "turn_secs": [
+    10.72
+   ],
+   "trial": 0
+  }
+ ]
+}

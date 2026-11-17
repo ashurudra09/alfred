@@ -2,11 +2,14 @@
 
 Usage: uv run python -m eval.run --backend local --system base-2b-q8 --set indomain [--limit N]
        uv run python -m eval.run --rescore    # re-score all reports from their stored outputs
+       ... --set unseen --tools unseen        # track 4F: the 10 held-out tools after Alfred's own
+       ... --set indomain --rename 1          # track 4F: every tool and argument renamed (seed 1), mapped back
 Writes eval/reports/<system>_<set>.json (+ .md summary). Raw outputs are cached in <...>.raw.jsonl, so an interrupted
 or rate-limited run resumes where it stopped (delete the .raw.jsonl to rerun from scratch).
 """
 
 import argparse
+import hashlib
 import json
 import statistics
 import subprocess
@@ -17,7 +20,7 @@ from pathlib import Path
 from alfred.agent.backends import BACKENDS, Backend, openai_messages
 from alfred.contracts.export import load, openai_tools
 from alfred.contracts.prompt import PROMPT_VERSION, TEMPLATES, render_system_prompt
-from alfred.contracts.schemas import TestItem
+from alfred.contracts.schemas import Example, Message, TestItem
 from alfred.contracts.tools import CONTRACTS_VERSION
 from eval.score import EVAL_DATE, EVAL_FOLDERS, aggregate, score_item
 
@@ -35,6 +38,32 @@ def unreviewed(name: str, items: list[TestItem]) -> int:
     from eval.review import item_hash, load_reviews
     done = load_reviews().get(name, {})
     return sum(done.get(i.id) != item_hash(i) for i in items)
+
+
+def renamer(tools: list[dict], system: str, seed: int):
+    """Track 4F (iii): one random renaming of every tool and argument name (data/augment.py, as in run A's masking),
+    used for the whole set. Returns (tools, system, rename_messages, map_back): map_back turns the model's calls
+    into the original names, so the frozen scorer is unchanged. Seed 0 means no renaming at all (the check that
+    the renamed path reproduces the plain run)."""
+    from data.augment import mask, rename
+
+    def ex(messages, tl):
+        return Example.model_construct(id="renamed", source="eval", category="direct", messages=messages, tools=tl)
+    sys_msg = Message(role="system", content=system)
+    if seed:
+        m = mask(ex([sys_msg], tools), seed)[1]
+    else:
+        m = {"tools": {}, "args": {}}
+    named = rename(ex([sys_msg], tools), m["tools"], m["args"])
+    back_t, back_a = {v: k for k, v in m["tools"].items()}, {v: k for k, v in m["args"].items()}
+
+    def rename_messages(messages):
+        return rename(ex(messages, tools), m["tools"], m["args"]).messages
+
+    def map_back(call):
+        args = {back_a.get(k, k): v for k, v in call.arguments.items()} if isinstance(call.arguments, dict) else call.arguments
+        return back_t.get(call.name, call.name), args
+    return named.tools, named.messages[0].content, rename_messages, map_back
 
 
 def pct(x):
@@ -88,10 +117,12 @@ def main():
     ap.add_argument("--prompt", choices=list(TEMPLATES), default=PROMPT_VERSION,
                     help="system prompt version: score each model with the one it was trained on (SFT v1/v2: 1.1)")
     ap.add_argument("--contracts", help="tool-list version the model was trained on, e.g. 1.2 (default: current)")
+    ap.add_argument("--tools", choices=["unseen"], help="add the held-out tools (eval/unseen/specs.py) after Alfred's own")
+    ap.add_argument("--rename", type=int, help="rename every tool and argument at random (this seed; 0 = identity)")
     a = ap.parse_args()
 
     items = load_set(a.set)[: a.limit]
-    set_name = Path(a.set).stem
+    set_name = Path(a.set).stem + (f"_renamed{a.rename}" if a.rename is not None else "")
     REPORTS.mkdir(exist_ok=True)
     out = REPORTS / f"{a.system}_{set_name}.json"
     raw_path = out.with_suffix(".raw.jsonl")
@@ -99,17 +130,25 @@ def main():
     if raw_path.exists():
         raw = {r["id"]: r for r in map(json.loads, raw_path.read_text(encoding="utf-8").splitlines())}
     backend, tools = Backend(a.backend), openai_tools(load(a.contracts))
+    if a.tools:
+        from eval.unseen.specs import openai_tools as held_out
+        tools += held_out()
     system = render_system_prompt(EVAL_FOLDERS, EVAL_DATE, a.prompt)
+    same, back = (lambda ms: ms), (lambda c: (c.name, c.arguments))
+    if a.rename is not None:
+        tools, system, same, back = renamer(tools, system, a.rename)
 
     with raw_path.open("a", encoding="utf-8") as f:
         for n, it in enumerate(items, 1):
-            if it.id in raw and not raw[it.id]["output"].get("error"):
+            asked = hashlib.sha1(json.dumps([m.model_dump() for m in it.messages]).encode()).hexdigest()[:12]
+            r = raw.get(it.id)  # an edited item is asked again (rows from before this check carry no hash)
+            if r and not r["output"].get("error") and r.get("asked", asked) == asked:
                 continue
-            res = backend.chat(openai_messages(it.messages, system), tools)
-            raw[it.id] = {"id": it.id, "ttft": res.ttft, "total": round(res.total, 3),
+            res = backend.chat(openai_messages(same(it.messages), system), tools)
+            raw[it.id] = {"id": it.id, "asked": asked, "ttft": res.ttft, "total": round(res.total, 3),
                           "prompt_tokens": res.prompt_tokens, "cached_tokens": res.cached_tokens,
                           "output": {"content": res.content, "error": res.error,
-                                     "tool_calls": [{"name": c.name, "arguments": c.arguments, "raw": c.raw}
+                                     "tool_calls": [{"name": back(c)[0], "arguments": back(c)[1], "raw": c.raw}
                                                     for c in res.tool_calls]}}
             f.write(json.dumps(raw[it.id], ensure_ascii=False) + "\n")
             f.flush()
@@ -120,7 +159,7 @@ def main():
     rows = [raw[it.id] for it in items]
     ttfts = [r["ttft"] for r in rows if r["ttft"] is not None]
     report = {
-        "system": a.system, "prompt": a.prompt, "contracts": a.contracts or CONTRACTS_VERSION, "backend": a.backend, "model": backend.model, "set": set_name,
+        "system": a.system, "prompt": a.prompt, "tools": a.tools, "rename": a.rename, "contracts": a.contracts or CONTRACTS_VERSION, "backend": a.backend, "model": backend.model, "set": set_name,
         "date": datetime.now().isoformat(timespec="seconds"),
         "commit": subprocess.run(["git", "rev-parse", "--short", "HEAD"], capture_output=True, text=True).stdout.strip(),
         "unreviewed": unreviewed(set_name, items),
