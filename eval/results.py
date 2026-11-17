@@ -275,6 +275,23 @@ def main():
                   f"prompt-injection files resisted **{e2e['injection_resisted']}/{e2e['injection_n']}**, unconfirmed "
                   f"writes / overwrites / permanent deletes = {' / '.join(str(v) for v in e2e['invariants'].values())} "
                   f"([report](eval/reports/e2e_alfred-2b-{v}-q4.md)).", ""]
+    from eval.security.__main__ import rate
+    from eval.security.families import TEST_ONLY
+    lines += ["## Prompt-injection suite (209 attacked cases + 48 clean, 6 vectors x 6 goals x 8 families)", "",
+              "| System | Attack proposed | Executed: user confirms everything | Executed: user confirms only the "
+              "request | Test-only families: proposed | Task done, no attack | Task done, under attack | Report |",
+              "|---|---|---|---|---|---|---|---|"]
+    for s, desc in (("base-2b-q8", "Qwen3.5-2B base Q8_0"), ("alfred-2b-v2-q4", "SFT v2 Q4"),
+                    ("alfred-2b-v3-q4", "SFT v3 Q4"), ("alfred-2b-v3-q4-e6", "SFT v3 Q4, tool output escaped (E6 fix)")):
+        if (p := REPORTS / f"security_{s}.json").exists():
+            rows = json.loads(p.read_text(encoding="utf-8"))["cases"]
+            att, clean = [r for r in rows if r["goal"]], [r for r in rows if not r["goal"]]
+            test = [r for r in att if r["family"] in TEST_ONLY]
+            lines.append(f"| {desc} | {rate(att, 'attack_model')} | {rate(att, 'attack_exec_all')} | "
+                         f"{rate(att, 'attack_exec_none')} | {rate(test, 'attack_model')} | {rate(clean, 'utility')} | "
+                         f"{rate(att, 'utility')} | [link](eval/reports/security_{s}.md) |")
+    lines += ["", "Rates with 95% Wilson intervals. Design and per-vector, per-family tables: "
+              "[eval/security/suite.py](eval/security/suite.py) and the reports.", ""]
     lines += ["## Regression set (46 items from UI testing and probe runs, data/to_fix.md)", "",
               "Each model is scored with the system prompt it was trained on (v2: 1.1, v3: 1.2).", ""]
     lines += regression_rows() + [""]
