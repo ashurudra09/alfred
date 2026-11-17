@@ -51,8 +51,9 @@ checkout while a machine job runs.
 - **Run B** (unmasked, `data/out/v4/mix_b/`) needs its own go; package with `train.package_data --mix b --upload`.
 
 ## Machine
-- Kaggle: kernel `ashurudra09/alfred-sft` version 4 = the 20-step probe of run A (pushed 2026-11-17 ~15:00).
-  Local machine idle; only Ollama's embedder is running. (The owner's UI server on :8080 is never touched.)
+- Kaggle: kernel `ashurudra09/alfred-sft` **version 5 = run A** (masked mix), pushed 2026-11-17 ~15:40, expected
+  done around 03:30 on 2026-11-18 (~10.5 h training + export). Version 4 was the probe. Local machine idle; only
+  Ollama's embedder is running. (The owner's UI server on :8080 is never touched.)
 
 ## Track 0: Setup
 
@@ -197,7 +198,7 @@ Left for other tracks (not part of 1C's code):
 | 3.1 Mix | done | 2026-11-17 | 7e528be | `data/mix.py`; `data/out/v4/mix_a/` (masked, run A), `mix_b/` (unmasked, run B), same rows; `data/stats.md`; `runs/v4/mix.log` | Alfred 8,626 (v3 synthetic + on-policy 422 + 25 ask endings + search_by_meaning 219 + injection 179; all with the 26-tool list, prompt 1.2; Hinglish dropped 40), When2Call 1,831, xLAM 1,824. Dropped: 252 near test items, 43 held-out tool or look-alike, 1 test-only injection wording, 4 over 4,096 tokens. Masking (run A): 2,019 examples, 0 left unmasked for length. ask_endings now also cuts on-policy trajectories after a mid-conversation question. |
 | 3.2 Size check | done | 2026-11-17 | 7e528be | `data/mix.py` (`fit`, `BUDGET`) | Untrimmed run A: 11,424 examples, 26.0M tokens, ~10.75 h at v3's rate (22.2M tokens in 33,078 s): over the 10.5 h stop. Trimmed 465 single-call synthetic examples at random (no tool under 220; on-policy and search_by_meaning never dropped): **train 10,959, val 601, 24.6M tokens, ~10.2 h, 1,370 steps.** |
 | 3.3 Config + package | done | 2026-11-17 | 7e528be | `train/configs/sft_2b_v4.yaml` (v3's LoRA and schedule; eval_every 229); `train/package_data.py --mix a|b` | Kaggle dataset `alfred-sft-data` new version = run A's data (train.jsonl 101.0 MB). v3's data stays in the dataset's version history and in `data/out/train.jsonl`. |
-| 3.4 Probe, run A | running | 2026-11-17 | | kernel version 4 (probe) | |
+| 3.4 Probe, run A | probe done; **run A running** | 2026-11-17 | this commit | probe: kernel version 4, `runs/sft_2b_v4_probe/log_history.json`; run A: kernel version 5 (pushed 2026-11-17 ~15:40) | Probe: 20 steps in 803 s (40.2 s/step, first steps include compilation; loss 0.46 -> 0.40), 1,370 steps per epoch confirmed, no errors. v1's probe read 33.5 s/step against 23 s/step for the run; the same ratio gives ~27.5 s/step, ~10.5 h for the epoch, at the max_hours stop: if it triggers, the last few steps (learning rate near 0) are skipped and the best checkpoint is still exported. Outputs: `kaggle kernels output ashurudra09/alfred-sft -p runs/sft_2b_v4a --file-pattern '\.gguf$'` plus train_summary.json, log_history.json, loss.png, smoke.json. |
 
 ## Notes for whoever works next
 - Track branches cannot be named `v4/<track>` (git refuses while a branch `v4` exists); 1B uses `v4-1B`.
