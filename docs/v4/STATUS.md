@@ -44,19 +44,15 @@ checkout while a machine job runs.
 | 6 Write-up | blocked | 5 | |
 
 ## Waiting on the owner
-- **Step 2.8, your part of the audit:** read `data/out/v4/audit_sample.txt` (40 kept trajectories: 12 as v3
-  produced them, 28 corrected; teacher turns are marked `*`). Tell Claude what looks wrong.
-- **How large should the on-policy set be?** The plan said 1,500-2,000 tasks; the pilot gives 422 examples from
-  425. The pipeline now runs end to end, so more is machine time plus correction rounds: about 900 more tasks is
-  roughly two hours of rollouts on three servers and three to four rounds of Haiku corrections. Past about 100
-  tasks per family the generator starts repeating request wordings (1,839 distinct texts for 2,775 turns at 150).
-- **Decided and done 2026-11-17 (owner):** recover_empty redone with 26 tools, and v3's groundless calls
-  corrected; see step 2.9 in the Track 2 table. `audit_sample.txt` was drawn again afterwards.
-- Phase 3 (mix, probe, training run A) needs your go in the turn it starts.
+- **Step 2.8, your part of the audit:** read `data/out/v4/audit_sample.txt` (40 kept trajectories, teacher turns
+  marked `*`). Tell Claude what looks wrong. Not blocking: run A was started on the owner's go.
+- **Decided 2026-11-17 (owner):** on-policy set stays at the pilot size (422 examples); scale only the families
+  run A leaves weak. recover_empty redone with 26 tools and v3's groundless calls corrected (steps 2.9, 2.10).
+- **Run B** (unmasked, `data/out/v4/mix_b/`) needs its own go; package with `train.package_data --mix b --upload`.
 
 ## Machine
-- Idle since 2026-11-17 14:10. The eval server of step 2.9 (:8081) was stopped by PID; only Ollama's embedder is
-  running. (The owner's UI server on :8080 is never touched.)
+- Kaggle: kernel `ashurudra09/alfred-sft` version 4 = the 20-step probe of run A (pushed 2026-11-17 ~15:00).
+  Local machine idle; only Ollama's embedder is running. (The owner's UI server on :8080 is never touched.)
 
 ## Track 0: Setup
 
@@ -193,6 +189,15 @@ Left for other tracks (not part of 1C's code):
 | Verify | done for the pilot | 2026-11-17 | this commit | `data/onpolicy.py replay`; `runs/v4/onpolicy_replay_2.log` | **With no model, every one of the 423 kept trajectories passes again from an empty sandbox with identical answers** (11:21; an earlier run at 233 kept: 233 of 233). No kept example contains a path of this machine (checked at conversion). Validator: 422 of 423. Near-duplicates of test items: 0 in the on-policy file (the mix checks all files again). |
 | 2.9 Clean-up after the owner's review | done | 2026-11-17 | this commit | `data/onpolicy.py` (`by_topic`, `flagged`); `data/out/v4/judge/habits.json`; `data/out/v4/recover_empty_25tools.jsonl` (old rows, set aside); `runs/v4/onpolicy_recover26.log`, `onpolicy_correct_9a.log`, `onpolicy_replay_3.log` | **(1) recover_empty with 26 tools:** v3 passed 0 of 25 (it never calls `search_by_meaning`); all 25 corrected at turn 0 and kept only if `search_by_meaning` was called, so one wording now has one route. **(2) Groundless calls:** only 76 student turns came before a first fix; reading them showed three habits of v3 (a `recall` nobody asked for, an invented `modified_within_days` or `extension` filter, a search in one guessed folder). A scan of every kept row, unaided ones included, found 28 trajectories (by call: 19 recall, 5 date filter, 4 extension, 10 folder; 10 of them had passed unaided). They were flagged like review failures and corrected again: 27 kept, 1 dropped (find_then_act-1004); the scan now finds 0. Review of the 49 + 3 new trajectories' replies: 0 flagged (49 by Haiku, 3 read by Claude). **Totals now, 425 tasks:** 156 kept as v3 produced them, 266 corrected and kept, 3 dropped; 422 examples, all valid; 362 teacher turns, 0 using a name not yet shown; contamination guard 0 hits; replay with no model 422 of 422; pytest 177 passed. The numbers in rows 2.5 to Verify above are the state before this step. |
 | 2.10 `memory.remember` date | done | 2026-11-17 | this commit | `src/alfred/tools/memory.py`; `tests/tools/test_tools.py::test_pinned_clock` | Owner's go. A memory is stamped with `guards.now()`, so under `ALFRED_TODAY` recall shows the pinned day. No data regenerated: conversion already wrote the pinned day into recall's "(saved ...)" text, which is what the fixed tool prints. Hard-suite memory tasks now show the pinned day where the v3 baseline runs showed the run's real date; no check reads it. |
+
+## Track 3: Mix + train (main checkout, branch `v4`)
+
+| Step | State | Date | Commit | Artifacts | Numbers / notes |
+|---|---|---|---|---|---|
+| 3.1 Mix | done | 2026-11-17 | 7e528be | `data/mix.py`; `data/out/v4/mix_a/` (masked, run A), `mix_b/` (unmasked, run B), same rows; `data/stats.md`; `runs/v4/mix.log` | Alfred 8,626 (v3 synthetic + on-policy 422 + 25 ask endings + search_by_meaning 219 + injection 179; all with the 26-tool list, prompt 1.2; Hinglish dropped 40), When2Call 1,831, xLAM 1,824. Dropped: 252 near test items, 43 held-out tool or look-alike, 1 test-only injection wording, 4 over 4,096 tokens. Masking (run A): 2,019 examples, 0 left unmasked for length. ask_endings now also cuts on-policy trajectories after a mid-conversation question. |
+| 3.2 Size check | done | 2026-11-17 | 7e528be | `data/mix.py` (`fit`, `BUDGET`) | Untrimmed run A: 11,424 examples, 26.0M tokens, ~10.75 h at v3's rate (22.2M tokens in 33,078 s): over the 10.5 h stop. Trimmed 465 single-call synthetic examples at random (no tool under 220; on-policy and search_by_meaning never dropped): **train 10,959, val 601, 24.6M tokens, ~10.2 h, 1,370 steps.** |
+| 3.3 Config + package | done | 2026-11-17 | 7e528be | `train/configs/sft_2b_v4.yaml` (v3's LoRA and schedule; eval_every 229); `train/package_data.py --mix a|b` | Kaggle dataset `alfred-sft-data` new version = run A's data (train.jsonl 101.0 MB). v3's data stays in the dataset's version history and in `data/out/train.jsonl`. |
+| 3.4 Probe, run A | running | 2026-11-17 | | kernel version 4 (probe) | |
 
 ## Notes for whoever works next
 - Track branches cannot be named `v4/<track>` (git refuses while a branch `v4` exists); 1B uses `v4-1B`.
