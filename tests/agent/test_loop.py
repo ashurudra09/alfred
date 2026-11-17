@@ -168,3 +168,14 @@ def test_disabled_tool_is_hidden_and_refused(env):
     events = drive(run_turn(env["chat"], "what's in downloads?", b, env["tools"]))
     assert "list_directory" not in b.tool_names[0] and "read_file" in b.tool_names[0]
     assert kinds(events)[0] == "retry" and "disabled" in events[0].data["issues"][0]
+
+
+def test_groq_rejected_call_goes_to_the_loop():
+    from types import SimpleNamespace
+    from alfred.agent.backends import rejected_calls
+    body = {"code": "tool_use_failed", "failed_generation":  # Groq's body, 2026-11-18
+            '{"name": "search_files", "arguments": {\n  "query": "2025 newsletter",\n  "extension": null\n}}'}
+    [c] = rejected_calls(SimpleNamespace(body=body))
+    assert c.name == "search_files" and c.arguments == {"query": "2025 newsletter", "extension": None}
+    assert rejected_calls(SimpleNamespace(body={"code": "rate_limit_exceeded"})) == []
+    assert rejected_calls(ValueError("x")) == []

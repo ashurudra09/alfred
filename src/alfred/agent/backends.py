@@ -73,6 +73,18 @@ def parse_text_calls(content: str) -> tuple[str, list[RawCall]]:
     return content.strip(), calls
 
 
+def rejected_calls(e: Exception) -> list[RawCall]:
+    """Groq checks tool calls against the schema itself and fails the whole response (code `tool_use_failed`, e.g.
+    gpt-oss writing null for an optional argument). Its `failed_generation` holds the call: hand it to the loop, which
+    validates and retries exactly as for a local model (4G)."""
+    body = getattr(e, "body", None)
+    if not isinstance(body, dict) or body.get("code") != "tool_use_failed":
+        return []
+    gen = _value(body.get("failed_generation") or "")
+    return [RawCall(c["name"], c.get("arguments") if isinstance(c.get("arguments"), dict) else None, json.dumps(c))
+            for c in (gen if isinstance(gen, list) else [gen]) if isinstance(c, dict) and c.get("name")]
+
+
 def defuse(text: str) -> str:
     """Break text that would end the wrapper or open a chat turn (`</tool_output>`, Qwen's `</tool_response>`,
     `<|im_start|>`), so a file cannot pose as a new user message (4E finding E6)."""
@@ -146,7 +158,9 @@ class Backend:
                     p["name"] += (tc.function and tc.function.name) or ""
                     p["args"] += (tc.function and tc.function.arguments) or ""
         except Exception as e:  # report, don't crash a 250-item eval run
-            res.error = f"{type(e).__name__}: {e}"[:500]
+            if not (calls := rejected_calls(e)):
+                res.error = f"{type(e).__name__}: {e}"[:500]
+            res.tool_calls += calls
         for p in parts.values():
             args = _value(p["args"] or "{}")
             res.tool_calls.append(RawCall(p["name"], args if isinstance(args, dict) else None, p["args"]))
