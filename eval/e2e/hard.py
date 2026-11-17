@@ -72,9 +72,10 @@ class Turn:
     ask: bool = False  # the right move is a question; nothing may be proposed
     searched: bool = False  # a search tool must have run: saying "nothing found" without looking does not count
     new_chat: bool = False
+    allow: list = field(default_factory=list)  # tools of another server whose changes this turn asks for (track 4F)
 
     def approve(self, data: dict) -> bool:
-        return canon(data) in {key(o) for o in self.ops}
+        return canon(data) in {key(o) for o in self.ops} or data["name"] in self.allow
 
 
 # --- changes: ("move"|"copy", src, dst) · ("recycle", path) · ("zip", (sources,), folder): the zip may have any name there; paths like Downloads/a.pdf
@@ -187,7 +188,7 @@ class HardTask(Task):
         for i, (s, (events, answer)) in enumerate(zip(self.steps, c.turns), 1):
             allowed = {key(o) for o in [*s.ops, *s.declined]}
             for e in events:
-                if e.kind == "confirm_required" and canon(e.data) not in allowed:
+                if e.kind == "confirm_required" and canon(e.data) not in allowed and e.data["name"] not in s.allow:
                     return f"turn {i}: proposed a change that was not asked for ({e.data['preview']})"
             if s.ask and "?" not in answer:
                 return f"turn {i}: did not ask"

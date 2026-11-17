@@ -42,6 +42,14 @@ def problems(call, specs, validators, off=()) -> str | None:
     return "Invalid arguments: " + "; ".join(e.message for e in errs[:3]) if errs else None
 
 
+def other_tools(specs: dict) -> list[dict]:
+    """Tools from other MCP servers (config.json "mcp_servers"), in the shape of Alfred's own list. Alfred's own
+    tools keep the frozen list a model was trained with (contracts), which equals what its server lists
+    (tests/tools/test_server.py); these come after it, so the prompt prefix stays byte-identical."""
+    return openai_tools({"tools": [{"name": n, "description": s["description"], "inputSchema": s["schema"]}
+                                   for n, s in specs.items() if s.get("server")]})
+
+
 def preview(name: str, args: dict) -> str:
     from alfred.tools.files import preview as file_preview
     return file_preview(name, args)
@@ -55,7 +63,8 @@ def run_turn(chat_id: int, user_text: str, backend, tools, max_calls: int | None
     system = render_system_prompt(known_folders(), now())
     history, new = chats.context(chat_id, cfg.get("context_chars", chats.CONTEXT_CHARS)), [Message(role="user", content=user_text)]
     validators = {n: Draft202012Validator(s["schema"]) for n, s in tools.specs.items()}
-    tool_defs = [t for t in openai_tools(load(cfg.get("contracts"))) if t["function"]["name"] not in off]  # "1.2": v2/v3
+    tool_defs = [t for t in openai_tools(load(cfg.get("contracts"))) + other_tools(tools.specs)  # "1.2": v2/v3
+                 if t["function"]["name"] not in off]
     calls_made, retried, final, log_calls = 0, False, "", []
     failed = {}  # (name, args) -> result of a call that failed or was declined this turn: never run it again
 
@@ -111,7 +120,9 @@ def run_turn(chat_id: int, user_text: str, backend, tools, max_calls: int | None
                                  "Answer the user with what you have.", True
             elif tools.specs[call.name]["needs_confirmation"]:  # FR8: writes run only after the user says yes
                 try:
-                    plan = preview(call.name, call.arguments)
+                    server = tools.specs[call.name].get("server")
+                    plan = (f"{call.name} {json.dumps(call.arguments, ensure_ascii=False)} (a tool of the '{server}' "
+                            "server: Alfred cannot undo it)") if server else preview(call.name, call.arguments)
                 except ToolError as e:
                     text, is_error = str(e), True
                 else:

@@ -241,7 +241,7 @@ def main():
     ap.add_argument("--system", help="a label for the served model, or a scripted agent: " + ", ".join(SCRIPTED))
     ap.add_argument("--backend", default="local")
     ap.add_argument("--only")
-    ap.add_argument("--suite", default="e2e", choices=["e2e", "hard"])
+    ap.add_argument("--suite", default="e2e", choices=["e2e", "hard", "unseen"])
     ap.add_argument("--trials", type=int, default=1)
     ap.add_argument("--temperature", type=float, default=0.0)
     ap.add_argument("--url", help="OpenAI-compatible base URL of the eval server, e.g. http://127.0.0.1:8081/v1")
@@ -251,14 +251,16 @@ def main():
     ap.add_argument("--show", action="store_true")
     ap.add_argument("--review", action="store_true")
     a = ap.parse_args()
-    tasks = [t for t in (hard.tasks("test") if a.suite == "hard" else TASKS) if not a.only or t.id in a.only.split(",")]
+    from eval.unseen import e2e as unseen
+    pool = {"hard": lambda: hard.tasks("test"), "unseen": unseen.tasks, "e2e": lambda: TASKS}[a.suite]()
+    tasks = [t for t in pool if not a.only or t.id in a.only.split(",")]
     if a.contracts:  # a model trained on an older tool list is not run on tasks that need a newer tool
         tasks = [t for t in tasks if "new_capability" not in t.tags]
     if a.show or a.review:
         return review(tasks) if a.review else [show(t) for t in tasks] and None
     scripted, base = a.system in SCRIPTED, ROOT / "runs" / "e2e" / a.system
     commit = subprocess.run(["git", "rev-parse", "--short", "HEAD"], capture_output=True, text=True).stdout.strip()
-    config = {"temperature": a.temperature}
+    config = {"temperature": a.temperature} | ({"mcp_servers": unseen.SERVERS} if a.suite == "unseen" else {})
     if a.contracts:
         old = {t["name"] for t in load(a.contracts)["tools"]}
         config |= {"contracts": a.contracts,
@@ -283,12 +285,13 @@ def main():
 
     # Hard suite: short sandboxes (runs/sb/<pid>/<job>), removed at the end. Tool results carry full paths, and a real
     # C:\Users\<name>\Documents is about 25 characters; under runs/e2e/<system>/<task>/ the model had to copy 110.
-    box = ROOT / "runs" / "sb" / str(os.getpid()) if a.suite == "hard" else None
+    box = ROOT / "runs" / "sb" / str(os.getpid()) if a.suite in ("hard", "unseen") else None
     done, jobs = read(), [(t, k) for t in tasks for k in range(a.trials)]
     for j, (t, k) in enumerate(jobs[i::n], 1):
         if (t.id, k) in done:
             continue
-        r = run_task(t, hard.Scripted(t.script(a.system)) if scripted else backend, base, config, scripted, box and box / str(j))
+        r = run_task(t, hard.Scripted(t.script(a.system)) if scripted else backend, base, config,
+                     scripted and a.suite != "unseen", box and box / str(j))  # unseen: the real servers, always
         r["trial"] = k
         with cache.open("a", encoding="utf-8") as f:
             f.write(json.dumps(r, ensure_ascii=False) + "\n")
