@@ -37,10 +37,10 @@ checkout while a machine job runs.
 | 2 On-policy data | done (2026-11-17): owner chose the pilot size (422 examples), scale per family after run A if needed; owner's audit read still open | 1A, 1B | main checkout, branch `v4` directly (machine jobs need it) |
 | 3 Mix + train | in progress (claimed 2026-11-17; owner's go for the probe and run A given 2026-11-17) | 2, 1C, owner's go per run | main checkout, branch `v4` |
 | 4D Grammar | done (2026-11-17): the server already constrains calls; own grammar not built (owner's decision, PLAN amendment 12) | 1A | main checkout, branch `v4` |
-| 4E Security | in progress (claimed 2026-11-17, branch `v4-4E`) | 1A, 1C | worktree `.claude/worktrees/v4-4E`, branch `v4-4E` (git cannot create `v4/4E`) |
+| 4E Security | done (2026-11-18, merged into `v4`): v3 0/209 attacks after the tool-output escaping fix | 1A, 1C | was branch `v4-4E` |
 | 4F Unseen-tools eval | in progress (F1-F4 done; waits on the owner's review of a sample of the unseen set, then merge) | 1A, 1C | worktree `.claude/worktrees/v4-4F`, branch `v4-4F` (code; machine jobs later in the main checkout) |
-| 4G Reliability + baselines | ready | 1A | |
-| 5 Evaluate v4 | blocked | 3 (run A downloaded), 4E, 4F, 4G (4D done) | |
+| 4G Reliability + baselines | in progress (claimed 2026-11-18) | 1A | main checkout, branch `v4` (small code change, then machine jobs) |
+| 5 Evaluate v4 | blocked | 3 (run A downloaded), 4F, 4G (4D, 4E done) | |
 | 6 Write-up | blocked | 5 | |
 
 ## Waiting on the owner
@@ -241,3 +241,10 @@ Left for other tracks (not part of 1C's code):
   with the editor tools, not with `cat <<EOF`.
 - The three Phase 1 tracks are independent. 1A should add its semantic-search task families only after step B1
   has frozen the new tool's contract.
+
+## Track 4G: Reliability + baselines (main checkout, branch `v4`)
+
+| Step | State | Date | Commit | Artifacts | Numbers / notes |
+|---|---|---|---|---|---|
+| G1 pass^k in the runner | in progress | 2026-11-18 | | | Definition confirmed in the tau-bench paper (Yao et al. 2024, arXiv 2406.12045, read 2026-11-18): pass^k = mean over tasks of C(c,k)/C(n,k), n trials, c successes, the chance that k i.i.d. trials all succeed (unbiased). The paper ran >= 3 trials, agent temperature 0. |
+| G2 Hard-suite baselines | pending | | | | base, v2, v3 at t=0; v3 K=5 at t=0.7 and over alternative phrasings; gpt-oss-120b on Groq's free tier. |
