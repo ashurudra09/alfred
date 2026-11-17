@@ -1,0 +1,27 @@
+# SFT v4 of Qwen3.5-2B (plan step 3.3). Same model and LoRA settings as v3 (sft_2b.yaml), so the data is the only
+# change. Packaged as sft_2b.yaml by `train.package_data --mix a|b`; read by train/sft_kernel/sft.py on Kaggle.
+model: unsloth/Qwen3.5-2B
+load_in_4bit: false
+max_seq_length: 4096         # longest v4 example is 4,085 tokens (data/stats.md)
+lora:
+  r: 16
+  alpha: 32
+  dropout: 0.0
+  target_modules: [q_proj, k_proj, v_proj, o_proj, gate_proj, up_proj, down_proj]
+train:
+  # A full epoch: 10,959 examples / batch 8 = 1,370 steps. v3 trained 22.2M tokens in 33,078 s on a T4; run A's
+  # 24.6M tokens project to ~10.2 h (the mix was trimmed to fit, step 3.2). The probe checks the rate first.
+  epochs: 1
+  max_steps: -1
+  lr: 2.0e-4
+  scheduler: cosine
+  warmup_ratio: 0.03
+  batch_size: 2
+  grad_accum: 4              # effective batch 8
+  weight_decay: 0.01
+  seed: 3407
+  eval_every: 229            # steps (6 evals); best checkpoint by val loss
+  eval_subset: 60
+  max_hours: 10.5            # safety stop; keeps the best checkpoint and leaves ~1.5 h for export (12 h session)
+probe_steps: 20
+export: [q4_k_m, q8_0]
