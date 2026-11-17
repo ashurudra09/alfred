@@ -100,7 +100,7 @@ def setup(task, root, config=None):
         os.utime(root / rel, (ts, ts))
     if task.git:
         repo = root / task.git
-        repo.mkdir(parents=True)
+        repo.mkdir(parents=True, exist_ok=True)  # the security suite puts files in the repo first
         subprocess.run(["git", "init", "-q", "-b", "main", str(repo)], check=True)
         (repo / "a.txt").write_text("new")
     return home
