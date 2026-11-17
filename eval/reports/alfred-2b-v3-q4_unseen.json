@@ -1,0 +1,2603 @@
+{
+ "system": "alfred-2b-v3-q4",
+ "prompt": "1.2",
+ "tools": "unseen",
+ "rename": null,
+ "contracts": "1.2",
+ "backend": "local",
+ "model": "local",
+ "set": "unseen",
+ "date": "2026-11-17T18:58:03",
+ "commit": "80018f1",
+ "unreviewed": 80,
+ "metrics": {
+  "n": 80,
+  "accuracy": 0.8,
+  "valid_rate": 1.0,
+  "decision_accuracy": 0.9875,
+  "tool_accuracy": 0.8125,
+  "args_score": 0.7851,
+  "decision_macro_f1": 0.9671,
+  "per_decision": {
+   "tool_call": {
+    "precision": 1.0,
+    "recall": 0.9861,
+    "f1": 0.993,
+    "support": 72
+   },
+   "direct": {
+    "precision": 0.0,
+    "recall": 0.0,
+    "f1": 0.0,
+    "support": 0
+   },
+   "ask": {
+    "precision": 0.0,
+    "recall": 0.0,
+    "f1": 0.0,
+    "support": 0
+   },
+   "cannot": {
+    "precision": 0.8889,
+    "recall": 1.0,
+    "f1": 0.9412,
+    "support": 8
+   },
+   "refuse": {
+    "precision": 0.0,
+    "recall": 0.0,
+    "f1": 0.0,
+    "support": 0
+   }
+  },
+  "per_label_accuracy": {
+   "calculate": 1.0,
+   "cannot": 1.0,
+   "clipboard_get": 1.0,
+   "clipboard_set": 0.6,
+   "colorConvert": 0.1429,
+   "convertUnits": 0.875,
+   "copy_file": 1.0,
+   "countWords": 0.8571,
+   "create_note": 1.0,
+   "files-differ": 0.8571,
+   "hashFile": 1.0,
+   "list_reminders": 1.0,
+   "read_file": 1.0,
+   "remember": 1.0,
+   "search_file_contents": 1.0,
+   "set_reminder": 1.0,
+   "todo_add": 1.0,
+   "todo_done": 0.8,
+   "todo_list": 0.0
+  },
+  "confusion": {
+   "calculate": {
+    "calculate": 3
+   },
+   "cannot": {
+    "cannot": 8
+   },
+   "clipboard_get": {
+    "clipboard_get": 5
+   },
+   "clipboard_set": {
+    "copy_file": 1,
+    "clipboard_set": 3,
+    "cannot": 1
+   },
+   "colorConvert": {
+    "convertUnits": 6,
+    "colorConvert": 1
+   },
+   "convertUnits": {
+    "convertUnits": 8
+   },
+   "copy_file": {
+    "copy_file": 1
+   },
+   "countWords": {
+    "countWords": 6,
+    "read_file": 1
+   },
+   "create_note": {
+    "create_note": 2
+   },
+   "files-differ": {
+    "files-differ": 6,
+    "read_file+read_file": 1
+   },
+   "hashFile": {
+    "hashFile": 7
+   },
+   "list_reminders": {
+    "list_reminders": 1
+   },
+   "read_file": {
+    "read_file": 1
+   },
+   "remember": {
+    "remember": 1
+   },
+   "search_file_contents": {
+    "search_file_contents": 1
+   },
+   "set_reminder": {
+    "set_reminder": 1
+   },
+   "todo_add": {
+    "todo_add": 6
+   },
+   "todo_done": {
+    "todo_done": 4,
+    "list_reminders": 1
+   },
+   "todo_list": {
+    "list_reminders": 4
+   }
+  }
+ },
+ "latency": {
+  "ttft_median": 1.93,
+  "total_median": 5.28,
+  "prompt_tokens_median": 3677.0
+ },
+ "items": [
+  {
+   "id": "clip-get-01",
+   "decision": "tool_call",
+   "decision_ok": true,
+   "tool_ok": true,
+   "args_score": 1.0,
+   "valid": true,
+   "ok": true,
+   "expected_label": "clipboard_get",
+   "label": "clipboard_get",
+   "tags": [
+    "held_out"
+   ],
+   "ttft": 30.680898000005982,
+   "total": 31.191,
+   "prompt_tokens": 3674,
+   "cached_tokens": 0,
+   "output": {
+    "content": "",
+    "error": null,
+    "tool_calls": [
+     {
+      "name": "clipboard_get",
+      "arguments": {},
+      "raw": "{}"
+     }
+    ]
+   }
+  },
+  {
+   "id": "clip-get-02",
+   "decision": "tool_call",
+   "decision_ok": true,
+   "tool_ok": true,
+   "args_score": 1.0,
+   "valid": true,
+   "ok": true,
+   "expected_label": "clipboard_get",
+   "label": "clipboard_get",
+   "tags": [
+    "held_out"
+   ],
+   "ttft": 1.4555460000119638,
+   "total": 1.932,
+   "prompt_tokens": 3672,
+   "cached_tokens": 3654,
+   "output": {
+    "content": "",
+    "error": null,
+    "tool_calls": [
+     {
+      "name": "clipboard_get",
+      "arguments": {},
+      "raw": "{}"
+     }
+    ]
+   }
+  },
+  {
+   "id": "clip-get-03",
+   "decision": "tool_call",
+   "decision_ok": true,
+   "tool_ok": true,
+   "args_score": 1.0,
+   "valid": true,
+   "ok": true,
+   "expected_label": "clipboard_get",
+   "label": "clipboard_get",
+   "tags": [
+    "held_out"
+   ],
+   "ttft": 2.680237100008526,
+   "total": 4.027,
+   "prompt_tokens": 3676,
+   "cached_tokens": 3654,
+   "output": {
+    "content": "",
+    "error": null,
+    "tool_calls": [
+     {
+      "name": "clipboard_get",
+      "arguments": {},
+      "raw": "{}"
+     }
+    ]
+   }
+  },
+  {
+   "id": "clip-get-04",
+   "decision": "tool_call",
+   "decision_ok": true,
+   "tool_ok": true,
+   "args_score": 1.0,
+   "valid": true,
+   "ok": true,
+   "expected_label": "clipboard_get",
+   "label": "clipboard_get",
+   "tags": [
+    "held_out",
+    "hinglish"
+   ],
+   "ttft": 3.5757108999969205,
+   "total": 4.395,
+   "prompt_tokens": 3672,
+   "cached_tokens": 3654,
+   "output": {
+    "content": "",
+    "error": null,
+    "tool_calls": [
+     {
+      "name": "clipboard_get",
+      "arguments": {},
+      "raw": "{}"
+     }
+    ]
+   }
+  },
+  {
+   "id": "clip-set-01",
+   "decision": "tool_call",
+   "decision_ok": true,
+   "tool_ok": false,
+   "args_score": 0.0,
+   "valid": true,
+   "ok": false,
+   "expected_label": "clipboard_set",
+   "label": "copy_file",
+   "tags": [
+    "held_out"
+   ],
+   "ttft": 4.019372400012799,
+   "total": 11.609,
+   "prompt_tokens": 3679,
+   "cached_tokens": 3654,
+   "output": {
+    "content": "",
+    "error": null,
+    "tool_calls": [
+     {
+      "name": "copy_file",
+      "arguments": {
+       "source": "C:\\Users\\neha\\Documents\\MEADOW-8687",
+       "destination": "clipboard"
+      },
+      "raw": "{\"source\":\"C:\\\\Users\\\\neha\\\\Documents\\\\MEADOW-8687\",\"destination\":\"clipboard\"}"
+     }
+    ]
+   }
+  },
+  {
+   "id": "clip-set-02",
+   "decision": "tool_call",
+   "decision_ok": true,
+   "tool_ok": true,
+   "args_score": 1.0,
+   "valid": true,
+   "ok": true,
+   "expected_label": "clipboard_set",
+   "label": "clipboard_set",
+   "tags": [
+    "held_out"
+   ],
+   "ttft": 1.9458625999977812,
+   "total": 4.017,
+   "prompt_tokens": 3682,
+   "cached_tokens": 3654,
+   "output": {
+    "content": "",
+    "error": null,
+    "tool_calls": [
+     {
+      "name": "clipboard_set",
+      "arguments": {
+       "text": "14 Larkfield Road, Leeds"
+      },
+      "raw": "{\"text\":\"14 Larkfield Road, Leeds\"}"
+     }
+    ]
+   }
+  },
+  {
+   "id": "clip-set-03",
+   "decision": "cannot",
+   "decision_ok": false,
+   "tool_ok": false,
+   "args_score": 0.0,
+   "valid": true,
+   "ok": false,
+   "expected_label": "clipboard_set",
+   "label": "cannot",
+   "tags": [
+    "held_out"
+   ],
+   "ttft": 0.9233400000084657,
+   "total": 2.664,
+   "prompt_tokens": 3685,
+   "cached_tokens": 3654,
+   "output": {
+    "content": "I can't copy links: I don't have a tool for that. You can copy it from your browser.",
+    "error": null,
+    "tool_calls": []
+   }
+  },
+  {
+   "id": "clip-set-04",
+   "decision": "tool_call",
+   "decision_ok": true,
+   "tool_ok": true,
+   "args_score": 1.0,
+   "valid": true,
+   "ok": true,
+   "expected_label": "clipboard_set",
+   "label": "clipboard_set",
+   "tags": [
+    "held_out",
+    "hinglish",
+    "typo"
+   ],
+   "ttft": 1.8163162999990163,
+   "total": 7.117,
+   "prompt_tokens": 3679,
+   "cached_tokens": 3654,
+   "output": {
+    "content": "",
+    "error": null,
+    "tool_calls": [
+     {
+      "name": "clipboard_set",
+      "arguments": {
+       "text": "otter-285"
+      },
+      "raw": "{\"text\":\"otter-285\"}"
+     }
+    ]
+   }
+  },
+  {
+   "id": "units-01",
+   "decision": "tool_call",
+   "decision_ok": true,
+   "tool_ok": true,
+   "args_score": 1.0,
+   "valid": true,
+   "ok": true,
+   "expected_label": "convertUnits",
+   "label": "convertUnits",
+   "tags": [
+    "held_out"
+   ],
+   "ttft": 3.657298300007824,
+   "total": 11.21,
+   "prompt_tokens": 3677,
+   "cached_tokens": 3654,
+   "output": {
+    "content": "",
+    "error": null,
+    "tool_calls": [
+     {
+      "name": "convertUnits",
+      "arguments": {
+       "value": 26.2,
+       "from_unit": "mi",
+       "to_unit": "km"
+      },
+      "raw": "{\"value\":26.2,\"from_unit\":\"mi\",\"to_unit\":\"km\"}"
+     }
+    ]
+   }
+  },
+  {
+   "id": "units-02",
+   "decision": "tool_call",
+   "decision_ok": true,
+   "tool_ok": true,
+   "args_score": 1.0,
+   "valid": true,
+   "ok": true,
+   "expected_label": "convertUnits",
+   "label": "convertUnits",
+   "tags": [
+    "held_out"
+   ],
+   "ttft": 3.5310210999887204,
+   "total": 7.094,
+   "prompt_tokens": 3675,
+   "cached_tokens": 3654,
+   "output": {
+    "content": "",
+    "error": null,
+    "tool_calls": [
+     {
+      "name": "convertUnits",
+      "arguments": {
+       "value": 72,
+       "from_unit": "F",
+       "to_unit": "C"
+      },
+      "raw": "{\"value\":72,\"from_unit\":\"F\",\"to_unit\":\"C\"}"
+     }
+    ]
+   }
+  },
+  {
+   "id": "units-03",
+   "decision": "tool_call",
+   "decision_ok": true,
+   "tool_ok": true,
+   "args_score": 1.0,
+   "valid": true,
+   "ok": true,
+   "expected_label": "convertUnits",
+   "label": "convertUnits",
+   "tags": [
+    "held_out"
+   ],
+   "ttft": 1.5345750999986194,
+   "total": 4.825,
+   "prompt_tokens": 3673,
+   "cached_tokens": 3654,
+   "output": {
+    "content": "",
+    "error": null,
+    "tool_calls": [
+     {
+      "name": "convertUnits",
+      "arguments": {
+       "value": 5,
+       "from_unit": "lb",
+       "to_unit": "kg"
+      },
+      "raw": "{\"value\":5,\"from_unit\":\"lb\",\"to_unit\":\"kg\"}"
+     }
+    ]
+   }
+  },
+  {
+   "id": "units-04",
+   "decision": "tool_call",
+   "decision_ok": true,
+   "tool_ok": true,
+   "args_score": 1.0,
+   "valid": true,
+   "ok": true,
+   "expected_label": "convertUnits",
+   "label": "convertUnits",
+   "tags": [
+    "held_out"
+   ],
+   "ttft": 3.5500160999945365,
+   "total": 11.247,
+   "prompt_tokens": 3671,
+   "cached_tokens": 3654,
+   "output": {
+    "content": "",
+    "error": null,
+    "tool_calls": [
+     {
+      "name": "convertUnits",
+      "arguments": {
+       "value": 2,
+       "from_unit": "gal",
+       "to_unit": "L"
+      },
+      "raw": "{\"value\":2,\"from_unit\":\"gal\",\"to_unit\":\"L\"}"
+     }
+    ]
+   }
+  },
+  {
+   "id": "units-05",
+   "decision": "tool_call",
+   "decision_ok": true,
+   "tool_ok": true,
+   "args_score": 1.0,
+   "valid": true,
+   "ok": true,
+   "expected_label": "convertUnits",
+   "label": "convertUnits",
+   "tags": [
+    "held_out"
+   ],
+   "ttft": 3.397334099994623,
+   "total": 9.706,
+   "prompt_tokens": 3680,
+   "cached_tokens": 3654,
+   "output": {
+    "content": "",
+    "error": null,
+    "tool_calls": [
+     {
+      "name": "convertUnits",
+      "arguments": {
+       "value": 180,
+       "from_unit": "cm",
+       "to_unit": "ft"
+      },
+      "raw": "{\"value\":180,\"from_unit\":\"cm\",\"to_unit\":\"ft\"}"
+     }
+    ]
+   }
+  },
+  {
+   "id": "units-06",
+   "decision": "tool_call",
+   "decision_ok": true,
+   "tool_ok": true,
+   "args_score": 0.6666666666666666,
+   "valid": true,
+   "ok": false,
+   "expected_label": "convertUnits",
+   "label": "convertUnits",
+   "tags": [
+    "held_out",
+    "typo"
+   ],
+   "ttft": 1.569450399998459,
+   "total": 4.951,
+   "prompt_tokens": 3673,
+   "cached_tokens": 3654,
+   "output": {
+    "content": "",
+    "error": null,
+    "tool_calls": [
+     {
+      "name": "convertUnits",
+      "arguments": {
+       "value": 3,
+       "from_unit": "cups",
+       "to_unit": "ml"
+      },
+      "raw": "{\"value\":3,\"from_unit\":\"cups\",\"to_unit\":\"ml\"}"
+     }
+    ]
+   }
+  },
+  {
+   "id": "units-07",
+   "decision": "tool_call",
+   "decision_ok": true,
+   "tool_ok": true,
+   "args_score": 1.0,
+   "valid": true,
+   "ok": true,
+   "expected_label": "convertUnits",
+   "label": "convertUnits",
+   "tags": [
+    "held_out",
+    "hinglish"
+   ],
+   "ttft": 2.267931900001713,
+   "total": 10.537,
+   "prompt_tokens": 3676,
+   "cached_tokens": 3654,
+   "output": {
+    "content": "",
+    "error": null,
+    "tool_calls": [
+     {
+      "name": "convertUnits",
+      "arguments": {
+       "value": 10,
+       "from_unit": "km",
+       "to_unit": "mi"
+      },
+      "raw": "{\"value\":10,\"from_unit\":\"km\",\"to_unit\":\"mi\"}"
+     }
+    ]
+   }
+  },
+  {
+   "id": "words-01",
+   "decision": "tool_call",
+   "decision_ok": true,
+   "tool_ok": true,
+   "args_score": 1.0,
+   "valid": true,
+   "ok": true,
+   "expected_label": "countWords",
+   "label": "countWords",
+   "tags": [
+    "held_out"
+   ],
+   "ttft": 3.583937400006107,
+   "total": 7.153,
+   "prompt_tokens": 3677,
+   "cached_tokens": 3654,
+   "output": {
+    "content": "",
+    "error": null,
+    "tool_calls": [
+     {
+      "name": "countWords",
+      "arguments": {
+       "file": "Documents\\essay_final.txt"
+      },
+      "raw": "{\"file\":\"Documents\\\\essay_final.txt\"}"
+     }
+    ]
+   }
+  },
+  {
+   "id": "words-02",
+   "decision": "tool_call",
+   "decision_ok": true,
+   "tool_ok": true,
+   "args_score": 1.0,
+   "valid": true,
+   "ok": true,
+   "expected_label": "countWords",
+   "label": "countWords",
+   "tags": [
+    "held_out"
+   ],
+   "ttft": 2.703713200011407,
+   "total": 4.379,
+   "prompt_tokens": 3675,
+   "cached_tokens": 3654,
+   "output": {
+    "content": "",
+    "error": null,
+    "tool_calls": [
+     {
+      "name": "countWords",
+      "arguments": {
+       "file": "Desktop\\cover_letter.txt"
+      },
+      "raw": "{\"file\":\"Desktop\\\\cover_letter.txt\"}"
+     }
+    ]
+   }
+  },
+  {
+   "id": "words-03",
+   "decision": "tool_call",
+   "decision_ok": true,
+   "tool_ok": true,
+   "args_score": 1.0,
+   "valid": true,
+   "ok": true,
+   "expected_label": "countWords",
+   "label": "countWords",
+   "tags": [
+    "held_out"
+   ],
+   "ttft": 1.449185799996485,
+   "total": 3.522,
+   "prompt_tokens": 3685,
+   "cached_tokens": 3654,
+   "output": {
+    "content": "",
+    "error": null,
+    "tool_calls": [
+     {
+      "name": "countWords",
+      "arguments": {
+       "file": "C:\\Users\\neha\\Downloads\\notes.txt"
+      },
+      "raw": "{\"file\":\"C:\\\\Users\\\\neha\\\\Downloads\\\\notes.txt\"}"
+     }
+    ]
+   }
+  },
+  {
+   "id": "words-04",
+   "decision": "tool_call",
+   "decision_ok": true,
+   "tool_ok": false,
+   "args_score": 0.0,
+   "valid": true,
+   "ok": false,
+   "expected_label": "countWords",
+   "label": "read_file",
+   "tags": [
+    "held_out"
+   ],
+   "ttft": 1.3981147999875247,
+   "total": 5.292,
+   "prompt_tokens": 3682,
+   "cached_tokens": 3654,
+   "output": {
+    "content": "",
+    "error": null,
+    "tool_calls": [
+     {
+      "name": "read_file",
+      "arguments": {
+       "path": "Documents\\personal_statement.txt"
+      },
+      "raw": "{\"path\":\"Documents\\\\personal_statement.txt\"}"
+     }
+    ]
+   }
+  },
+  {
+   "id": "words-05",
+   "decision": "tool_call",
+   "decision_ok": true,
+   "tool_ok": true,
+   "args_score": 1.0,
+   "valid": true,
+   "ok": true,
+   "expected_label": "countWords",
+   "label": "countWords",
+   "tags": [
+    "held_out",
+    "hinglish"
+   ],
+   "ttft": 3.7717848000029335,
+   "total": 8.217,
+   "prompt_tokens": 3679,
+   "cached_tokens": 3654,
+   "output": {
+    "content": "",
+    "error": null,
+    "tool_calls": [
+     {
+      "name": "countWords",
+      "arguments": {
+       "file": "Documents\\thesis\\chapter2.md"
+      },
+      "raw": "{\"file\":\"Documents\\\\thesis\\\\chapter2.md\"}"
+     }
+    ]
+   }
+  },
+  {
+   "id": "words-06",
+   "decision": "tool_call",
+   "decision_ok": true,
+   "tool_ok": true,
+   "args_score": 1.0,
+   "valid": true,
+   "ok": true,
+   "expected_label": "countWords",
+   "label": "countWords",
+   "tags": [
+    "held_out",
+    "typo"
+   ],
+   "ttft": 2.7021304999943823,
+   "total": 6.467,
+   "prompt_tokens": 3674,
+   "cached_tokens": 3654,
+   "output": {
+    "content": "",
+    "error": null,
+    "tool_calls": [
+     {
+      "name": "countWords",
+      "arguments": {
+       "file": "Desktop\\speech.txt"
+      },
+      "raw": "{\"file\":\"Desktop\\\\speech.txt\"}"
+     }
+    ]
+   }
+  },
+  {
+   "id": "hash-01",
+   "decision": "tool_call",
+   "decision_ok": true,
+   "tool_ok": true,
+   "args_score": 1.0,
+   "valid": true,
+   "ok": true,
+   "expected_label": "hashFile",
+   "label": "hashFile",
+   "tags": [
+    "held_out"
+   ],
+   "ttft": 2.2882814000040526,
+   "total": 5.953,
+   "prompt_tokens": 3684,
+   "cached_tokens": 3654,
+   "output": {
+    "content": "",
+    "error": null,
+    "tool_calls": [
+     {
+      "name": "hashFile",
+      "arguments": {
+       "file": "C:\\Users\\neha\\Downloads\\ubuntu-24.04.iso",
+       "algorithm": "sha256"
+      },
+      "raw": "{\"file\":\"C:\\\\Users\\\\neha\\\\Downloads\\\\ubuntu-24.04.iso\",\"algorithm\":\"sha256\"}"
+     }
+    ]
+   }
+  },
+  {
+   "id": "hash-02",
+   "decision": "tool_call",
+   "decision_ok": true,
+   "tool_ok": true,
+   "args_score": 1.0,
+   "valid": true,
+   "ok": true,
+   "expected_label": "hashFile",
+   "label": "hashFile",
+   "tags": [
+    "held_out"
+   ],
+   "ttft": 1.4256135999894468,
+   "total": 6.15,
+   "prompt_tokens": 3681,
+   "cached_tokens": 3654,
+   "output": {
+    "content": "",
+    "error": null,
+    "tool_calls": [
+     {
+      "name": "hashFile",
+      "arguments": {
+       "file": "C:\\Users\\neha\\Downloads\\setup.exe",
+       "algorithm": "md5"
+      },
+      "raw": "{\"file\":\"C:\\\\Users\\\\neha\\\\Downloads\\\\setup.exe\",\"algorithm\":\"md5\"}"
+     }
+    ]
+   }
+  },
+  {
+   "id": "hash-03",
+   "decision": "tool_call",
+   "decision_ok": true,
+   "tool_ok": true,
+   "args_score": 1.0,
+   "valid": true,
+   "ok": true,
+   "expected_label": "hashFile",
+   "label": "hashFile",
+   "tags": [
+    "held_out"
+   ],
+   "ttft": 2.551416500005871,
+   "total": 5.641,
+   "prompt_tokens": 3675,
+   "cached_tokens": 3654,
+   "output": {
+    "content": "",
+    "error": null,
+    "tool_calls": [
+     {
+      "name": "hashFile",
+      "arguments": {
+       "file": "C:\\Users\\neha\\Downloads\\driver.zip"
+      },
+      "raw": "{\"file\":\"C:\\\\Users\\\\neha\\\\Downloads\\\\driver.zip\"}"
+     }
+    ]
+   }
+  },
+  {
+   "id": "hash-04",
+   "decision": "tool_call",
+   "decision_ok": true,
+   "tool_ok": true,
+   "args_score": 1.0,
+   "valid": true,
+   "ok": true,
+   "expected_label": "hashFile",
+   "label": "hashFile",
+   "tags": [
+    "held_out"
+   ],
+   "ttft": 2.4421074999991106,
+   "total": 5.262,
+   "prompt_tokens": 3675,
+   "cached_tokens": 3654,
+   "output": {
+    "content": "",
+    "error": null,
+    "tool_calls": [
+     {
+      "name": "hashFile",
+      "arguments": {
+       "file": "Documents\\contract_signed.pdf",
+       "algorithm": "sha1"
+      },
+      "raw": "{\"file\":\"Documents\\\\contract_signed.pdf\",\"algorithm\":\"sha1\"}"
+     }
+    ]
+   }
+  },
+  {
+   "id": "hash-05",
+   "decision": "tool_call",
+   "decision_ok": true,
+   "tool_ok": true,
+   "args_score": 1.0,
+   "valid": true,
+   "ok": true,
+   "expected_label": "hashFile",
+   "label": "hashFile",
+   "tags": [
+    "held_out"
+   ],
+   "ttft": 1.53051989999949,
+   "total": 2.981,
+   "prompt_tokens": 3685,
+   "cached_tokens": 3654,
+   "output": {
+    "content": "",
+    "error": null,
+    "tool_calls": [
+     {
+      "name": "hashFile",
+      "arguments": {
+       "file": "Desktop\\photo.jpg"
+      },
+      "raw": "{\"file\":\"Desktop\\\\photo.jpg\"}"
+     }
+    ]
+   }
+  },
+  {
+   "id": "hash-06",
+   "decision": "tool_call",
+   "decision_ok": true,
+   "tool_ok": true,
+   "args_score": 1.0,
+   "valid": true,
+   "ok": true,
+   "expected_label": "hashFile",
+   "label": "hashFile",
+   "tags": [
+    "held_out",
+    "hinglish"
+   ],
+   "ttft": 1.4904291999991983,
+   "total": 3.079,
+   "prompt_tokens": 3675,
+   "cached_tokens": 3654,
+   "output": {
+    "content": "",
+    "error": null,
+    "tool_calls": [
+     {
+      "name": "hashFile",
+      "arguments": {
+       "file": "Downloads\\installer.msi"
+      },
+      "raw": "{\"file\":\"Downloads\\\\installer.msi\"}"
+     }
+    ]
+   }
+  },
+  {
+   "id": "diff-01",
+   "decision": "tool_call",
+   "decision_ok": true,
+   "tool_ok": true,
+   "args_score": 1.0,
+   "valid": true,
+   "ok": true,
+   "expected_label": "files-differ",
+   "label": "files-differ",
+   "tags": [
+    "held_out"
+   ],
+   "ttft": 1.437586599990027,
+   "total": 4.178,
+   "prompt_tokens": 3681,
+   "cached_tokens": 3654,
+   "output": {
+    "content": "",
+    "error": null,
+    "tool_calls": [
+     {
+      "name": "files-differ",
+      "arguments": {
+       "first": "Documents\\cv_old.txt",
+       "second": "Documents\\cv_new.txt"
+      },
+      "raw": "{\"first\":\"Documents\\\\cv_old.txt\",\"second\":\"Documents\\\\cv_new.txt\"}"
+     }
+    ]
+   }
+  },
+  {
+   "id": "diff-02",
+   "decision": "tool_call",
+   "decision_ok": true,
+   "tool_ok": true,
+   "args_score": 1.0,
+   "valid": true,
+   "ok": true,
+   "expected_label": "files-differ",
+   "label": "files-differ",
+   "tags": [
+    "held_out"
+   ],
+   "ttft": 1.6301471000042511,
+   "total": 4.572,
+   "prompt_tokens": 3680,
+   "cached_tokens": 3654,
+   "output": {
+    "content": "",
+    "error": null,
+    "tool_calls": [
+     {
+      "name": "files-differ",
+      "arguments": {
+       "first": "Desktop\\notes_v1.md",
+       "second": "Desktop\\notes_v2.md"
+      },
+      "raw": "{\"first\":\"Desktop\\\\notes_v1.md\",\"second\":\"Desktop\\\\notes_v2.md\"}"
+     }
+    ]
+   }
+  },
+  {
+   "id": "diff-03",
+   "decision": "tool_call",
+   "decision_ok": true,
+   "tool_ok": true,
+   "args_score": 1.0,
+   "valid": true,
+   "ok": true,
+   "expected_label": "files-differ",
+   "label": "files-differ",
+   "tags": [
+    "held_out"
+   ],
+   "ttft": 1.53238030000648,
+   "total": 5.199,
+   "prompt_tokens": 3682,
+   "cached_tokens": 3654,
+   "output": {
+    "content": "",
+    "error": null,
+    "tool_calls": [
+     {
+      "name": "files-differ",
+      "arguments": {
+       "first": "C:\\Users\\neha\\Downloads\\config.ini",
+       "second": "C:\\Users\\neha\\Documents\\config.ini"
+      },
+      "raw": "{\"first\":\"C:\\\\Users\\\\neha\\\\Downloads\\\\config.ini\",\"second\":\"C:\\\\Users\\\\neha\\\\Documents\\\\config.ini\"}"
+     }
+    ]
+   }
+  },
+  {
+   "id": "diff-04",
+   "decision": "tool_call",
+   "decision_ok": true,
+   "tool_ok": true,
+   "args_score": 1.0,
+   "valid": true,
+   "ok": true,
+   "expected_label": "files-differ",
+   "label": "files-differ",
+   "tags": [
+    "held_out"
+   ],
+   "ttft": 1.4174357000010787,
+   "total": 4.151,
+   "prompt_tokens": 3680,
+   "cached_tokens": 3654,
+   "output": {
+    "content": "",
+    "error": null,
+    "tool_calls": [
+     {
+      "name": "files-differ",
+      "arguments": {
+       "first": "Documents\\draft.txt",
+       "second": "Documents\\draft_final.txt"
+      },
+      "raw": "{\"first\":\"Documents\\\\draft.txt\",\"second\":\"Documents\\\\draft_final.txt\"}"
+     }
+    ]
+   }
+  },
+  {
+   "id": "diff-05",
+   "decision": "tool_call",
+   "decision_ok": true,
+   "tool_ok": false,
+   "args_score": 0.0,
+   "valid": true,
+   "ok": false,
+   "expected_label": "files-differ",
+   "label": "read_file+read_file",
+   "tags": [
+    "held_out",
+    "hinglish"
+   ],
+   "ttft": 1.4531473999959417,
+   "total": 5.067,
+   "prompt_tokens": 3679,
+   "cached_tokens": 3654,
+   "output": {
+    "content": "",
+    "error": null,
+    "tool_calls": [
+     {
+      "name": "read_file",
+      "arguments": {
+       "path": "Desktop\\a.txt"
+      },
+      "raw": "{\"path\":\"Desktop\\\\a.txt\"}"
+     },
+     {
+      "name": "read_file",
+      "arguments": {
+       "path": "Desktop\\b.txt"
+      },
+      "raw": "{\"path\":\"Desktop\\\\b.txt\"}"
+     }
+    ]
+   }
+  },
+  {
+   "id": "diff-06",
+   "decision": "tool_call",
+   "decision_ok": true,
+   "tool_ok": true,
+   "args_score": 1.0,
+   "valid": true,
+   "ok": true,
+   "expected_label": "files-differ",
+   "label": "files-differ",
+   "tags": [
+    "held_out"
+   ],
+   "ttft": 1.6912080000038259,
+   "total": 5.06,
+   "prompt_tokens": 3678,
+   "cached_tokens": 3654,
+   "output": {
+    "content": "",
+    "error": null,
+    "tool_calls": [
+     {
+      "name": "files-differ",
+      "arguments": {
+       "first": "Documents\\list1.txt",
+       "second": "Documents\\list2.txt"
+      },
+      "raw": "{\"first\":\"Documents\\\\list1.txt\",\"second\":\"Documents\\\\list2.txt\"}"
+     }
+    ]
+   }
+  },
+  {
+   "id": "todo-add-01",
+   "decision": "tool_call",
+   "decision_ok": true,
+   "tool_ok": true,
+   "args_score": 1.0,
+   "valid": true,
+   "ok": true,
+   "expected_label": "todo_add",
+   "label": "todo_add",
+   "tags": [
+    "held_out"
+   ],
+   "ttft": 1.8437918999989051,
+   "total": 3.217,
+   "prompt_tokens": 3677,
+   "cached_tokens": 3654,
+   "output": {
+    "content": "",
+    "error": null,
+    "tool_calls": [
+     {
+      "name": "todo_add",
+      "arguments": {
+       "item": "renew passport"
+      },
+      "raw": "{\"item\":\"renew passport\"}"
+     }
+    ]
+   }
+  },
+  {
+   "id": "todo-add-02",
+   "decision": "tool_call",
+   "decision_ok": true,
+   "tool_ok": true,
+   "args_score": 1.0,
+   "valid": true,
+   "ok": true,
+   "expected_label": "todo_add",
+   "label": "todo_add",
+   "tags": [
+    "held_out"
+   ],
+   "ttft": 1.643127799994545,
+   "total": 4.153,
+   "prompt_tokens": 3679,
+   "cached_tokens": 3654,
+   "output": {
+    "content": "",
+    "error": null,
+    "tool_calls": [
+     {
+      "name": "todo_add",
+      "arguments": {
+       "item": "Buy printer ink",
+       "priority": "high"
+      },
+      "raw": "{\"item\":\"Buy printer ink\",\"priority\":\"high\"}"
+     }
+    ]
+   }
+  },
+  {
+   "id": "todo-add-03",
+   "decision": "tool_call",
+   "decision_ok": true,
+   "tool_ok": true,
+   "args_score": 1.0,
+   "valid": true,
+   "ok": true,
+   "expected_label": "todo_add",
+   "label": "todo_add",
+   "tags": [
+    "held_out"
+   ],
+   "ttft": 1.3784196000051452,
+   "total": 4.58,
+   "prompt_tokens": 3686,
+   "cached_tokens": 3654,
+   "output": {
+    "content": "",
+    "error": null,
+    "tool_calls": [
+     {
+      "name": "todo_add",
+      "arguments": {
+       "item": "submit the expense report",
+       "due": "2026-10-30"
+      },
+      "raw": "{\"item\":\"submit the expense report\",\"due\":\"2026-10-30\"}"
+     }
+    ]
+   }
+  },
+  {
+   "id": "todo-add-04",
+   "decision": "tool_call",
+   "decision_ok": true,
+   "tool_ok": true,
+   "args_score": 1.0,
+   "valid": true,
+   "ok": true,
+   "expected_label": "todo_add",
+   "label": "todo_add",
+   "tags": [
+    "held_out"
+   ],
+   "ttft": 1.4933640999952331,
+   "total": 3.827,
+   "prompt_tokens": 3676,
+   "cached_tokens": 3654,
+   "output": {
+    "content": "",
+    "error": null,
+    "tool_calls": [
+     {
+      "name": "todo_add",
+      "arguments": {
+       "item": "call the plumber",
+       "priority": "low"
+      },
+      "raw": "{\"item\":\"call the plumber\",\"priority\":\"low\"}"
+     }
+    ]
+   }
+  },
+  {
+   "id": "todo-add-05",
+   "decision": "tool_call",
+   "decision_ok": true,
+   "tool_ok": true,
+   "args_score": 0.8571428571428571,
+   "valid": true,
+   "ok": true,
+   "expected_label": "todo_add",
+   "label": "todo_add",
+   "tags": [
+    "held_out",
+    "hinglish"
+   ],
+   "ttft": 1.4430645000102231,
+   "total": 2.926,
+   "prompt_tokens": 3678,
+   "cached_tokens": 3654,
+   "output": {
+    "content": "",
+    "error": null,
+    "tool_calls": [
+     {
+      "name": "todo_add",
+      "arguments": {
+       "item": "cancel gym membership"
+      },
+      "raw": "{\"item\":\"cancel gym membership\"}"
+     }
+    ]
+   }
+  },
+  {
+   "id": "todo-list-01",
+   "decision": "tool_call",
+   "decision_ok": true,
+   "tool_ok": false,
+   "args_score": 0.0,
+   "valid": true,
+   "ok": false,
+   "expected_label": "todo_list",
+   "label": "list_reminders",
+   "tags": [
+    "held_out"
+   ],
+   "ttft": 1.5440491999906953,
+   "total": 2.03,
+   "prompt_tokens": 3674,
+   "cached_tokens": 3654,
+   "output": {
+    "content": "",
+    "error": null,
+    "tool_calls": [
+     {
+      "name": "list_reminders",
+      "arguments": {},
+      "raw": "{}"
+     }
+    ]
+   }
+  },
+  {
+   "id": "todo-list-02",
+   "decision": "tool_call",
+   "decision_ok": true,
+   "tool_ok": false,
+   "args_score": 0.0,
+   "valid": true,
+   "ok": false,
+   "expected_label": "todo_list",
+   "label": "list_reminders",
+   "tags": [
+    "held_out"
+   ],
+   "ttft": 1.6170692000014242,
+   "total": 2.109,
+   "prompt_tokens": 3676,
+   "cached_tokens": 3654,
+   "output": {
+    "content": "",
+    "error": null,
+    "tool_calls": [
+     {
+      "name": "list_reminders",
+      "arguments": {},
+      "raw": "{}"
+     }
+    ]
+   }
+  },
+  {
+   "id": "todo-list-03",
+   "decision": "tool_call",
+   "decision_ok": true,
+   "tool_ok": false,
+   "args_score": 0.0,
+   "valid": true,
+   "ok": false,
+   "expected_label": "todo_list",
+   "label": "list_reminders",
+   "tags": [
+    "held_out"
+   ],
+   "ttft": 1.6581580999918515,
+   "total": 2.168,
+   "prompt_tokens": 3675,
+   "cached_tokens": 3654,
+   "output": {
+    "content": "",
+    "error": null,
+    "tool_calls": [
+     {
+      "name": "list_reminders",
+      "arguments": {},
+      "raw": "{}"
+     }
+    ]
+   }
+  },
+  {
+   "id": "todo-list-04",
+   "decision": "tool_call",
+   "decision_ok": true,
+   "tool_ok": false,
+   "args_score": 0.0,
+   "valid": true,
+   "ok": false,
+   "expected_label": "todo_list",
+   "label": "list_reminders",
+   "tags": [
+    "held_out"
+   ],
+   "ttft": 1.651659800001653,
+   "total": 2.136,
+   "prompt_tokens": 3672,
+   "cached_tokens": 3654,
+   "output": {
+    "content": "",
+    "error": null,
+    "tool_calls": [
+     {
+      "name": "list_reminders",
+      "arguments": {},
+      "raw": "{}"
+     }
+    ]
+   }
+  },
+  {
+   "id": "todo-done-01",
+   "decision": "tool_call",
+   "decision_ok": true,
+   "tool_ok": true,
+   "args_score": 1.0,
+   "valid": true,
+   "ok": true,
+   "expected_label": "todo_done",
+   "label": "todo_done",
+   "tags": [
+    "held_out"
+   ],
+   "ttft": 1.5802781999955187,
+   "total": 3.016,
+   "prompt_tokens": 3673,
+   "cached_tokens": 3654,
+   "output": {
+    "content": "",
+    "error": null,
+    "tool_calls": [
+     {
+      "name": "todo_done",
+      "arguments": {
+       "number": 3
+      },
+      "raw": "{\"number\":3}"
+     }
+    ]
+   }
+  },
+  {
+   "id": "todo-done-02",
+   "decision": "tool_call",
+   "decision_ok": true,
+   "tool_ok": true,
+   "args_score": 1.0,
+   "valid": true,
+   "ok": true,
+   "expected_label": "todo_done",
+   "label": "todo_done",
+   "tags": [
+    "held_out"
+   ],
+   "ttft": 1.9170063999918057,
+   "total": 6.63,
+   "prompt_tokens": 3675,
+   "cached_tokens": 3654,
+   "output": {
+    "content": "",
+    "error": null,
+    "tool_calls": [
+     {
+      "name": "todo_done",
+      "arguments": {
+       "number": 1
+      },
+      "raw": "{\"number\":1}"
+     }
+    ]
+   }
+  },
+  {
+   "id": "todo-done-03",
+   "decision": "tool_call",
+   "decision_ok": true,
+   "tool_ok": true,
+   "args_score": 1.0,
+   "valid": true,
+   "ok": true,
+   "expected_label": "todo_done",
+   "label": "todo_done",
+   "tags": [
+    "held_out"
+   ],
+   "ttft": 5.048693700009608,
+   "total": 9.865,
+   "prompt_tokens": 3676,
+   "cached_tokens": 3654,
+   "output": {
+    "content": "",
+    "error": null,
+    "tool_calls": [
+     {
+      "name": "todo_done",
+      "arguments": {
+       "number": 2
+      },
+      "raw": "{\"number\":2}"
+     }
+    ]
+   }
+  },
+  {
+   "id": "todo-done-04",
+   "decision": "tool_call",
+   "decision_ok": true,
+   "tool_ok": true,
+   "args_score": 1.0,
+   "valid": true,
+   "ok": true,
+   "expected_label": "todo_done",
+   "label": "todo_done",
+   "tags": [
+    "held_out",
+    "hinglish"
+   ],
+   "ttft": 5.059280099987518,
+   "total": 9.255,
+   "prompt_tokens": 3676,
+   "cached_tokens": 3654,
+   "output": {
+    "content": "",
+    "error": null,
+    "tool_calls": [
+     {
+      "name": "todo_done",
+      "arguments": {
+       "number": 4
+      },
+      "raw": "{\"number\":4}"
+     }
+    ]
+   }
+  },
+  {
+   "id": "color-01",
+   "decision": "tool_call",
+   "decision_ok": true,
+   "tool_ok": false,
+   "args_score": 0.0,
+   "valid": true,
+   "ok": false,
+   "expected_label": "colorConvert",
+   "label": "convertUnits",
+   "tags": [
+    "held_out"
+   ],
+   "ttft": 5.087600100014242,
+   "total": 13.576,
+   "prompt_tokens": 3677,
+   "cached_tokens": 3654,
+   "output": {
+    "content": "",
+    "error": null,
+    "tool_calls": [
+     {
+      "name": "convertUnits",
+      "arguments": {
+       "value": 1000000000.0,
+       "from_unit": "#1e90ff",
+       "to_unit": "rgb"
+      },
+      "raw": "{\"value\":1e9,\"from_unit\":\"#1e90ff\",\"to_unit\":\"rgb\"}"
+     }
+    ]
+   }
+  },
+  {
+   "id": "color-02",
+   "decision": "tool_call",
+   "decision_ok": true,
+   "tool_ok": false,
+   "args_score": 0.0,
+   "valid": true,
+   "ok": false,
+   "expected_label": "colorConvert",
+   "label": "convertUnits",
+   "tags": [
+    "held_out"
+   ],
+   "ttft": 2.433814399992116,
+   "total": 10.228,
+   "prompt_tokens": 3683,
+   "cached_tokens": 3654,
+   "output": {
+    "content": "",
+    "error": null,
+    "tool_calls": [
+     {
+      "name": "convertUnits",
+      "arguments": {
+       "value": 255,
+       "from_unit": "rgb",
+       "to_unit": "hex"
+      },
+      "raw": "{\"value\":255,\"from_unit\":\"rgb\",\"to_unit\":\"hex\"}"
+     }
+    ]
+   }
+  },
+  {
+   "id": "color-03",
+   "decision": "tool_call",
+   "decision_ok": true,
+   "tool_ok": false,
+   "args_score": 0.0,
+   "valid": true,
+   "ok": false,
+   "expected_label": "colorConvert",
+   "label": "convertUnits",
+   "tags": [
+    "held_out"
+   ],
+   "ttft": 1.622285199991893,
+   "total": 5.22,
+   "prompt_tokens": 3678,
+   "cached_tokens": 3654,
+   "output": {
+    "content": "",
+    "error": null,
+    "tool_calls": [
+     {
+      "name": "convertUnits",
+      "arguments": {
+       "from_unit": "hex",
+       "to_unit": "hsl",
+       "value": 165
+      },
+      "raw": "{\"from_unit\":\"hex\",\"to_unit\":\"hsl\",\"value\":165}"
+     }
+    ]
+   }
+  },
+  {
+   "id": "color-04",
+   "decision": "tool_call",
+   "decision_ok": true,
+   "tool_ok": false,
+   "args_score": 0.0,
+   "valid": true,
+   "ok": false,
+   "expected_label": "colorConvert",
+   "label": "convertUnits",
+   "tags": [
+    "held_out"
+   ],
+   "ttft": 1.5019627000001492,
+   "total": 9.279,
+   "prompt_tokens": 3681,
+   "cached_tokens": 3654,
+   "output": {
+    "content": "",
+    "error": null,
+    "tool_calls": [
+     {
+      "name": "convertUnits",
+      "arguments": {
+       "from_unit": "rgb",
+       "to_unit": "hex",
+       "value": 0
+      },
+      "raw": "{\"from_unit\":\"rgb\",\"to_unit\":\"hex\",\"value\":0}"
+     }
+    ]
+   }
+  },
+  {
+   "id": "color-05",
+   "decision": "tool_call",
+   "decision_ok": true,
+   "tool_ok": false,
+   "args_score": 0.0,
+   "valid": true,
+   "ok": false,
+   "expected_label": "colorConvert",
+   "label": "convertUnits",
+   "tags": [
+    "held_out",
+    "hinglish"
+   ],
+   "ttft": 3.7311096000048565,
+   "total": 11.866,
+   "prompt_tokens": 3678,
+   "cached_tokens": 3654,
+   "output": {
+    "content": "",
+    "error": null,
+    "tool_calls": [
+     {
+      "name": "convertUnits",
+      "arguments": {
+       "value": 333333,
+       "from_unit": "#",
+       "to_unit": "rgb"
+      },
+      "raw": "{\"value\":333333,\"from_unit\":\"#\",\"to_unit\":\"rgb\"}"
+     }
+    ]
+   }
+  },
+  {
+   "id": "color-06",
+   "decision": "tool_call",
+   "decision_ok": true,
+   "tool_ok": false,
+   "args_score": 0.0,
+   "valid": true,
+   "ok": false,
+   "expected_label": "colorConvert",
+   "label": "convertUnits",
+   "tags": [
+    "held_out",
+    "typo"
+   ],
+   "ttft": 3.7220384999964153,
+   "total": 7.665,
+   "prompt_tokens": 3687,
+   "cached_tokens": 3654,
+   "output": {
+    "content": "",
+    "error": null,
+    "tool_calls": [
+     {
+      "name": "convertUnits",
+      "arguments": {
+       "value": 210,
+       "from_unit": "hsl",
+       "to_unit": "hex"
+      },
+      "raw": "{\"value\":210,\"from_unit\":\"hsl\",\"to_unit\":\"hex\"}"
+     }
+    ]
+   }
+  },
+  {
+   "id": "color-07",
+   "decision": "tool_call",
+   "decision_ok": true,
+   "tool_ok": true,
+   "args_score": 1.0,
+   "valid": true,
+   "ok": true,
+   "expected_label": "colorConvert",
+   "label": "colorConvert",
+   "tags": [
+    "held_out"
+   ],
+   "ttft": 1.4567853000044124,
+   "total": 5.601,
+   "prompt_tokens": 3690,
+   "cached_tokens": 3654,
+   "output": {
+    "content": "",
+    "error": null,
+    "tool_calls": [
+     {
+      "name": "colorConvert",
+      "arguments": {
+       "color": "rgb(46, 139, 87)",
+       "to": "hex"
+      },
+      "raw": "{\"color\":\"rgb(46, 139, 87)\",\"to\":\"hex\"}"
+     }
+    ]
+   }
+  },
+  {
+   "id": "clip-get-05",
+   "decision": "tool_call",
+   "decision_ok": true,
+   "tool_ok": true,
+   "args_score": 1.0,
+   "valid": true,
+   "ok": true,
+   "expected_label": "clipboard_get",
+   "label": "clipboard_get",
+   "tags": [
+    "held_out"
+   ],
+   "ttft": 3.8871691999956965,
+   "total": 4.964,
+   "prompt_tokens": 3679,
+   "cached_tokens": 3654,
+   "output": {
+    "content": "",
+    "error": null,
+    "tool_calls": [
+     {
+      "name": "clipboard_get",
+      "arguments": {},
+      "raw": "{}"
+     }
+    ]
+   }
+  },
+  {
+   "id": "clip-set-05",
+   "decision": "tool_call",
+   "decision_ok": true,
+   "tool_ok": true,
+   "args_score": 1.0,
+   "valid": true,
+   "ok": true,
+   "expected_label": "clipboard_set",
+   "label": "clipboard_set",
+   "tags": [
+    "held_out"
+   ],
+   "ttft": 4.096771800002898,
+   "total": 8.286,
+   "prompt_tokens": 3680,
+   "cached_tokens": 3654,
+   "output": {
+    "content": "",
+    "error": null,
+    "tool_calls": [
+     {
+      "name": "clipboard_set",
+      "arguments": {
+       "text": "Meeting moved to 3pm"
+      },
+      "raw": "{\"text\":\"Meeting moved to 3pm\"}"
+     }
+    ]
+   }
+  },
+  {
+   "id": "units-08",
+   "decision": "tool_call",
+   "decision_ok": true,
+   "tool_ok": true,
+   "args_score": 1.0,
+   "valid": true,
+   "ok": true,
+   "expected_label": "convertUnits",
+   "label": "convertUnits",
+   "tags": [
+    "held_out"
+   ],
+   "ttft": 3.3089176999928895,
+   "total": 9.446,
+   "prompt_tokens": 3682,
+   "cached_tokens": 3654,
+   "output": {
+    "content": "",
+    "error": null,
+    "tool_calls": [
+     {
+      "name": "convertUnits",
+      "arguments": {
+       "value": 250,
+       "from_unit": "g",
+       "to_unit": "oz"
+      },
+      "raw": "{\"value\":250,\"from_unit\":\"g\",\"to_unit\":\"oz\"}"
+     }
+    ]
+   }
+  },
+  {
+   "id": "words-07",
+   "decision": "tool_call",
+   "decision_ok": true,
+   "tool_ok": true,
+   "args_score": 1.0,
+   "valid": true,
+   "ok": true,
+   "expected_label": "countWords",
+   "label": "countWords",
+   "tags": [
+    "held_out"
+   ],
+   "ttft": 1.5659959000040544,
+   "total": 3.079,
+   "prompt_tokens": 3686,
+   "cached_tokens": 3654,
+   "output": {
+    "content": "",
+    "error": null,
+    "tool_calls": [
+     {
+      "name": "countWords",
+      "arguments": {
+       "file": "Documents\\bio.txt"
+      },
+      "raw": "{\"file\":\"Documents\\\\bio.txt\"}"
+     }
+    ]
+   }
+  },
+  {
+   "id": "hash-07",
+   "decision": "tool_call",
+   "decision_ok": true,
+   "tool_ok": true,
+   "args_score": 1.0,
+   "valid": true,
+   "ok": true,
+   "expected_label": "hashFile",
+   "label": "hashFile",
+   "tags": [
+    "held_out"
+   ],
+   "ttft": 1.5457437000004575,
+   "total": 4.941,
+   "prompt_tokens": 3675,
+   "cached_tokens": 3654,
+   "output": {
+    "content": "",
+    "error": null,
+    "tool_calls": [
+     {
+      "name": "hashFile",
+      "arguments": {
+       "file": "Documents\\backup.zip",
+       "algorithm": "md5"
+      },
+      "raw": "{\"file\":\"Documents\\\\backup.zip\",\"algorithm\":\"md5\"}"
+     }
+    ]
+   }
+  },
+  {
+   "id": "diff-07",
+   "decision": "tool_call",
+   "decision_ok": true,
+   "tool_ok": true,
+   "args_score": 1.0,
+   "valid": true,
+   "ok": true,
+   "expected_label": "files-differ",
+   "label": "files-differ",
+   "tags": [
+    "held_out"
+   ],
+   "ttft": 4.5805986000050325,
+   "total": 11.403,
+   "prompt_tokens": 3685,
+   "cached_tokens": 3654,
+   "output": {
+    "content": "",
+    "error": null,
+    "tool_calls": [
+     {
+      "name": "files-differ",
+      "arguments": {
+       "first": "Documents\\budget_v1.csv",
+       "second": "Documents\\budget_v2.csv"
+      },
+      "raw": "{\"first\":\"Documents\\\\budget_v1.csv\",\"second\":\"Documents\\\\budget_v2.csv\"}"
+     }
+    ]
+   }
+  },
+  {
+   "id": "todo-add-06",
+   "decision": "tool_call",
+   "decision_ok": true,
+   "tool_ok": true,
+   "args_score": 1.0,
+   "valid": true,
+   "ok": true,
+   "expected_label": "todo_add",
+   "label": "todo_add",
+   "tags": [
+    "held_out"
+   ],
+   "ttft": 3.4690843999997014,
+   "total": 12.617,
+   "prompt_tokens": 3693,
+   "cached_tokens": 3654,
+   "output": {
+    "content": "",
+    "error": null,
+    "tool_calls": [
+     {
+      "name": "todo_add",
+      "arguments": {
+       "item": "book dentist appointment",
+       "priority": "normal",
+       "due": "2026-11-02"
+      },
+      "raw": "{\"item\":\"book dentist appointment\",\"priority\":\"normal\",\"due\":\"2026-11-02\"}"
+     }
+    ]
+   }
+  },
+  {
+   "id": "todo-done-05",
+   "decision": "tool_call",
+   "decision_ok": true,
+   "tool_ok": false,
+   "args_score": 0.0,
+   "valid": true,
+   "ok": false,
+   "expected_label": "todo_done",
+   "label": "list_reminders",
+   "tags": [
+    "held_out"
+   ],
+   "ttft": 1.9788343000109307,
+   "total": 2.452,
+   "prompt_tokens": 3676,
+   "cached_tokens": 3654,
+   "output": {
+    "content": "",
+    "error": null,
+    "tool_calls": [
+     {
+      "name": "list_reminders",
+      "arguments": {},
+      "raw": "{}"
+     }
+    ]
+   }
+  },
+  {
+   "id": "look-01",
+   "decision": "tool_call",
+   "decision_ok": true,
+   "tool_ok": true,
+   "args_score": 1.0,
+   "valid": true,
+   "ok": true,
+   "expected_label": "set_reminder",
+   "label": "set_reminder",
+   "tags": [
+    "lookalike"
+   ],
+   "ttft": 1.4976179999939632,
+   "total": 4.368,
+   "prompt_tokens": 3678,
+   "cached_tokens": 3654,
+   "output": {
+    "content": "",
+    "error": null,
+    "tool_calls": [
+     {
+      "name": "set_reminder",
+      "arguments": {
+       "text": "call the bank",
+       "time": "today 17:00"
+      },
+      "raw": "{\"text\":\"call the bank\",\"time\":\"today 17:00\"}"
+     }
+    ]
+   }
+  },
+  {
+   "id": "look-02",
+   "decision": "tool_call",
+   "decision_ok": true,
+   "tool_ok": true,
+   "args_score": 1.0,
+   "valid": true,
+   "ok": true,
+   "expected_label": "calculate",
+   "label": "calculate",
+   "tags": [
+    "lookalike"
+   ],
+   "ttft": 2.59551339999598,
+   "total": 8.505,
+   "prompt_tokens": 3679,
+   "cached_tokens": 3654,
+   "output": {
+    "content": "",
+    "error": null,
+    "tool_calls": [
+     {
+      "name": "calculate",
+      "arguments": {
+       "expression": "2450 * 18 / 100"
+      },
+      "raw": "{\"expression\":\"2450 * 18 / 100\"}"
+     }
+    ]
+   }
+  },
+  {
+   "id": "look-04",
+   "decision": "tool_call",
+   "decision_ok": true,
+   "tool_ok": true,
+   "args_score": 1.0,
+   "valid": true,
+   "ok": true,
+   "expected_label": "read_file",
+   "label": "read_file",
+   "tags": [
+    "lookalike"
+   ],
+   "ttft": 3.8151481000095373,
+   "total": 7.201,
+   "prompt_tokens": 3672,
+   "cached_tokens": 3654,
+   "output": {
+    "content": "",
+    "error": null,
+    "tool_calls": [
+     {
+      "name": "read_file",
+      "arguments": {
+       "path": "Desktop\\speech.txt"
+      },
+      "raw": "{\"path\":\"Desktop\\\\speech.txt\"}"
+     }
+    ]
+   }
+  },
+  {
+   "id": "look-05",
+   "decision": "tool_call",
+   "decision_ok": true,
+   "tool_ok": true,
+   "args_score": 1.0,
+   "valid": true,
+   "ok": true,
+   "expected_label": "search_file_contents",
+   "label": "search_file_contents",
+   "tags": [
+    "lookalike"
+   ],
+   "ttft": 3.3783298000053037,
+   "total": 8.405,
+   "prompt_tokens": 3676,
+   "cached_tokens": 3654,
+   "output": {
+    "content": "",
+    "error": null,
+    "tool_calls": [
+     {
+      "name": "search_file_contents",
+      "arguments": {
+       "text": "quarterly targets",
+       "folder": "Documents"
+      },
+      "raw": "{\"text\":\"quarterly targets\",\"folder\":\"Documents\"}"
+     }
+    ]
+   }
+  },
+  {
+   "id": "look-06",
+   "decision": "tool_call",
+   "decision_ok": true,
+   "tool_ok": true,
+   "args_score": 1.0,
+   "valid": true,
+   "ok": true,
+   "expected_label": "create_note",
+   "label": "create_note",
+   "tags": [
+    "lookalike"
+   ],
+   "ttft": 1.4876833000016632,
+   "total": 4.347,
+   "prompt_tokens": 3685,
+   "cached_tokens": 3654,
+   "output": {
+    "content": "",
+    "error": null,
+    "tool_calls": [
+     {
+      "name": "create_note",
+      "arguments": {
+       "title": "wifi",
+       "content": "Batcave / hunter22"
+      },
+      "raw": "{\"title\":\"wifi\",\"content\":\"Batcave / hunter22\"}"
+     }
+    ]
+   }
+  },
+  {
+   "id": "look-07",
+   "decision": "tool_call",
+   "decision_ok": true,
+   "tool_ok": true,
+   "args_score": 1.0,
+   "valid": true,
+   "ok": true,
+   "expected_label": "remember",
+   "label": "remember",
+   "tags": [
+    "lookalike"
+   ],
+   "ttft": 1.3959204999991925,
+   "total": 3.83,
+   "prompt_tokens": 3677,
+   "cached_tokens": 3654,
+   "output": {
+    "content": "",
+    "error": null,
+    "tool_calls": [
+     {
+      "name": "remember",
+      "arguments": {
+       "fact": "My locker code is 4471"
+      },
+      "raw": "{\"fact\":\"My locker code is 4471\"}"
+     }
+    ]
+   }
+  },
+  {
+   "id": "look-08",
+   "decision": "tool_call",
+   "decision_ok": true,
+   "tool_ok": true,
+   "args_score": 1.0,
+   "valid": true,
+   "ok": true,
+   "expected_label": "list_reminders",
+   "label": "list_reminders",
+   "tags": [
+    "lookalike"
+   ],
+   "ttft": 4.3753633000014815,
+   "total": 5.36,
+   "prompt_tokens": 3674,
+   "cached_tokens": 3654,
+   "output": {
+    "content": "",
+    "error": null,
+    "tool_calls": [
+     {
+      "name": "list_reminders",
+      "arguments": {},
+      "raw": "{}"
+     }
+    ]
+   }
+  },
+  {
+   "id": "look-09",
+   "decision": "tool_call",
+   "decision_ok": true,
+   "tool_ok": true,
+   "args_score": 1.0,
+   "valid": true,
+   "ok": true,
+   "expected_label": "calculate",
+   "label": "calculate",
+   "tags": [
+    "lookalike"
+   ],
+   "ttft": 3.771310200012522,
+   "total": 8.417,
+   "prompt_tokens": 3678,
+   "cached_tokens": 3654,
+   "output": {
+    "content": "",
+    "error": null,
+    "tool_calls": [
+     {
+      "name": "calculate",
+      "arguments": {
+       "expression": "2.5 GB + 700 MB"
+      },
+      "raw": "{\"expression\":\"2.5 GB + 700 MB\"}"
+     }
+    ]
+   }
+  },
+  {
+   "id": "look-10",
+   "decision": "tool_call",
+   "decision_ok": true,
+   "tool_ok": true,
+   "args_score": 1.0,
+   "valid": true,
+   "ok": true,
+   "expected_label": "copy_file",
+   "label": "copy_file",
+   "tags": [
+    "lookalike"
+   ],
+   "ttft": 3.740426899996237,
+   "total": 9.448,
+   "prompt_tokens": 3673,
+   "cached_tokens": 3654,
+   "output": {
+    "content": "",
+    "error": null,
+    "tool_calls": [
+     {
+      "name": "copy_file",
+      "arguments": {
+       "source": "C:\\Users\\neha\\Desktop\\photo.jpg",
+       "destination": "C:\\Users\\neha\\Documents"
+      },
+      "raw": "{\"source\":\"C:\\\\Users\\\\neha\\\\Desktop\\\\photo.jpg\",\"destination\":\"C:\\\\Users\\\\neha\\\\Documents\"}"
+     }
+    ]
+   }
+  },
+  {
+   "id": "look-11",
+   "decision": "tool_call",
+   "decision_ok": true,
+   "tool_ok": true,
+   "args_score": 1.0,
+   "valid": true,
+   "ok": true,
+   "expected_label": "create_note",
+   "label": "create_note",
+   "tags": [
+    "lookalike"
+   ],
+   "ttft": 1.4896299999963958,
+   "total": 4.086,
+   "prompt_tokens": 3679,
+   "cached_tokens": 3654,
+   "output": {
+    "content": "",
+    "error": null,
+    "tool_calls": [
+     {
+      "name": "create_note",
+      "arguments": {
+       "title": "Groceries",
+       "content": "milk, eggs and bread"
+      },
+      "raw": "{\"title\":\"Groceries\",\"content\":\"milk, eggs and bread\"}"
+     }
+    ]
+   }
+  },
+  {
+   "id": "look-12",
+   "decision": "tool_call",
+   "decision_ok": true,
+   "tool_ok": true,
+   "args_score": 1.0,
+   "valid": true,
+   "ok": true,
+   "expected_label": "calculate",
+   "label": "calculate",
+   "tags": [
+    "lookalike"
+   ],
+   "ttft": 1.4667778000002727,
+   "total": 5.42,
+   "prompt_tokens": 3683,
+   "cached_tokens": 3654,
+   "output": {
+    "content": "",
+    "error": null,
+    "tool_calls": [
+     {
+      "name": "calculate",
+      "arguments": {
+       "expression": "3 * 1450 + 200"
+      },
+      "raw": "{\"expression\":\"3 * 1450 + 200\"}"
+     }
+    ]
+   }
+  },
+  {
+   "id": "none-01",
+   "decision": "cannot",
+   "decision_ok": true,
+   "tool_ok": true,
+   "args_score": null,
+   "valid": true,
+   "ok": true,
+   "expected_label": "cannot",
+   "label": "cannot",
+   "tags": [
+    "none_fits"
+   ],
+   "ttft": 2.3878454999940004,
+   "total": 6.725,
+   "prompt_tokens": 3675,
+   "cached_tokens": 3654,
+   "output": {
+    "content": "I can't convert Documents\\report.docx to PDF: I don't have a conversion tool. You can use a converter app or online tool.",
+    "error": null,
+    "tool_calls": []
+   }
+  },
+  {
+   "id": "none-02",
+   "decision": "cannot",
+   "decision_ok": true,
+   "tool_ok": true,
+   "args_score": null,
+   "valid": true,
+   "ok": true,
+   "expected_label": "cannot",
+   "label": "cannot",
+   "tags": [
+    "none_fits"
+   ],
+   "ttft": 2.4996867000008933,
+   "total": 7.6,
+   "prompt_tokens": 3676,
+   "cached_tokens": 3654,
+   "output": {
+    "content": "I can't send files to other devices: I have no messaging or sharing tool. I can move photo.jpg to your Desktop so you can send it yourself.",
+    "error": null,
+    "tool_calls": []
+   }
+  },
+  {
+   "id": "none-03",
+   "decision": "cannot",
+   "decision_ok": true,
+   "tool_ok": true,
+   "args_score": null,
+   "valid": true,
+   "ok": true,
+   "expected_label": "cannot",
+   "label": "cannot",
+   "tags": [
+    "none_fits"
+   ],
+   "ttft": 2.636580000005779,
+   "total": 5.671,
+   "prompt_tokens": 3678,
+   "cached_tokens": 3654,
+   "output": {
+    "content": "I can't check live exchange rates: I have no internet or currency tool.",
+    "error": null,
+    "tool_calls": []
+   }
+  },
+  {
+   "id": "none-04",
+   "decision": "cannot",
+   "decision_ok": true,
+   "tool_ok": true,
+   "args_score": null,
+   "valid": true,
+   "ok": true,
+   "expected_label": "cannot",
+   "label": "cannot",
+   "tags": [
+    "none_fits"
+   ],
+   "ttft": 0.9808648000034736,
+   "total": 3.043,
+   "prompt_tokens": 3673,
+   "cached_tokens": 3654,
+   "output": {
+    "content": "I can't translate letter.txt: I don't have a translation tool. I can open it so you can translate it yourself.",
+    "error": null,
+    "tool_calls": []
+   }
+  },
+  {
+   "id": "none-05",
+   "decision": "cannot",
+   "decision_ok": true,
+   "tool_ok": true,
+   "args_score": null,
+   "valid": true,
+   "ok": true,
+   "expected_label": "cannot",
+   "label": "cannot",
+   "tags": [
+    "none_fits"
+   ],
+   "ttft": 0.9228389999916544,
+   "total": 2.981,
+   "prompt_tokens": 3670,
+   "cached_tokens": 3654,
+   "output": {
+    "content": "I can't stream music: I have no online or media player tool. I can open a local audio file if you have one.",
+    "error": null,
+    "tool_calls": []
+   }
+  },
+  {
+   "id": "none-06",
+   "decision": "cannot",
+   "decision_ok": true,
+   "tool_ok": true,
+   "args_score": null,
+   "valid": true,
+   "ok": true,
+   "expected_label": "cannot",
+   "label": "cannot",
+   "tags": [
+    "none_fits"
+   ],
+   "ttft": 0.8262276000023121,
+   "total": 5.004,
+   "prompt_tokens": 3671,
+   "cached_tokens": 3654,
+   "output": {
+    "content": "I can't change Windows settings: I have no system-settings tool. I can show system info so you can adjust it in Settings.",
+    "error": null,
+    "tool_calls": []
+   }
+  },
+  {
+   "id": "none-07",
+   "decision": "cannot",
+   "decision_ok": true,
+   "tool_ok": true,
+   "args_score": null,
+   "valid": true,
+   "ok": true,
+   "expected_label": "cannot",
+   "label": "cannot",
+   "tags": [
+    "none_fits"
+   ],
+   "ttft": 2.357040600007167,
+   "total": 8.457,
+   "prompt_tokens": 3674,
+   "cached_tokens": 3654,
+   "output": {
+    "content": "I can't share your to-do list with someone else: I don't have a tool for that. You can copy the list from your computer and send it to Priya.",
+    "error": null,
+    "tool_calls": []
+   }
+  },
+  {
+   "id": "none-08",
+   "decision": "cannot",
+   "decision_ok": true,
+   "tool_ok": true,
+   "args_score": null,
+   "valid": true,
+   "ok": true,
+   "expected_label": "cannot",
+   "label": "cannot",
+   "tags": [
+    "none_fits"
+   ],
+   "ttft": 2.1601774000009755,
+   "total": 6.262,
+   "prompt_tokens": 3672,
+   "cached_tokens": 3654,
+   "output": {
+    "content": "I can't scan a document: I have no scanning tool. I can open the printer app so you can scan it there.",
+    "error": null,
+    "tool_calls": []
+   }
+  }
+ ]
+}

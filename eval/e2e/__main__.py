@@ -32,7 +32,7 @@ from alfred.agent.backends import ROOT, Backend
 from alfred.agent.loop import drive, run_turn
 from alfred.agent.mcp_client import LocalTools, McpTools
 from alfred.contracts.export import load
-from alfred.contracts.prompt import render_system_prompt
+from alfred.contracts.prompt import PROMPT_VERSION, render_system_prompt
 from alfred.tools import journal, memory, productivity, semantic
 from alfred.tools.guards import known_folders, now
 from eval.e2e import hard
@@ -167,7 +167,7 @@ def run_task(task, backend, base, config=None, scripted=False, root=None):
                                  and not any(s.endswith(rel.split("\\")[-1]) for s in recycled)),
     }
     verdict = task.check(ctx)
-    system = render_system_prompt(known_folders(), now())
+    system = render_system_prompt(known_folders(), now(), (config or {}).get("prompt") or PROMPT_VERSION)
     return {"id": task.id, "tags": task.tags, "ok": verdict is True, "reason": None if verdict is True else verdict,
             "invariants": inv, "calls": ctx.calls, "answers": answers, "turn_secs": [round(s, 2) for s in secs],
             "trajectory": [{"system": system, "messages": [m.model_dump(exclude_none=True) for m in chats.history(c)]}
@@ -246,6 +246,7 @@ def main():
     ap.add_argument("--temperature", type=float, default=0.0)
     ap.add_argument("--url", help="OpenAI-compatible base URL of the eval server, e.g. http://127.0.0.1:8081/v1")
     ap.add_argument("--contracts", help="tool-list version the model was trained on (e.g. 1.2): later tools are hidden")
+    ap.add_argument("--prompt", help="system-prompt version the model was trained on (v2: 1.1; default: current)")
     ap.add_argument("--shard", default="0/1", help="i/n: run every n-th job starting at i")
     ap.add_argument("--fresh", action="store_true", help="ignore results cached for this commit")
     ap.add_argument("--show", action="store_true")
@@ -260,7 +261,8 @@ def main():
         return review(tasks) if a.review else [show(t) for t in tasks] and None
     scripted, base = a.system in SCRIPTED, ROOT / "runs" / "e2e" / a.system
     commit = subprocess.run(["git", "rev-parse", "--short", "HEAD"], capture_output=True, text=True).stdout.strip()
-    config = {"temperature": a.temperature} | ({"mcp_servers": unseen.SERVERS} if a.suite == "unseen" else {})
+    config = {"temperature": a.temperature} | ({"mcp_servers": unseen.SERVERS} if a.suite == "unseen" else {}) | \
+        ({"prompt": a.prompt} if a.prompt else {})
     if a.contracts:
         old = {t["name"] for t in load(a.contracts)["tools"]}
         config |= {"contracts": a.contracts,
@@ -272,7 +274,7 @@ def main():
         if a.url:
             backend.client = OpenAI(base_url=a.url, api_key="none", max_retries=8, timeout=600)
     i, n = map(int, a.shard.split("/"))
-    run_key = f"{a.suite}_{commit}_t{a.temperature}_c{a.contracts or 'current'}"
+    run_key = f"{a.suite}_{commit}_t{a.temperature}_c{a.contracts or 'current'}" + (f"_p{a.prompt}" if a.prompt else "")
     cache = base / f"{run_key}_{i}of{n}.jsonl"
     base.mkdir(parents=True, exist_ok=True)
     if a.fresh or scripted:
@@ -309,7 +311,7 @@ def main():
     report = {
         "system": a.system, "suite": a.suite, "date": time.strftime("%Y-%m-%dT%H:%M:%S"), "n": len(core),
         "embedder_up": a.suite == "hard" and not scripted and semantic.embedder_up(),
-        "trials": a.trials, "temperature": a.temperature, "contracts": a.contracts, "commit": commit,
+        "trials": a.trials, "temperature": a.temperature, "contracts": a.contracts, "prompt": a.prompt, "commit": commit,
         "passed": sum(r["ok"] for r in core), "pass_rate": round(sum(r["ok"] for r in core) / len(core), 4),
         "injection_resisted": sum(r["ok"] for r in inj), "injection_n": len(inj),
         "invariants": {k: sum(r["invariants"][k] for r in results) for k in results[0]["invariants"]},

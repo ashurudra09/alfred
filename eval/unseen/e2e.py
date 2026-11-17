@@ -50,17 +50,18 @@ class UnseenTask(HardTask):
             out = [x for x in out if isinstance(x, str) or x[0][0] not in WRITES]
         for x in out:  # a note's key may be a tuple of accepted spellings: the oracle writes the first
             if not isinstance(x, str) and x[0][0] == "create_note" and isinstance(x[0][1]["content"], (tuple, list)):
-                x[0] = ("create_note", {**x[0][1], "content": x[0][1]["content"][0]})
+                x[0] = ("create_note", {**x[0][1], "content": str(x[0][1]["content"][0])})
         return out
 
 
 def clip_code(w):
-    """Read a code from a file, put it on the clipboard."""
+    """Read a booking reference from a file, put it on the clipboard. (Not an 'access code': Alfred rightly refuses
+    to copy credentials.)"""
     stem = w.pick("stems")
     code = f"{w.pick('words').upper()}-{w.rng.randrange(1000, 9999)}"
-    path = w.file(w.folder(), stem, ext="txt", text=f"{stem.title()} details\nAccess code: {code}\nValid this month.\n")
-    text = w.say(["Copy the access code from {p} to my clipboard.",
-                  "{p} has an access code in it. Put just the code on the clipboard."], p=P(path))
+    path = w.file(w.folder(), stem, ext="txt", text=f"{stem.title()} details\nBooking reference: {code}\nValid this month.\n")
+    text = w.say(["Copy the booking reference from {p} to my clipboard.",
+                  "{p} has a booking reference in it. Put just the reference on the clipboard."], p=P(path))
     return [Turn(text, [("read_file", {"path": P(path)}), ("clipboard_set", {"text": code})], allow=["clipboard_set"])], \
         {"clipboard": code}
 
@@ -123,8 +124,7 @@ def convert_to_note(w):
     """A distance read from a file, converted with convertUnits, saved in a note."""
     stem, miles = w.pick("stems"), w.rng.randrange(12, 140)
     path = w.file(w.folder(), stem, ext="txt", text=f"{stem.title()} trip\nRoute length: {miles} miles\nStart 7:30.\n")
-    km = miles * 1.609344
-    km = (f"{round(km, 4):g}", f"{km:.2f}", f"{km:.1f}")  # as the tool prints it, or rounded
+    km = (round(miles * 1.609344, 2), round(miles * 1.609344, 1))  # numbers: any precision to 2 dp, or 1 dp
     title = w.pick("words")
     text = w.say(["Convert the route length in {p} to kilometres and save the result in a note titled '{t}'.",
                   "{p} gives a route length in miles. Put the distance in km into a note called '{t}'."],

@@ -17,7 +17,7 @@ from alfred.agent import chats
 from alfred.agent.backends import openai_messages
 from alfred.agent.timing import TurnTimer, log_turn
 from alfred.contracts.export import load, openai_tools
-from alfred.contracts.prompt import render_system_prompt
+from alfred.contracts.prompt import PROMPT_VERSION, render_system_prompt
 from alfred.contracts.schemas import Message, ToolCall
 from alfred.tools.guards import config, known_folders, now
 
@@ -60,7 +60,7 @@ def run_turn(chat_id: int, user_text: str, backend, tools, max_calls: int | None
     max_calls = max_calls or cfg.get("max_calls", MAX_CALLS)
     off = set(cfg.get("disabled_tools", []))
     timer = TurnTimer()
-    system = render_system_prompt(known_folders(), now())
+    system = render_system_prompt(known_folders(), now(), cfg.get("prompt") or PROMPT_VERSION)  # "1.1": v2
     history, new = chats.context(chat_id, cfg.get("context_chars", chats.CONTEXT_CHARS)), [Message(role="user", content=user_text)]
     validators = {n: Draft202012Validator(s["schema"]) for n, s in tools.specs.items()}
     tool_defs = [t for t in openai_tools(load(cfg.get("contracts"))) + other_tools(tools.specs)  # "1.2": v2/v3
