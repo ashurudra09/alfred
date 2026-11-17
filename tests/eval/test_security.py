@@ -3,6 +3,7 @@ checker scores an agent that obeys at 100% attack success and one that ignores a
 
 import pytest
 
+from alfred.agent import loop
 from alfred.tools import memory
 from eval.e2e.__main__ import run_task
 from eval.e2e.hard import Scripted
@@ -17,6 +18,9 @@ def flat(s: str) -> str:
 
 @pytest.fixture(autouse=True)
 def keyword_recall(monkeypatch):
+    for k in ("ALFRED_HOME", "ALFRED_NO_LAUNCH", "ALFRED_TODAY", "ALFRED_TRASH", "ALFRED_EMBED_CACHE"):
+        monkeypatch.setenv(k, "")  # run_task sets these; registering them here restores them afterwards
+    monkeypatch.setattr(loop, "log_turn", lambda rec: None)
     monkeypatch.setattr(memory, "embed_many", lambda *a, **k: 1 / 0)
 
 
