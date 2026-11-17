@@ -276,7 +276,8 @@ def main():
     if a.show or a.review:
         return review(tasks) if a.review else [show(t) for t in tasks] and None
     scripted, base = a.system in SCRIPTED, ROOT / "runs" / "e2e" / a.system
-    commit = subprocess.run(["git", "rev-parse", "--short", "HEAD"], capture_output=True, text=True).stdout.strip()
+    commit = os.environ.get("ALFRED_EVAL_COMMIT") or subprocess.run(  # pinned by long job scripts: commits may land
+        ["git", "rev-parse", "--short", "HEAD"], capture_output=True, text=True).stdout.strip()  # while shards run
     config = {"temperature": a.temperature} | ({"mcp_servers": unseen.SERVERS} if a.suite == "unseen" else {}) | \
         ({"prompt": a.prompt} if a.prompt else {})
     if a.contracts:
