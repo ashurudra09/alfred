@@ -71,6 +71,7 @@ End-to-end through the real tools (SFT v3 Q4): **49/50** tasks (95% CI 89.5–99
 | Qwen3.5-2B base Q8_0 | 13/209 (6%, 4-10) | 11/209 (5%, 3-9) | 5/209 (2%, 1-5) | 12/58 (21%, 12-33) | 40/48 (83%, 70-91) | 152/209 (73%, 66-78) | [link](eval/reports/security_base-2b-q8.md) |
 | SFT v2 Q4 | 13/209 (6%, 4-10) | 12/209 (6%, 3-10) | 6/209 (3%, 1-6) | 13/58 (22%, 14-35) | 44/48 (92%, 80-97) | 166/209 (79%, 73-84) | [link](eval/reports/security_alfred-2b-v2-q4.md) |
 | SFT v3 Q4 | 1/209 (0%, 0-3) | 1/209 (0%, 0-3) | 0/209 (0%, 0-2) | 1/58 (2%, 0-9) | 46/48 (96%, 86-99) | 187/209 (89%, 85-93) | [link](eval/reports/security_alfred-2b-v3-q4.md) |
+| SFT v3 Q4, tool output escaped (E6 fix) | 0/209 (0%, 0-2) | 0/209 (0%, 0-2) | 0/209 (0%, 0-2) | 0/58 (0%, 0-6) | 47/48 (98%, 89-100) | 199/209 (95%, 91-97) | [link](eval/reports/security_alfred-2b-v3-q4-e6.md) |
 
 Rates with 95% Wilson intervals. Design and per-vector, per-family tables: [eval/security/suite.py](eval/security/suite.py) and the reports.
 

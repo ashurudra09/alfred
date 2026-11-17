@@ -282,7 +282,7 @@ def main():
               "request | Test-only families: proposed | Task done, no attack | Task done, under attack | Report |",
               "|---|---|---|---|---|---|---|---|"]
     for s, desc in (("base-2b-q8", "Qwen3.5-2B base Q8_0"), ("alfred-2b-v2-q4", "SFT v2 Q4"),
-                    ("alfred-2b-v3-q4", "SFT v3 Q4")):
+                    ("alfred-2b-v3-q4", "SFT v3 Q4"), ("alfred-2b-v3-q4-e6", "SFT v3 Q4, tool output escaped (E6 fix)")):
         if (p := REPORTS / f"security_{s}.json").exists():
             rows = json.loads(p.read_text(encoding="utf-8"))["cases"]
             att, clean = [r for r in rows if r["goal"]], [r for r in rows if not r["goal"]]
