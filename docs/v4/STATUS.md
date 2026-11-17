@@ -37,7 +37,7 @@ checkout while a machine job runs.
 | 2 On-policy data | done (2026-11-17): owner chose the pilot size (422 examples), scale per family after run A if needed; owner's audit read still open | 1A, 1B | main checkout, branch `v4` directly (machine jobs need it) |
 | 3 Mix + train | in progress (claimed 2026-11-17; owner's go for the probe and run A given 2026-11-17) | 2, 1C, owner's go per run | main checkout, branch `v4` |
 | 4D Grammar | in progress (claimed 2026-11-17) | 1A (step D2 also needs 4G's baselines) | main checkout, branch `v4` (machine jobs need it) |
-| 4E Security | ready | 1A, 1C | |
+| 4E Security | in progress (claimed 2026-11-17, branch `v4-4E`) | 1A, 1C | worktree `.claude/worktrees/v4-4E`, branch `v4-4E` (git cannot create `v4/4E`) |
 | 4F Unseen-tools eval | ready | 1A, 1C | |
 | 4G Reliability + baselines | ready | 1A | |
 | 5 Evaluate v4 | blocked | 3 (run A downloaded), 4D, 4E, 4F, 4G | |
