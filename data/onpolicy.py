@@ -100,8 +100,22 @@ def rows(stage: str) -> dict:
             if not any(x.startswith(LOOP_MADE[0]) for x in r["answers"])}
 
 
+def wrong_search(r: dict) -> bool:
+    """A request that describes what a document is about, done without search_by_meaning. The task's check can
+    still pass (a name search finds nothing, the reply says so), but as training data that teaches the wrong tool.
+    exact_phrase is the look-alike family where the other search tool is the right one."""
+    return ("new_capability" in r["tags"] and "exact_phrase" not in r["tags"]
+            and "search_by_meaning" not in r["calls"])
+
+
 def kept(r: dict) -> bool:
-    return r["ok"] and not any(r["invariants"].values())
+    return r["ok"] and not any(r["invariants"].values()) and not wrong_search(r)
+
+
+def reason(r: dict) -> str:
+    return r["reason"] or ("a safety rule was broken: " + json.dumps(r["invariants"]) if any(r["invariants"].values())
+                           else "the request describes what a document is about, with no file name and no exact "
+                                "phrase: that needs search_by_meaning, which was never called")
 
 
 def rollout(a):
@@ -201,7 +215,7 @@ Transcript (tool results are real):
 {transcript(r)}
 
 Why the task failed, from an automatic check of the files and the answers afterwards:
-{r["reason"] or "a safety rule was broken: " + json.dumps(r["invariants"])}{LACKS if "the answer lacks" in (r["reason"] or "") else ""}
+{reason(r)}{LACKS if "the answer lacks" in (r["reason"] or "") else ""}
 
 Rules for your turn:
 - The turns before it stay exactly as they are, so it must follow from what the transcript shows up to that point.
@@ -219,15 +233,34 @@ Return one JSON object: {{"index": <number of the wrong assistant turn>, "why": 
 place of "tool_calls" for a text reply."""
 
 
+NAMES = re.compile(r"[\w-]+\.[A-Za-z0-9]{2,5}")  # file names, to tie a reply to its transcript
+
+
+def belongs(text: str, reply: dict) -> bool:
+    """Whether a reply was written for this prompt. The agents answer many prompts in a row and now and then save
+    an answer under another prompt's name: such a reply acts on, or talks about, files its transcript never
+    mentions. Only what must already exist is checked (a destination or a new name may be new)."""
+    shown = text[text.index("Transcript (tool results are real):"):].casefold().replace("\\\\", "\\")
+    said = [v for c in reply.get("tool_calls") or [] for k, v in (c.get("arguments") or {}).items()
+            if k in ("source", "path") and isinstance(v, str)]
+    said += NAMES.findall(reply.get("content") or "")
+    # a listing shows the folder and the names apart, so a path is checked piece by piece: its sandbox and its name
+    said = [x for v in said for x in (v.rsplit("\\", 1)[-1], *re.findall(r"sb\\\w+", v))]
+    return all(v.strip().casefold() in shown for v in said)
+
+
 def ask(text: str) -> dict | None:
     """The teacher's reply to this prompt, or None after writing the prompt out for the agents to answer."""
     path = OUT / "ask" / (hashlib.sha256(text.encode()).hexdigest()[:24] + ".txt")
-    if path.with_suffix(".json").exists():
+    done = path.with_suffix(".json")
+    if done.exists():
         try:
-            reply = json.loads(path.with_suffix(".json").read_text(encoding="utf-8"))
-            return reply if isinstance(reply, dict) else {}
+            reply = json.loads(done.read_text(encoding="utf-8"))
         except ValueError:
-            return {}  # no usable reply: this task is dropped and counted
+            reply = None
+        if isinstance(reply, dict) and belongs(text, reply):
+            return reply
+        done.replace(done.with_suffix(".rejected"))  # unreadable or written for another prompt: ask again
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(text, encoding="utf-8")
     return None
