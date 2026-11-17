@@ -8,14 +8,12 @@ import math
 import re
 import sqlite3
 import urllib.request
-from datetime import datetime
-
 import numpy as np
 
 from mcp.server.fastmcp.exceptions import ToolError
 
 from alfred.tools import journal
-from alfred.tools.guards import config, home
+from alfred.tools.guards import config, home, now
 
 EMBED_URL, MODEL = "http://127.0.0.1:11434/api/embed", "embeddinggemma"
 MIN_SCORE = 0.5  # embeddinggemma: related 0.52-0.69, unrelated up to 0.47 (measured 2026-10-23)
@@ -54,7 +52,7 @@ def remember(fact):
     vec = embed(fact)
     with _db() as db:
         mid = db.execute("INSERT INTO memories (ts, text, embedding) VALUES (?, ?, ?)",
-                         (datetime.now().isoformat(timespec="seconds"), fact, json.dumps(vec) if vec else None)).lastrowid
+                         (now().isoformat(timespec="seconds"), fact, json.dumps(vec) if vec else None)).lastrowid
     journal.record("remember", "memory", None, None, {"id": mid})
     return f"Saved memory {mid}: {fact}"
 

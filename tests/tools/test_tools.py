@@ -366,5 +366,8 @@ def test_pinned_clock(sandbox, monkeypatch):
     assert productivity.parse_time("tomorrow at 9am").isoformat(timespec="minutes") == "2031-03-06T09:00"
     assert "2031-03-06 09:00" in productivity.set_reminder("call", "tomorrow at 9am")
     assert "No matching" in files.search_files("notes", "Downloads", modified_within_days=1)  # years old by 2031
+    monkeypatch.setattr(memory, "embed", lambda text: None)
+    memory.remember("Gym locker code is 4471")
+    assert "(saved 2031-03-05)" in memory.recall("gym locker code")
     monkeypatch.delenv("ALFRED_TODAY")
     assert abs((guards.now() - datetime.now()).total_seconds()) < 5

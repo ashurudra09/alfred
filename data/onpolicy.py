@@ -380,8 +380,8 @@ def examples(r: dict) -> list[Example]:
     text, home = json.dumps(r["trajectory"], ensure_ascii=False), json.dumps(f"C:\\Users\\{user}")[1:-1]
     for root in (json.dumps(r["root"])[1:-1], r["root"].replace("\\", "/")):
         text = re.sub(re.escape(root), lambda _: home, text, flags=re.I)
-    # Memories seeded before the first turn are stamped with the real day of the run, not the task's pinned day
-    # (memory.remember does not read ALFRED_TODAY): in the data they were saved on the pinned day.
+    # Rows recorded before memory.remember read ALFRED_TODAY (fixed 2026-11-17, step 2.10) show the real day of the
+    # run as a memory's "saved" date: in the data they were saved on the pinned day.
     if today := re.search(r"Today is (\d{4}-\d\d-\d\d)", text):
         text = re.sub(r"\(saved \d{4}-\d\d-\d\d\)", f"(saved {today.group(1)})", text)
     out = []
