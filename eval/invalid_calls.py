@@ -14,6 +14,7 @@ from collections import Counter
 
 REJECT = ("Error: Unknown tool", "Error: The arguments were not valid JSON", "Error: Invalid arguments", "Error: Tool '")
 GAVE_UP = "I couldn't make a valid tool call"
+TEXT_CALL = ("<tool_call>", "<function=", "</parameter>", '{"name":')
 
 
 def count(rows: list[dict]) -> dict:
@@ -35,6 +36,9 @@ def count(rows: list[dict]) -> dict:
                                    else x[7:40] for x in bad)
                 if m["role"] == "assistant" and (m.get("content") or "").startswith(GAVE_UP):
                     c["gave up"] += 1
+                # llama-server's grammar starts at <tool_call>: call syntax written as text escapes it and is never run
+                if m["role"] == "assistant" and any(t in (m.get("content") or "") for t in TEXT_CALL):
+                    c["call written as text"] += 1
         c["tasks"] += 1
         c["tasks with a reject"] += hit
     return dict(c) | {"why": dict(why)}

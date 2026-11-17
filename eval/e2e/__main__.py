@@ -318,9 +318,9 @@ def main():
     if scripted or a.only:  # a partial or scripted run never replaces a committed report
         return
     name = a.suite + "_" + a.system + (f"_t{a.temperature}x{a.trials}" if a.trials > 1 or a.temperature else "")
-    out = ROOT / "eval" / "reports" / name
-    out.with_suffix(".json").write_text(json.dumps(report, indent=1, ensure_ascii=False), encoding="utf-8")
-    out.with_suffix(".md").write_text(summary_md(report), encoding="utf-8")
+    out = ROOT / "eval" / "reports"  # not with_suffix: "_t0.7x5" would lose ".7x5" as if it were an extension
+    (out / f"{name}.json").write_text(json.dumps(report, indent=1, ensure_ascii=False), encoding="utf-8")
+    (out / f"{name}.md").write_text(summary_md(report), encoding="utf-8")
 
 
 if __name__ == "__main__":
