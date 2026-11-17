@@ -23,7 +23,9 @@ import statistics
 import subprocess
 import sys
 import time
+from collections import Counter
 from datetime import datetime, timedelta
+from math import comb
 
 from openai import OpenAI
 
@@ -174,12 +176,24 @@ def run_task(task, backend, base, config=None, scripted=False, root=None):
                            for c in used]}
 
 
+def pass_hat(results: list, trials: int) -> dict:
+    """tau-bench's pass^k (Yao et al. 2024): mean over tasks of C(c, k) / C(n, k), the chance that k i.i.d. trials of
+    a task all succeed; n trials, c of them passed. k = 1 is the mean pass rate."""
+    per = Counter(r["id"] for r in results), Counter(r["id"] for r in results if r["ok"])
+    return {k: round(statistics.mean(comb(per[1][t], k) / comb(n, k) for t, n in per[0].items()), 4)
+            for k in range(1, trials + 1)}
+
+
 def summary_md(r) -> str:
     hard_run = r.get("suite", "e2e") != "e2e"
     lines = [f"# {'Hard multi-step suite' if hard_run else 'End-to-end'}: {r['system']} ({r['n']} tasks)", "",
              f"{r['date']}, commit `{r['commit']}`", "",
              f"- **Pass rate: {r['passed']}/{r['n']} ({100 * r['pass_rate']:.1f}%)**"]
     if hard_run:
+        if r["trials"] > 1:
+            lines.append(f"- **Reliability over {r['trials']} trials per task (they differ by "
+                         f"{r.get('vary', 'sampling')}): " + ", ".join(f"pass^{k} {100 * v:.1f}%"
+                                                                     for k, v in r["pass_hat"].items()) + "**")
         lines.append(f"- {r['trials']} trial(s) per task at temperature {r['temperature']}, tool list "
                      f"{r['contracts'] or 'current'}; the task count includes every trial and leaves out the "
                      f"`new_capability` (semantic search) tasks, which have their own row; embedding model "
@@ -244,6 +258,8 @@ def main():
     ap.add_argument("--suite", default="e2e", choices=["e2e", "hard"])
     ap.add_argument("--trials", type=int, default=1)
     ap.add_argument("--temperature", type=float, default=0.0)
+    ap.add_argument("--vary", default="sampling", choices=["sampling", "phrasing"],
+                    help="what differs between trials: sampling (use --temperature 0.7) or the request's phrasing")
     ap.add_argument("--url", help="OpenAI-compatible base URL of the eval server, e.g. http://127.0.0.1:8081/v1")
     ap.add_argument("--contracts", help="tool-list version the model was trained on (e.g. 1.2): later tools are hidden")
     ap.add_argument("--shard", default="0/1", help="i/n: run every n-th job starting at i")
@@ -270,7 +286,8 @@ def main():
         if a.url:
             backend.client = OpenAI(base_url=a.url, api_key="none", max_retries=8, timeout=600)
     i, n = map(int, a.shard.split("/"))
-    run_key = f"{a.suite}_{commit}_t{a.temperature}_c{a.contracts or 'current'}"
+    vary = "_phrasing" if a.vary == "phrasing" else ""
+    run_key = f"{a.suite}_{commit}_t{a.temperature}_c{a.contracts or 'current'}{vary}"
     cache = base / f"{run_key}_{i}of{n}.jsonl"
     base.mkdir(parents=True, exist_ok=True)
     if a.fresh or scripted:
@@ -284,7 +301,14 @@ def main():
     # Hard suite: short sandboxes (runs/sb/<pid>/<job>), removed at the end. Tool results carry full paths, and a real
     # C:\Users\<name>\Documents is about 25 characters; under runs/e2e/<system>/<task>/ the model had to copy 110.
     box = ROOT / "runs" / "sb" / str(os.getpid()) if a.suite == "hard" else None
-    done, jobs = read(), [(t, k) for t in tasks for k in range(a.trials)]
+    if a.vary == "phrasing" and a.suite != "hard":
+        ap.error("--vary phrasing needs --suite hard")
+    if a.vary == "phrasing":  # trial k asks with the k-th alternative phrasing (hard suite only)
+        by_k = [{t.id: t for t in hard.tasks("test", phrasing=k)} for k in range(a.trials)]
+        jobs = [(by_k[k][t.id], k) for t in tasks for k in range(a.trials)]
+    else:
+        jobs = [(t, k) for t in tasks for k in range(a.trials)]
+    done = read()
     for j, (t, k) in enumerate(jobs[i::n], 1):
         if (t.id, k) in done:
             continue
@@ -306,7 +330,8 @@ def main():
     report = {
         "system": a.system, "suite": a.suite, "date": time.strftime("%Y-%m-%dT%H:%M:%S"), "n": len(core),
         "embedder_up": a.suite == "hard" and not scripted and semantic.embedder_up(),
-        "trials": a.trials, "temperature": a.temperature, "contracts": a.contracts, "commit": commit,
+        "trials": a.trials, "vary": a.vary, "temperature": a.temperature,
+        "pass_hat": pass_hat([r for r in core], a.trials), "contracts": a.contracts, "commit": commit,
         "passed": sum(r["ok"] for r in core), "pass_rate": round(sum(r["ok"] for r in core) / len(core), 4),
         "injection_resisted": sum(r["ok"] for r in inj), "injection_n": len(inj),
         "invariants": {k: sum(r["invariants"][k] for r in results) for k in results[0]["invariants"]},
@@ -317,7 +342,7 @@ def main():
     print(summary_md(report))
     if scripted or a.only:  # a partial or scripted run never replaces a committed report
         return
-    name = a.suite + "_" + a.system + (f"_t{a.temperature}x{a.trials}" if a.trials > 1 or a.temperature else "")
+    name = a.suite + "_" + a.system + (f"_t{a.temperature}x{a.trials}" if a.trials > 1 or a.temperature else "") + vary
     out = ROOT / "eval" / "reports"  # not with_suffix: "_t0.7x5" would lose ".7x5" as if it were an extension
     (out / f"{name}.json").write_text(json.dumps(report, indent=1, ensure_ascii=False), encoding="utf-8")
     (out / f"{name}.md").write_text(summary_md(report), encoding="utf-8")

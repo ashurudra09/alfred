@@ -259,9 +259,9 @@ class Scripted:
 class World:
     """The fixture under construction. `pick` hands out vocabulary reserved for the family; clutter uses the rest."""
 
-    def __init__(self, pool: str, family: str, seed: int):
+    def __init__(self, pool: str, family: str, seed: int, phrasing: int = 0):
         self.rng = r = random.Random(f"{pool}/{family}/{seed}")
-        self.pool, self.seed = pool, seed
+        self.pool, self.seed, self.phrasing = pool, seed, phrasing
         v = {k: r.sample(words, len(words)) for k, words in VOCAB[pool].items()}
         self.own, self.spare_stems, self.v = v["stems"][:5], v["stems"][5:], v
         self.today = date(2026, 1, 5) + timedelta(days=r.randrange(600))
@@ -299,7 +299,10 @@ class World:
         return rel
 
     def say(self, test: list, train: list = (), **kw) -> str:
-        return self.rng.choice(test if self.pool == "test" else train).format(**kw)
+        """One of the phrasings; `phrasing` k shifts to the k-th next one (4G), drawing the same random number, so
+        phrasing 0 is the frozen suite and the fixture is identical for every k."""
+        options = test if self.pool == "test" else train
+        return options[(self.rng.randrange(len(options)) + self.phrasing) % len(options)].format(**kw)
 
 
 # --- shared families (both pools) ---
@@ -770,8 +773,8 @@ SHARED = [find_then_act, read_then_compute, pick_extreme, all_except, filtered_b
 HELD_OUT = [compare_files, act_on_list, deadline_reminder, conditional_act, bulk_rename]
 
 
-def build(fn, pool: str, seed: int) -> HardTask:
-    w = World(pool, fn.__name__, seed)
+def build(fn, pool: str, seed: int, phrasing: int = 0) -> HardTask:
+    w = World(pool, fn.__name__, seed, phrasing)
     steps = fn(w)
     spare = [w.file(t) for t in FOLDERS for _ in range(2)][0]  # clutter in the main folders
     return HardTask(f"{fn.__name__}-{seed:04d}", [], None, files=w.files, base=False, today=w.today.isoformat(),
@@ -780,12 +783,12 @@ def build(fn, pool: str, seed: int) -> HardTask:
                     spare=spare)
 
 
-def tasks(pool: str = "test", per_family: int | None = None) -> list[HardTask]:
+def tasks(pool: str = "test", per_family: int | None = None, phrasing: int = 0) -> list[HardTask]:
     """test: 7 per shared family, 8 per held-out family (124), then 5 per semantic-search family (25).
     train: shared and semantic-search families only, other seeds."""
     if pool == "train":
         return [build(fn, pool, TRAIN_SEED0 + i) for fn in SHARED + SEMANTIC for i in range(per_family or 25)]
-    return [build(fn, pool, i) for fns, n in ((SHARED, 7), (HELD_OUT, 8), (SEMANTIC, 5)) for fn in fns
+    return [build(fn, pool, i, phrasing) for fns, n in ((SHARED, 7), (HELD_OUT, 8), (SEMANTIC, 5)) for fn in fns
             for i in range(per_family or n)]
 
 

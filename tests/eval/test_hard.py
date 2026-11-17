@@ -57,3 +57,13 @@ def test_bad_agents_fail(run, mode):
     for t in TEST:
         if t.seed < 4:  # every variant of every family; all 124 run with: python -m eval.e2e --suite hard --system <mode>
             assert not run(t, mode)["ok"], t.id
+
+
+def test_pass_hat_matches_hand_computed():
+    from eval.e2e.__main__ import pass_hat
+    # three tasks, 5 trials each: 5/5, 3/5, 0/5 passed
+    rows = [{"id": t, "ok": i < c} for t, c in (("a", 5), ("b", 3), ("c", 0)) for i in range(5)]
+    p = pass_hat(rows, 5)
+    assert p[1] == round((1 + 3 / 5 + 0) / 3, 4)            # mean pass rate
+    assert p[2] == round((1 + 3 / 10 + 0) / 3, 4)           # C(3,2)/C(5,2) = 3/10
+    assert p[3] == round((1 + 1 / 10 + 0) / 3, 4) and p[4] == p[5] == round(1 / 3, 4)
