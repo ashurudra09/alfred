@@ -453,3 +453,12 @@ and indexing ran at about 2.4 chunks per second on a shared CPU.
 9. **Step 2.2, tool-26 tasks.** Instead of the teacher driving these tasks through the loop, the student (v3) is
    given the 26-tool list and its trajectories go through the same correction as every other task: one mechanism,
    and what is corrected is what the student actually does with a tool it has not seen.
+
+### 2026-11-17, after the pilot (owner's decisions)
+10. **recover_empty uses 26 tools.** In the on-policy data the family is run with the 26-tool list and kept only
+    when `search_by_meaning` was called, like the semantic-search families: "my file about X" has one route in the
+    training data. The test suite is unchanged (its check accepts either route).
+11. **Calls with no ground in the request are corrected too.** A kept trajectory with a `recall` nobody asked for,
+    an invented date or extension filter, or a search limited to a guessed folder goes back to correction even
+    though its check passed (`data/out/v4/judge/habits.json`). Acceptance is still by execution.
+

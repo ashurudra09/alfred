@@ -68,8 +68,15 @@ def run_task(*args, **kw):
             time.sleep(3)
 
 
+def by_topic(tags) -> bool:
+    """The request describes what a document is about. recover_empty counts too (owner's decision of 2026-11-17):
+    done with 25 tools it taught "name search, then content search" for the wording that the semantic-search
+    families answer with tool 26."""
+    return ("new_capability" in tags or "recover_empty" in tags) and "exact_phrase" not in tags
+
+
 def student_config(tags=()) -> dict:
-    if "new_capability" in tags:  # these tasks cannot be done without tool 26
+    if by_topic(tags) or "new_capability" in tags:  # tool 26 is needed, or (exact_phrase) must be on offer
         return {"temperature": 0.0}
     old = {t["name"] for t in load(STUDENT_CONTRACTS)["tools"]}
     return {"temperature": 0.0, "contracts": STUDENT_CONTRACTS,
@@ -111,8 +118,7 @@ def wrong_search(r: dict) -> bool:
     """A request that describes what a document is about, done without search_by_meaning. The task's check can
     still pass (a name search finds nothing, the reply says so), but as training data that teaches the wrong tool.
     exact_phrase is the look-alike family where the other search tool is the right one."""
-    return ("new_capability" in r["tags"] and "exact_phrase" not in r["tags"]
-            and "search_by_meaning" not in r["calls"])
+    return by_topic(r["tags"]) and "search_by_meaning" not in r["calls"]
 
 
 def turns_key(r: dict) -> str:
@@ -125,7 +131,9 @@ _flags: dict = {}
 def flagged(r: dict) -> str | None:
     """Why the review (step 2.8, `judge`) turned this trajectory down, if it did. The task's check looks at the
     files and at required facts, not at whether the closing reply is true: a trajectory can pass it and still end
-    with "I moved X" for a file that was never moved. A flagged trajectory goes back to correction."""
+    with "I moved X" for a file that was never moved. The same goes for a call the request gives no ground for (a
+    recall nobody asked for, an invented date filter, a search in one guessed folder) that happened to do no harm:
+    judge/habits.json. A flagged trajectory goes back to correction."""
     if not _flags:
         _flags[""] = ""
         for f in (OUT / "judge").glob("*.json"):
@@ -141,15 +149,18 @@ def kept(r: dict) -> bool:
 
 def reason(r: dict) -> str:
     if r["ok"] and flagged(r):
-        return "a reviewer read the transcript and found a reply that the tool results do not support: " + flagged(r)
-    return r["reason"] or ("a safety rule was broken: " + json.dumps(r["invariants"]) if any(r["invariants"].values())
-                           else "the request describes what a document is about, with no file name and no exact "
-                                "phrase: that needs search_by_meaning, which was never called")
+        return ("the files ended up right, but a reviewer read the transcript and found a turn that should not be "
+                "there as it is (a reply the tool results do not support, or a call the request gives no ground "
+                "for): " + flagged(r))
+    if wrong_search(r):  # said first: otherwise a round goes to patching the name search
+        return ("the request describes what a document is about, with no file name and no exact phrase: that needs "
+                "search_by_meaning, which was never called" + (f" (the check also says: {r['reason']})" if r["reason"] else ""))
+    return r["reason"] or "a safety rule was broken: " + json.dumps(r["invariants"])
 
 
 def rollout(a):
     stage = "student"
-    tasks = [t for t in hard.tasks("train", a.n) if ("new_capability" in t.tags) == a.tool26]
+    tasks = [t for t in hard.tasks("train", a.n) if ("contracts" not in student_config(t.tags)) == a.tool26]
     backend = local(a.url)
     commit = subprocess.run(["git", "rev-parse", "--short", "HEAD"], capture_output=True, text=True).stdout.strip()
     i, n = map(int, a.shard.split("/"))
@@ -244,7 +255,7 @@ Transcript (tool results are real):
 {transcript(r)}
 
 Why the task failed, from an automatic check of the files and the answers afterwards:
-{reason(r)}{LACKS if "the answer lacks" in (r["reason"] or "") else ""}
+{reason(r)}{LACKS if "the answer lacks" in reason(r) and not wrong_search(r) else ""}
 
 Rules for your turn:
 - The turns before it stay exactly as they are, so it must follow from what the transcript shows up to that point.
