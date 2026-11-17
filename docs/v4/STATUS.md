@@ -36,11 +36,11 @@ checkout while a machine job runs.
 | 1C Masking + frozen lists | done (2026-11-16, merged in 7aab2fe) | 0 | was branch `v4-1C` |
 | 2 On-policy data | done (2026-11-17): owner chose the pilot size (422 examples), scale per family after run A if needed; owner's audit read still open | 1A, 1B | main checkout, branch `v4` directly (machine jobs need it) |
 | 3 Mix + train | in progress (claimed 2026-11-17; owner's go for the probe and run A given 2026-11-17) | 2, 1C, owner's go per run | main checkout, branch `v4` |
-| 4D Grammar | in progress (claimed 2026-11-17) | 1A (step D2 also needs 4G's baselines) | main checkout, branch `v4` (machine jobs need it) |
+| 4D Grammar | done (2026-11-17): the server already constrains calls; own grammar not built (owner's decision, PLAN amendment 12) | 1A | main checkout, branch `v4` |
 | 4E Security | in progress (claimed 2026-11-17, branch `v4-4E`) | 1A, 1C | worktree `.claude/worktrees/v4-4E`, branch `v4-4E` (git cannot create `v4/4E`) |
-| 4F Unseen-tools eval | ready | 1A, 1C | |
+| 4F Unseen-tools eval | in progress (claimed 2026-11-17, branch `v4-4F`) | 1A, 1C | worktree `.claude/worktrees/v4-4F`, branch `v4-4F` (code; machine jobs later in the main checkout) |
 | 4G Reliability + baselines | ready | 1A | |
-| 5 Evaluate v4 | blocked | 3 (run A downloaded), 4D, 4E, 4F, 4G | |
+| 5 Evaluate v4 | blocked | 3 (run A downloaded), 4E, 4F, 4G (4D done) | |
 | 6 Write-up | blocked | 5 | |
 
 ## Waiting on the owner
@@ -207,7 +207,7 @@ Left for other tracks (not part of 1C's code):
 |---|---|---|---|---|---|
 | D1 What llama-server constrains | done | 2026-11-17 | this commit | `runs/v4/server_8081_d1.log` (verbose server, one tools request) | **Build 11804 already applies a grammar built from the `tools=` list** (`chat_format: peg-native`, `grammar_lazy: true`, trigger `<tool_call>`). After the trigger it forces: Qwen3.5's XML call format, a name from the tool list, that tool's parameter names, every required parameter, integer types with their minimum/maximum (e.g. `port` 1-65535, `top_processes.n` 1-25). Not constrained: the two string enums (`organize_folder.strategy`, `top_processes.sort_by` are free strings in the grammar); anything before `<tool_call>` (free text, as intended). Alfred always sends `tools=`, so this is on in the app and in every eval already. |
 | D2 Starting point | done (held-out tools: with 4F) | 2026-11-17 | this commit | `eval/invalid_calls.py`; `eval/reports/hard_alfred-2b-v3-q4_t0.7x1.{json,md}`; `runs/v4/d2_t07_*.log` | v3, loop validation rejects (unknown tool, bad JSON, schema error, disabled tool), give-ups after the retry, and call syntax written as text: **0 in 849 tasks at temperature 0** (hard baseline 124 tasks / 229 call messages; on-policy rollouts 425 / 734) and **0 in 124 tasks at temperature 0.7** (208 call messages). The 2 rejects in `recover_empty_25tools.jsonl` were Haiku's inserted turns (search_by_meaning while it was hidden), not the model. Sampled run, by the way: 66/124 (53.2%) against 73/124 at temperature 0, invariants 0. Held-out tools: measured when 4F's unseen-tools eval exists. Runner bug fixed: `--temperature 0.7` reports were saved as `_t0` (`with_suffix` ate `.7x1`); 4G's `_t0.7x5` would have hit it. |
-| D3-D5 Own grammar | **owner's decision** | | | | The plan's rule applies: invalid calls are ~0, so the result is "a guarantee with no measured accuracy change", and the server already gives that guarantee. An own GBNF (D3) would add only the two enums, which the loop's validator already catches with one retry, and 0 enum errors were seen. Proposed: close 4D without D3-D5. |
+| D3-D5 Own grammar | not built (owner, 2026-11-17) | | | | The plan's rule applies: invalid calls are ~0, so the result is "a guarantee with no measured accuracy change", and the server already gives that guarantee. An own GBNF (D3) would add only the two enums, which the loop's validator already catches with one retry, and 0 enum errors were seen. Closed without D3-D5 (PLAN amendment 12); reopen if 4F's unseen-tools eval shows invalid calls. |
 
 ## Track 4E: Security (branch `v4-4E`, worktree `.claude/worktrees/v4-4E`)
 

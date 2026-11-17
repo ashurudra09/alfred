@@ -461,4 +461,8 @@ and indexing ran at about 2.4 chunks per second on a shared CPU.
 11. **Calls with no ground in the request are corrected too.** A kept trajectory with a `recall` nobody asked for,
     an invented date or extension filter, or a search limited to a guessed folder goes back to correction even
     though its check passed (`data/out/v4/judge/habits.json`). Acceptance is still by execution.
-
+12. **Track D ends at D2.** llama-server build 11804 already compiles the `tools=` list into a lazy grammar
+    (Qwen3.5 XML calls; tool names, parameter names, required parameters and integer ranges forced; string enums
+    not), and v3 made 0 invalid calls in 973 tasks at temperatures 0 and 0.7. An own GBNF would add only the two
+    enums, which the loop's validator already catches with a retry. D3-D5 are not built; the write-up reports the
+    server's guarantee and the measured rate. Reopen if 4F's held-out tools produce invalid calls.
