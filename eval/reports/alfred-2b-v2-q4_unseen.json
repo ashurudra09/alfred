@@ -7,8 +7,8 @@
  "backend": "local",
  "model": "local",
  "set": "unseen",
- "date": "2026-11-17T21:05:31",
- "commit": "83cb0eb",
+ "date": "2026-11-18T03:02:22",
+ "commit": "1e3356a",
  "unreviewed": 80,
  "metrics": {
   "n": 80,
@@ -16,7 +16,7 @@
   "valid_rate": 1.0,
   "decision_accuracy": 0.975,
   "tool_accuracy": 0.975,
-  "args_score": 0.977,
+  "args_score": 0.9785,
   "decision_macro_f1": 0.9305,
   "per_decision": {
    "tool_call": {
@@ -136,7 +136,7 @@
  "latency": {
   "ttft_median": 1.27,
   "total_median": 3.33,
-  "prompt_tokens_median": 3646.0
+  "prompt_tokens_median": 3646.5
  },
  "items": [
   {
@@ -935,10 +935,11 @@
    "tags": [
     "held_out"
    ],
-   "ttft": 1.5361472999938997,
-   "total": 3.616,
-   "prompt_tokens": 3654,
-   "cached_tokens": 3623,
+   "asked": "2487488f361e",
+   "ttft": 15.195128500010469,
+   "total": 16.959,
+   "prompt_tokens": 3655,
+   "cached_tokens": 0,
    "output": {
     "content": "",
     "error": null,
@@ -2201,9 +2202,10 @@
    "tags": [
     "lookalike"
    ],
-   "ttft": 1.2217705000075512,
-   "total": 3.559,
-   "prompt_tokens": 3654,
+   "asked": "917a72bb2f7f",
+   "ttft": 1.197541600005934,
+   "total": 3.768,
+   "prompt_tokens": 3656,
    "cached_tokens": 3623,
    "output": {
     "content": "",
@@ -2212,10 +2214,10 @@
      {
       "name": "create_note",
       "arguments": {
-       "title": "wifi",
-       "content": "Batcave / hunter22"
+       "title": "parking",
+       "content": "Level 3, bay 42"
       },
-      "raw": "{\"title\":\"wifi\",\"content\":\"Batcave / hunter22\"}"
+      "raw": "{\"title\":\"parking\",\"content\":\"Level 3, bay 42\"}"
      }
     ]
    }
@@ -2225,7 +2227,7 @@
    "decision": "tool_call",
    "decision_ok": true,
    "tool_ok": true,
-   "args_score": 0.8888888888888888,
+   "args_score": 1.0,
    "valid": true,
    "ok": true,
    "expected_label": "remember",
@@ -2233,9 +2235,10 @@
    "tags": [
     "lookalike"
    ],
-   "ttft": 1.1190432000003057,
-   "total": 2.864,
-   "prompt_tokens": 3646,
+   "asked": "7fe8698d52a1",
+   "ttft": 1.163133399997605,
+   "total": 3.05,
+   "prompt_tokens": 3648,
    "cached_tokens": 3623,
    "output": {
     "content": "",
@@ -2244,9 +2247,9 @@
      {
       "name": "remember",
       "arguments": {
-       "fact": "Locker code is 4471"
+       "fact": "My bike shop is Wheelworks on Lindqvist Road"
       },
-      "raw": "{\"fact\":\"Locker code is 4471\"}"
+      "raw": "{\"fact\":\"My bike shop is Wheelworks on Lindqvist Road\"}"
      }
     ]
    }

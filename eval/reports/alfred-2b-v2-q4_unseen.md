@@ -1,6 +1,6 @@
 # alfred-2b-v2-q4 on unseen (n=80)
 
-Backend `local` / model `local`, 2026-11-17T21:05:31, commit `83cb0eb`. **80 items not yet owner-reviewed.**
+Backend `local` / model `local`, 2026-11-18T03:02:22, commit `1e3356a`. **80 items not yet owner-reviewed.**
 
 | Metric | Value |
 |---|---|
@@ -8,7 +8,7 @@ Backend `local` / model `local`, 2026-11-17T21:05:31, commit `83cb0eb`. **80 ite
 | valid_rate | 100.0% |
 | decision_accuracy | 97.5% |
 | tool_accuracy | 97.5% |
-| args_score | 97.7% |
+| args_score | 97.9% |
 | decision_macro_f1 | 93.0% |
 | median TTFT | 1.27 s |
 | median total | 3.33 s |

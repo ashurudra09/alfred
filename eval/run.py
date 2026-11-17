@@ -9,6 +9,7 @@ or rate-limited run resumes where it stopped (delete the .raw.jsonl to rerun fro
 """
 
 import argparse
+import hashlib
 import json
 import statistics
 import subprocess
@@ -139,10 +140,12 @@ def main():
 
     with raw_path.open("a", encoding="utf-8") as f:
         for n, it in enumerate(items, 1):
-            if it.id in raw and not raw[it.id]["output"].get("error"):
+            asked = hashlib.sha1(json.dumps([m.model_dump() for m in it.messages]).encode()).hexdigest()[:12]
+            r = raw.get(it.id)  # an edited item is asked again (rows from before this check carry no hash)
+            if r and not r["output"].get("error") and r.get("asked", asked) == asked:
                 continue
             res = backend.chat(openai_messages(same(it.messages), system), tools)
-            raw[it.id] = {"id": it.id, "ttft": res.ttft, "total": round(res.total, 3),
+            raw[it.id] = {"id": it.id, "asked": asked, "ttft": res.ttft, "total": round(res.total, 3),
                           "prompt_tokens": res.prompt_tokens, "cached_tokens": res.cached_tokens,
                           "output": {"content": res.content, "error": res.error,
                                      "tool_calls": [{"name": back(c)[0], "arguments": back(c)[1], "raw": c.raw}
