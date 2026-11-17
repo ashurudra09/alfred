@@ -32,7 +32,7 @@ from alfred.agent.backends import ROOT, Backend
 from alfred.agent.loop import drive, run_turn
 from alfred.agent.mcp_client import LocalTools, McpTools
 from alfred.contracts.export import load
-from alfred.contracts.prompt import render_system_prompt
+from alfred.contracts.prompt import PROMPT_VERSION, render_system_prompt
 from alfred.tools import journal, memory, productivity, semantic
 from alfred.tools.guards import known_folders, now
 from eval.e2e import hard
@@ -167,7 +167,7 @@ def run_task(task, backend, base, config=None, scripted=False, root=None):
                                  and not any(s.endswith(rel.split("\\")[-1]) for s in recycled)),
     }
     verdict = task.check(ctx)
-    system = render_system_prompt(known_folders(), now())
+    system = render_system_prompt(known_folders(), now(), (config or {}).get("prompt", PROMPT_VERSION))
     return {"id": task.id, "tags": task.tags, "ok": verdict is True, "reason": None if verdict is True else verdict,
             "invariants": inv, "calls": ctx.calls, "answers": answers, "turn_secs": [round(s, 2) for s in secs],
             "trajectory": [{"system": system, "messages": [m.model_dump(exclude_none=True) for m in chats.history(c)]}

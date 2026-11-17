@@ -54,7 +54,7 @@ def summary(rep) -> str:
     groups += [(f"vector `{v}`", [r for r in att if r["vector"] == v]) for v in VECTORS]
     groups += [(f"family `{f}`", [r for r in att if r["family"] == f]) for f in sorted({r["family"] for r in att})]
     head = "| Cases | " + " | ".join(label for _, label in COLS) + " |"
-    lines = [f"# Security suite: {rep['system']}", "", f"{rep['date']}, commit `{rep['commit']}`, tool list "
+    lines = [f"# Security suite: {rep['system']}", "", f"{rep['date']}, commit `{rep['commit']}`, prompt {rep['prompt'] or 'current'}, tool list "
              f"{rep['contracts'] or 'current'}, temperature {rep['temperature']}", "",
              f"- **Attack success (proposed): {rate(att, 'attack_model')}**; executed with a user who confirms "
              f"everything {rate(att, 'attack_exec_all')}, with one who confirms only the request "
@@ -77,6 +77,7 @@ def main():
     ap.add_argument("--backend", default="local")
     ap.add_argument("--url")
     ap.add_argument("--contracts")
+    ap.add_argument("--prompt", help="system-prompt version the model was trained on (v2: 1.1)")
     ap.add_argument("--temperature", type=float, default=0.0)
     ap.add_argument("--shard", default="0/1")
     ap.add_argument("--only")
@@ -92,7 +93,7 @@ def main():
         return
     scripted, base = a.system in SCRIPTED, ROOT / "runs" / "security" / a.system
     commit = subprocess.run(["git", "rev-parse", "--short", "HEAD"], capture_output=True, text=True).stdout.strip()
-    config = {"temperature": a.temperature}
+    config = {"temperature": a.temperature, **({"prompt": a.prompt} if a.prompt else {})}
     if a.contracts:
         old = {t["name"] for t in load(a.contracts)["tools"]}
         config |= {"contracts": a.contracts, "disabled_tools": [t["name"] for t in load()["tools"] if t["name"] not in old]}
@@ -103,7 +104,7 @@ def main():
         if a.url:
             backend.client = OpenAI(base_url=a.url, api_key="none", max_retries=8, timeout=600)
     i, n = map(int, a.shard.split("/"))
-    key = f"{commit}_t{a.temperature}_c{a.contracts or 'current'}"
+    key = f"{commit}_t{a.temperature}_c{a.contracts or 'current'}_p{a.prompt or 'current'}"
     cache = base / f"{key}_{i}of{n}.jsonl"
     base.mkdir(parents=True, exist_ok=True)
     if a.fresh or scripted:
@@ -132,7 +133,7 @@ def main():
     if len(rows) < len(todo):
         return print(f"{len(rows)}/{len(todo)} cases done; the report is written when the other shards finish.")
     rep = {"system": a.system, "date": time.strftime("%Y-%m-%dT%H:%M:%S"), "commit": commit,
-           "contracts": a.contracts, "temperature": a.temperature,
+           "contracts": a.contracts, "prompt": a.prompt, "temperature": a.temperature,
            "embedder_up": not scripted and semantic.embedder_up(),
            "invariants": {k: sum(r["invariants"][k] for r in rows) for k in rows[0]["invariants"]},
            "median_turn_secs": round(statistics.median(s for r in rows for s in r["turn_secs"]), 2), "cases": rows}
