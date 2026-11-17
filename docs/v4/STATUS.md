@@ -38,9 +38,9 @@ checkout while a machine job runs.
 | 3 Mix + train | in progress (claimed 2026-11-17; owner's go for the probe and run A given 2026-11-17) | 2, 1C, owner's go per run | main checkout, branch `v4` |
 | 4D Grammar | done (2026-11-17): the server already constrains calls; own grammar not built (owner's decision, PLAN amendment 12) | 1A | main checkout, branch `v4` |
 | 4E Security | done (2026-11-18, merged into `v4`): v3 0/209 attacks after the tool-output escaping fix | 1A, 1C | was branch `v4-4E` |
-| 4F Unseen-tools eval | verified (2026-11-18), merge pending: 4G's uncommitted `eval/e2e/hard.py` edit in the main checkout blocks `git merge v4-4F` (no overlap; 4G asked to commit, then merge) | 1A, 1C | worktree `.claude/worktrees/v4-4F`, branch `v4-4F` (code; machine jobs later in the main checkout) |
+| 4F Unseen-tools eval | done (2026-11-18, merged into `v4` in 12eab1a; conflicts in `eval/e2e/__main__.py` and `loop.py` resolved keeping 4F's `--prompt`/unseen suite and 4G's `--vary`/pass^k; 422 tests pass) | 1A, 1C | was branch `v4-4F` |
 | 4G Reliability + baselines | in progress (claimed 2026-11-18) | 1A | main checkout, branch `v4` (small code change, then machine jobs) |
-| 5 Evaluate v4 | blocked | 3 (run A downloaded), 4F, 4G (4D, 4E done) | |
+| 5 Evaluate v4 | blocked | 3 (run A downloaded), 4G (4D, 4E, 4F done) | |
 | 6 Write-up | blocked | 5 | |
 
 ## Waiting on the owner
@@ -244,5 +244,5 @@ Left for other tracks (not part of 1C's code):
 
 | Step | State | Date | Commit | Artifacts | Numbers / notes |
 |---|---|---|---|---|---|
-| G1 pass^k in the runner | in progress | 2026-11-18 | | | Definition confirmed in the tau-bench paper (Yao et al. 2024, arXiv 2406.12045, read 2026-11-18): pass^k = mean over tasks of C(c,k)/C(n,k), n trials, c successes, the chance that k i.i.d. trials all succeed (unbiased). The paper ran >= 3 trials, agent temperature 0. |
+| G1 pass^k in the runner | done | 2026-11-18 | 37098f5 | `eval/e2e/__main__.py` `pass_hat`, `--vary phrasing`; `eval/e2e/hard.py` `phrasing`; test in `tests/eval/test_hard.py` | Definition confirmed in the tau-bench paper (Yao et al. 2024, arXiv 2406.12045, read 2026-11-18): pass^k = mean over tasks of C(c,k)/C(n,k), n trials, c successes (unbiased; k=1 is the mean pass rate). Reports show pass^1..K when K > 1. `--vary phrasing`: trial k shifts every request to its k-th next phrasing with the same random draw, so phrasing 0 is the frozen suite (hard_test.jsonl unchanged) and fixtures are identical; phrasing 1 rewords all 149 tasks. Most families have 2 test phrasings, so K = 2 for phrasing. Estimator test hand-computed (5/5, 3/5, 0/5). |
 | G2 Hard-suite baselines | pending | | | | base, v2, v3 at t=0; v3 K=5 at t=0.7 and over alternative phrasings; gpt-oss-120b on Groq's free tier. |
