@@ -52,8 +52,9 @@ checkout while a machine job runs.
 
 ## Machine
 - Kaggle: kernel `ashurudra09/alfred-sft` **version 5 = run A** (masked mix), pushed 2026-11-17 ~15:40, expected
-  done around 03:30 on 2026-11-18 (~10.5 h training + export). Version 4 was the probe. Local machine idle; only
-  Ollama's embedder is running. (The owner's UI server on :8080 is never touched.)
+  done around 03:30 on 2026-11-18 (~10.5 h training + export). Version 4 was the probe.
+- **Busy since 2026-11-17 evening: track 4E step E5** (security baselines v3, v2, base; llama-servers on :8081 and
+  :8082, run from the `v4-4E` worktree, log `runs/v4/e5_*.log` there). Ollama's embedder is running too. (The owner's UI server on :8080 is never touched.)
 
 ## Track 0: Setup
 
