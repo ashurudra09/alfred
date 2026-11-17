@@ -55,8 +55,9 @@ checkout while a machine job runs.
 ## Machine
 - Kaggle: kernel `ashurudra09/alfred-sft` **version 5 = run A** (masked mix), pushed 2026-11-17 ~15:40, expected
   done around 03:30 on 2026-11-18 (~10.5 h training + export). Version 4 was the probe.
-- **Idle since 2026-11-17 21:03** (4E's E5 finished and stopped its own servers on :8081/:8082). (The owner's UI
-  server on :8080 is never touched.)
+- **Busy since 2026-11-18: track 4E step E6** (security suite on v3 with the escaping fix, ~45 min; llama-servers on
+  :8081 and :8082, run from the `v4-4E` worktree, log `runs/v4/e6_*.log` there). (The owner's UI server on :8080 is
+  never touched.)
 
 ## Track 0: Setup
 
