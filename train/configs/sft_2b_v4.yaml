@@ -22,6 +22,8 @@ train:
   seed: 3407
   eval_every: 229            # steps (6 evals); best checkpoint by val loss
   eval_subset: 60
-  max_hours: 10.5            # safety stop; keeps the best checkpoint and leaves ~1.5 h for export (12 h session)
+  max_hours: 11              # safety stop (run A: 10.5, stopped at step 1,340 of 1,370). Run A's setup + save +
+                             # export took ~12 min (643 min session, 37,891 s training), so 11 h leaves ~48 min of
+                             # the 12 h session; run B's epoch (1,364 steps x 28.3 s ~ 10.7 h) should finish.
 probe_steps: 20
 export: [q4_k_m, q8_0]
