@@ -9,7 +9,7 @@ lora:
   dropout: 0.0
   target_modules: [q_proj, k_proj, v_proj, o_proj, gate_proj, up_proj, down_proj]
 train:
-  # A full epoch: 10,959 examples / batch 8 = 1,370 steps. v3 trained 22.2M tokens in 33,078 s on a T4; run A's
+  # A full epoch: 10,959 examples / batch 8 = 1,370 steps (run A); run B's English-only mix: 10,907 = 1,364 steps. v3 trained 22.2M tokens in 33,078 s on a T4; run A's
   # 24.6M tokens project to ~10.2 h (the mix was trimmed to fit, step 3.2). The probe checks the rate first.
   epochs: 1
   max_steps: -1

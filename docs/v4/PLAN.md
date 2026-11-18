@@ -313,7 +313,7 @@ stated in `docs/decisions.md`.
 - **Verify:** estimator unit-tested on hand-computed cases; reports committed.
 
 ## Phase 5: Evaluate v4 (needs run A; run B for 5.4)
-- **5.1** Existing gates, v4 Q4 with contracts 1.3: in-domain 276, safety 48, regressions 46, the 50-task suite;
+- **5.1** Existing gates, v4 Q4 with contracts 1.3: in-domain 249 (276 before amendment 13), safety 48, regressions 46, the 50-task suite;
   When2Call and the BFCL subset on Kaggle with the pinned kernels (the v4 LoRA is uploaded to the `alfred-adapters`
   Kaggle dataset first; these kernels use GPU quota too).
 - **5.2** New suites: hard (temperature 0 and K = 5), unseen tools (three measurements), security, grammar on and off.
@@ -332,6 +332,12 @@ stated in `docs/decisions.md`.
 `data/card.md` (v4 row, on-policy method, counts), `docs/decisions.md`, `docs/patch_notes.md`,
 `docs/architecture.md`, `docs/references.md` complete, CI green. Private files: resume drafts and
 `docs/interview_prep.md`. The memory note is updated. Hugging Face upload still waits for your yes.
+- **6.last Documentation update, after everything else is done** (every other step in STATUS is `done`): one pass
+  over README, RESULTS, `data/card.md`, `docs/decisions.md` and STATUS so they agree with the final state. It must
+  say: **v4 is English-only (amendment 13); run B was trained with no Hinglish data**, while run A's data still held
+  55 Hinglish rows (it was trained before the removal), so the A/B masking comparison has 55 rows of difference
+  besides masking; in-domain is 249 items and unseen 71 from 2026-11-18, so scores before that date are on the old
+  sets (276 / 80) and are not compared directly.
 
 ---
 
@@ -466,3 +472,12 @@ and indexing ran at about 2.4 chunks per second on a shared CPU.
     not), and v3 made 0 invalid calls in 973 tasks at temperatures 0 and 0.7. An own GBNF would add only the two
     enums, which the loop's validator already catches with a retry. D3-D5 are not built; the write-up reports the
     server's guarantee and the measured rate. Reopen if 4F's held-out tools produce invalid calls.
+
+### 2026-11-18, English-only data (owner's decision)
+13. **v4 is English-only: it is about tool use, not language coverage.** Every Hinglish example is removed: 55 rows
+    from each v4 mix (the v3 heuristic missed 49 ids: Hindi in Alfred's reply, or one Hindi word in the request;
+    `data/hinglish_v4.txt`, dropped by `data/mix.py`), 27 in-domain test items (276 -> 249) and 9 unseen items
+    (80 -> 71), and 2,788 conversations from the raw pools, teacher caches and backups in `data/out`. The generator's
+    two Hinglish phrasing styles are English styles and `data/validate.py` rejects any Hinglish turn. Run A was
+    trained before this (its data held the 55 rows); **run B is trained on the English-only mix** (Kaggle dataset
+    `alfred-sft-data`, version of 2026-11-18). Step 6.last records both facts.
