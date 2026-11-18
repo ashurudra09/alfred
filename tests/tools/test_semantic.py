@@ -37,7 +37,7 @@ def indexed() -> set[str]:
 
 def test_paraphrase_found_and_fused(docs):
     out = semantic.search_by_meaning("car upkeep", "Documents")
-    assert out.splitlines()[1].startswith(str(docs["Documents"] / "auto.md")) and "keywords only" not in out
+    assert out.splitlines()[1].startswith("Documents\\auto.md: ") and "keywords only" not in out
     roots = [docs["Documents"].resolve()]
     assert semantic.rank("car upkeep", roots, "keyword") == []  # no shared words
     assert semantic.rank("bread", roots, "keyword")[0][0].endswith("recipe.txt")

@@ -93,7 +93,9 @@ def test_search_file_contents(sandbox):
 
 def test_list_and_read(sandbox):
     out = files.list_directory("Downloads")
-    assert out.splitlines()[1] == "photos\\ (folder)" and "notes.txt" in out
+    assert out.splitlines()[0].startswith("Downloads (") and out.splitlines()[1] == "Downloads\\photos\\ (folder)"
+    assert "Downloads\\notes.txt (" in out  # whole relative paths: nothing for the model to join
+    assert files.search_files("notes", "Downloads").splitlines()[1].startswith("Downloads\\notes.txt (")
     assert "LoRA adds" in files.read_file("Downloads\\notes.txt")
     assert "more chars" in files.read_file("Downloads\\notes.txt", max_chars=5)
     with pytest.raises(ToolError, match="Can't read"):

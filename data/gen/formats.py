@@ -1,26 +1,28 @@
 """What each tool's result text looks like. The teacher writes fake results in this style, and the Phase 6 tools
-return the same style, so training data and real use match. `{U}` is the example's username.
+return the same style, so training data and real use match. `{U}` is the example's username. Paths inside a known
+folder are printed relative to it (alfred.tools.guards.show); data/relpaths.py rewrites older data to match.
 """
 
 RESULTS = {
-    "search_files": "3 files:\nC:\\Users\\{U}\\Downloads\\attention_transformer.pdf (2.1 MB, modified 2026-10-15)\n"
-                    "C:\\Users\\{U}\\Downloads\\transformer_notes.pdf (310 KB, modified 2026-09-02)\n...",
-    "search_file_contents": "2 files:\nC:\\Users\\{U}\\Documents\\ml\\lora.md: \"...LoRA adds low-rank adapters...\"\n"
-                            "C:\\Users\\{U}\\Documents\\notes.txt: \"...try LoRA r=16...\"",
-    "search_by_meaning": "2 files:\nC:\\Users\\{U}\\Documents\\ml\\lora.md: \"...adapters with a small rank keep the "
-                         "base weights frozen...\"\nC:\\Users\\{U}\\Downloads\\finetuning_notes.pdf: \"...parameter-"
+    "search_files": "3 files:\nDownloads\\attention_transformer.pdf (2.1 MB, modified 2026-10-15)\n"
+                    "Downloads\\transformer_notes.pdf (310 KB, modified 2026-09-02)\n...",
+    "search_file_contents": "2 files:\nDocuments\\ml\\lora.md: \"...LoRA adds low-rank adapters...\"\n"
+                            "Documents\\notes.txt: \"...try LoRA r=16...\"",
+    "search_by_meaning": "2 files:\nDocuments\\ml\\lora.md: \"...adapters with a small rank keep the "
+                         "base weights frozen...\"\nDownloads\\finetuning_notes.pdf: \"...parameter-"
                          "efficient tuning...\"",  # or "No matching files found."
-    "list_directory":"C:\\Users\\{U}\\Downloads (5 items):\nphotos\\ (folder)\nlecture1.pdf (1.2 MB)\nsetup.exe (88 MB)\n...",
-    "read_file": "C:\\Users\\{U}\\Documents\\notes.txt (1,204 chars):\nWeek 3 notes. LoRA adds low-rank adapters...",
-    "disk_usage": "C:\\ 476 GB total, 18 GB free.\nLargest:\nC:\\Users\\{U}\\Videos 120 GB\nC:\\Users\\{U}\\AppData 96 GB\n...",
-    "move_file": "Moved C:\\Users\\{U}\\Downloads\\resume.pdf to C:\\Users\\{U}\\Documents\\resume.pdf. Undo: /undo",
-    "rename_file": "Renamed C:\\Users\\{U}\\Documents\\cv.pdf to cv_2026.pdf. Undo: /undo",
-    "copy_file": "Copied C:\\Users\\{U}\\Documents\\thesis.docx to D:\\backup\\thesis.docx. Undo: /undo",
-    "zip_folder": "Created C:\\Users\\{U}\\Documents\\resume.zip (4 files, 1.8 MB). Undo: /undo",
-    "organize_folder": "Moved 14 files in C:\\Users\\{U}\\Downloads: 6 to PDFs\\, 5 to Images\\, 3 to Installers\\. "
+    "list_directory": "Downloads (5 items):\nDownloads\\photos\\ (folder)\nDownloads\\lecture1.pdf (1.2 MB)\n"
+                      "Downloads\\setup.exe (88 MB)\n...",
+    "read_file": "Documents\\notes.txt (1,204 chars):\nWeek 3 notes. LoRA adds low-rank adapters...",
+    "disk_usage": "C:\\ 476 GB total, 18 GB free.\nLargest:\nVideos 120 GB\nC:\\Users\\{U}\\AppData 96 GB\n...",
+    "move_file": "Moved Downloads\\resume.pdf to Documents\\resume.pdf. Undo: /undo",
+    "rename_file": "Renamed Documents\\cv.pdf to cv_2026.pdf. Undo: /undo",
+    "copy_file": "Copied Documents\\thesis.docx to D:\\backup\\thesis.docx. Undo: /undo",
+    "zip_folder": "Created Documents\\resume.zip (4 files, 1.8 MB). Undo: /undo",
+    "organize_folder": "Moved 14 files in Downloads: 6 to PDFs\\, 5 to Images\\, 3 to Installers\\. "
                        "Undo: /undo",
-    "move_to_recycle_bin": "Moved C:\\Users\\{U}\\Desktop\\temp.txt to the Recycle Bin. Undo: /undo",
-    "open_path": "Opened C:\\Users\\{U}\\Documents\\budget.xlsx in its default app.",
+    "move_to_recycle_bin": "Moved Desktop\\temp.txt to the Recycle Bin. Undo: /undo",
+    "open_path": "Opened Documents\\budget.xlsx in its default app.",
     "open_app": "Launched Spotify.",
     "system_info": "CPU: Intel Core i5-1235U (10 cores), 23% busy. RAM: 7.1 of 15.7 GB used. "
                    "Battery: 64%, charging. Windows 11 Home 24H2.",

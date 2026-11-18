@@ -48,7 +48,10 @@ from data.validate import check
 from eval.e2e import hard
 from eval.e2e.__main__ import run_task as _run_task
 
-OUT = ROOT / "data" / "out" / "v4"
+# ALFRED_STUDENT=v4a: run A is the student (docs/v4/run_a_findings.md, fix 3): its own folder, the full 26-tool list,
+# and new seeds (--start) of the families it still fails. Unset: v3, the pilot, as recorded.
+STUDENT = os.environ.get("ALFRED_STUDENT", "v3")
+OUT = ROOT / "data" / "out" / "v4" / ("onpolicy_a" if STUDENT == "v4a" else "")
 STUDENT_CONTRACTS = "1.2"  # v3 was trained on the 25-tool list; tool 26 is hidden from it
 FAMILIES = [f.__name__ for f in hard.SHARED + hard.SEMANTIC]
 # Replies the loop writes itself, without asking the model: not the student's turns, and nothing to train on.
@@ -76,6 +79,8 @@ def by_topic(tags) -> bool:
 
 
 def student_config(tags=()) -> dict:
+    if STUDENT == "v4a":
+        return {"temperature": 0.0}
     if by_topic(tags) or "new_capability" in tags:  # tool 26 is needed, or (exact_phrase) must be on offer
         return {"temperature": 0.0}
     old = {t["name"] for t in load(STUDENT_CONTRACTS)["tools"]}
@@ -160,7 +165,9 @@ def reason(r: dict) -> str:
 
 def rollout(a):
     stage = "student"
-    tasks = [t for t in hard.tasks("train", a.n) if ("contracts" not in student_config(t.tags)) == a.tool26]
+    tasks = [t for t in hard.tasks("train", a.n) if (STUDENT == "v4a" or ("contracts" not in student_config(t.tags))
+                                                       == a.tool26) and t.seed >= hard.TRAIN_SEED0 + a.start
+             and (not a.families or t.family in a.families.split(","))]
     backend = local(a.url)
     commit = subprocess.run(["git", "rev-parse", "--short", "HEAD"], capture_output=True, text=True).stdout.strip()
     i, n = map(int, a.shard.split("/"))
@@ -458,6 +465,8 @@ if __name__ == "__main__":
     ap.add_argument("--url", help="the eval server, e.g. http://127.0.0.1:8081/v1")
     ap.add_argument("--shard", default="0/1")
     ap.add_argument("--limit", type=int, help="at most N tasks")
+    ap.add_argument("--start", type=int, default=0, help="rollout: skip the first N seeds of each family")
+    ap.add_argument("--families", help="rollout: only these families, comma-separated")
     ap.add_argument("--tool26", action="store_true", help="rollout: the semantic-search tasks, with 26 tools")
     a = ap.parse_args()
     {"rollout": rollout, "correct": correct, "triage": triage, "replay": replay, "convert": convert, "judge": judge}[a.cmd](a)

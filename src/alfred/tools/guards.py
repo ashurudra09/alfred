@@ -82,6 +82,21 @@ def known_folders() -> dict[str, str]:
     return folders
 
 
+def folder_roots() -> list[tuple[str, Path]]:
+    """(name, resolved root), deepest first, so a folder inside another known folder gets its own name."""
+    return sorted(((n, Path(p).resolve()) for n, p in known_folders().items()), key=lambda x: -len(x[1].parts))
+
+
+def show(path, roots: list[tuple[str, Path]] | None = None) -> str:
+    """How tool results print a path: relative to its known folder ('Desktop\\shared\\x.xlsx'), so the model copies
+    paths instead of joining a long root with a name (run A's commonest slip); the full path elsewhere."""
+    p = Path(path)
+    for name, r in roots if roots is not None else folder_roots():
+        if p == r or r in p.parents:
+            return name if p == r else name + "\\" + str(p.relative_to(r))
+    return str(p)
+
+
 def allowed_roots() -> list[Path]:
     return [Path(p).resolve() for p in known_folders().values()] + [home().resolve()]
 
@@ -138,7 +153,7 @@ def resolve_movable(path: str) -> Path:
     """resolve_safe for moves, renames and deletes: a main folder itself (Downloads, not Downloads\\x) is refused."""
     p = resolve_safe(path)
     if p in allowed_roots():
-        raise ToolError(f"Refused: {p} is one of your main folders.")
+        raise ToolError(f"Refused: {show(p)} is one of your main folders.")
     return p
 
 
@@ -147,9 +162,9 @@ def resolve_safe(path: str, must_exist: bool = True, any_location: bool = False)
     checks (disk_usage on C:\\); the sensitive-path block always applies."""
     p = expand(path).resolve()
     if is_sensitive(p):
-        raise ToolError(f"Refused: {p} is a sensitive location (keys, credentials or secrets).")
+        raise ToolError(f"Refused: {show(p)} is a sensitive location (keys, credentials or secrets).")
     if not any_location and not any(p == r or r in p.parents for r in allowed_roots()):
-        raise ToolError(f"Refused: {p} is outside the allowed folders ({', '.join(known_folders())}).")
+        raise ToolError(f"Refused: {show(p)} is outside the allowed folders ({', '.join(known_folders())}).")
     if must_exist and not p.exists():
         p = _closest(p)
     return p
@@ -160,7 +175,7 @@ def _closest(p: Path) -> Path:
     otherwise the error suggests similar names in that folder."""
     import difflib
     if not p.parent.is_dir():
-        raise ToolError(f"Not found: {p} (the folder {p.parent} doesn't exist either)")
+        raise ToolError(f"Not found: {show(p)} (the folder {show(p.parent)} doesn't exist either)")
     siblings = [x for x in p.parent.iterdir() if not is_sensitive(x)]
     same_stem = [x for x in siblings if x.stem.casefold() == p.name.casefold()]
     if len(same_stem) == 1:
@@ -168,12 +183,12 @@ def _closest(p: Path) -> Path:
     close = difflib.get_close_matches(p.name.casefold(), [x.name.casefold() for x in siblings], n=5, cutoff=0.5)
     hits = [x for x in siblings if x.name.casefold() in close] or same_stem
     names = [x.name + ("\\" if x.is_dir() else "") for x in hits]  # "resume\" is a folder, not a file
-    raise ToolError(f"Not found: {p}" + (f". Similar names in {p.parent.name}: {', '.join(names)}" if names else ""))
+    raise ToolError(f"Not found: {show(p)}" + (f". Similar names in {p.parent.name}: {', '.join(names)}" if names else ""))
 
 
 def assert_no_overwrite(dst: Path):
     if dst.exists():
-        raise ToolError(f"Refused: {dst} already exists, and Alfred never overwrites files.")
+        raise ToolError(f"Refused: {show(dst)} already exists, and Alfred never overwrites files.")
 
 
 def is_executable(path: Path) -> bool:

@@ -15,7 +15,7 @@ from pathlib import Path
 from mcp.server.fastmcp.exceptions import ToolError
 from alfred.tools import journal
 from alfred.tools.guards import (assert_no_overwrite, config, is_executable, is_hidden, is_sensitive, known_folders, now,
-                                 resolve_movable, resolve_safe)
+                                 resolve_movable, resolve_safe, folder_roots, show)
 
 MAX_RESULTS, MAX_SCAN = 50, 20000
 MAX_READ = 2_000_000  # bytes read from one text file
@@ -90,14 +90,14 @@ def _search_roots(folder) -> list[Path]:
 def search_files(query, folder=None, extension=None, modified_within_days=None):
     match, ext = name_matcher(query), _ext(extension)
     since = now().timestamp() - modified_within_days * 86400 if modified_within_days else None
-    hits, left = {}, config().get("max_scan", MAX_SCAN)
+    hits, left, kf = {}, config().get("max_scan", MAX_SCAN), folder_roots()
     for root in _search_roots(folder):  # ponytail: one scan budget for all roots; a budget per root if hits come back thin
         for p in walk(root):
             left -= 1
             if match(p.name) and (not ext or p.suffix.lower() == ext):
                 st = p.stat()
                 if since is None or st.st_mtime >= since:
-                    hits[p] = (st.st_mtime, f"{p} ({size(st.st_size)}, modified "
+                    hits[p] = (st.st_mtime, f"{show(p, kf)} ({size(st.st_size)}, modified "
                                             f"{datetime.fromtimestamp(st.st_mtime):%Y-%m-%d})")
             if left <= 0:
                 break
@@ -143,7 +143,7 @@ def is_text(p: Path) -> bool:
 def search_file_contents(text, folder, extension=None):
     root, needle = resolve_safe(folder), text.casefold()
     ext = _ext(extension)
-    hits = []
+    hits, kf = [], folder_roots()
     for p in walk(root):
         suf = p.suffix.lower()
         if (ext and suf != ext) or (suf not in TEXT_EXT | {".pdf", ".docx"}) or p.stat().st_size > 5_000_000:
@@ -155,25 +155,26 @@ def search_file_contents(text, folder, extension=None):
         i = body.casefold().find(needle)
         if i >= 0:
             snippet = " ".join(body[max(0, i - 40): i + len(text) + 40].split())
-            hits.append(f'{p}: "...{snippet}..."')
+            hits.append(f'{show(p, kf)}: "...{snippet}..."')
     return listing("", hits)
 
 
 def list_directory(path):
     p = resolve_safe(path)
     if not p.is_dir():
-        raise ToolError(f"Not a folder: {p}")
+        raise ToolError(f"Not a folder: {show(p)}")
     items = sorted(p.iterdir(), key=lambda x: (not x.is_dir(), x.name.casefold()))
-    lines = [f"{x.name}\\ (folder)" if x.is_dir() else f"{x.name} ({size(x.stat().st_size)})"
+    kf = folder_roots()  # each item with its whole relative path, so the model copies it instead of joining
+    lines = [f"{show(x, kf)}\\ (folder)" if x.is_dir() else f"{show(x, kf)} ({size(x.stat().st_size)})"
              for x in items if not is_sensitive(x) and not is_hidden(x)]
     more = f"\n... and {len(lines) - 200} more" if len(lines) > 200 else ""
-    return f"{p} ({len(lines)} items):\n" + ("\n".join(lines[:200]) or "(empty)") + more
+    return f"{show(p)} ({len(lines)} items):\n" + ("\n".join(lines[:200]) or "(empty)") + more
 
 
 def read_file(path, max_chars=4000):
     p = resolve_safe(path)
     if not p.is_file():
-        raise ToolError(f"Not a file: {p}")
+        raise ToolError(f"Not a file: {show(p)}")
     if not is_text(p):
         raise ToolError(f"Can't read {p.suffix or 'this'} files: only text, code, PDF and Word (.docx) files.")
     try:
@@ -181,10 +182,10 @@ def read_file(path, max_chars=4000):
     except Exception as e:
         raise ToolError(f"Couldn't read {p.name}: {e}")
     if not body.strip():
-        return f"{p}: no text found" + (" (it may be a scanned PDF with only images)." if p.suffix.lower() == ".pdf"
+        return f"{show(p)}: no text found" + (" (it may be a scanned PDF with only images)." if p.suffix.lower() == ".pdf"
                                         else ".")
     more = f"\n... ({len(body) - max_chars} more chars)" if len(body) > max_chars else ""
-    return f"{p} ({len(body):,} chars):\n{body[:max_chars]}{more}"
+    return f"{show(p)} ({len(body):,} chars):\n{body[:max_chars]}{more}"
 
 
 def _tree_size(p: Path, deadline: float) -> tuple[int, bool]:
@@ -214,10 +215,10 @@ def disk_usage(path, top_n=10):
     p = resolve_safe(path, any_location=True)
     du = shutil.disk_usage(p)
     head = f"{p.anchor} {size(du.total)} total, {size(du.free)} free." if p == Path(p.anchor) else \
-        f"{p}: drive {p.anchor} has {size(du.free)} free of {size(du.total)}."
+        f"{show(p)}: drive {p.anchor} has {size(du.free)} free of {size(du.total)}."
     if not p.is_dir():
-        return f"{head}\n{p} is {size(p.stat().st_size)}."
-    deadline, sizes = time.monotonic() + 20, []
+        return f"{head}\n{show(p)} is {size(p.stat().st_size)}."
+    deadline, sizes, kf = time.monotonic() + 20, [], folder_roots()
     for e in sorted(p.iterdir(), key=lambda x: x.name.casefold()):
         if is_sensitive(e) or e.name.startswith("$") or e.is_junction() or e.is_symlink():
             continue  # links ('My Music' -> Music) would count a folder twice; hidden files still take space
@@ -225,7 +226,7 @@ def disk_usage(path, top_n=10):
             n, exact = _tree_size(e, deadline) if e.is_dir() else (e.stat().st_size, True)
         except OSError:
             continue
-        sizes.append((n, f"{e} {'' if exact else '≥ '}{size(n)}"))
+        sizes.append((n, f"{show(e, kf)} {'' if exact else '≥ '}{size(n)}"))
     lines = [s for _, s in sorted(sizes, reverse=True)[:top_n]]
     return head + "\nLargest:\n" + "\n".join(lines)
 
@@ -237,7 +238,7 @@ def _target(src: Path, destination: str) -> Path:
     if d.is_dir():
         return d / src.name
     if src.is_file() and src.suffix and not d.suffix:
-        raise ToolError(f"Folder not found: {d}. Create it first, or give the full new file name.")
+        raise ToolError(f"Folder not found: {show(d)}. Create it first, or give the full new file name.")
     return d
 
 
@@ -257,7 +258,7 @@ def move_file(source, destination):
         raise ToolError(f"Folder not found: {dst.parent}")
     _os(f"move {src.name}", shutil.move, str(src), str(dst))
     journal.record("move_file", "move", src, dst)
-    return f"Moved {src} to {dst}. Undo: /undo"
+    return f"Moved {show(src)} to {show(dst)}. Undo: /undo"
 
 
 def _rename_target(path, new_name) -> tuple[Path, Path]:
@@ -278,7 +279,7 @@ def rename_file(path, new_name):
     src, dst = _rename_target(path, new_name)
     _os(f"rename {src.name}", src.rename, dst)
     journal.record("rename_file", "rename", src, dst)
-    return f"Renamed {src} to {dst.name}. Undo: /undo"
+    return f"Renamed {show(src)} to {dst.name}. Undo: /undo"
 
 
 def copy_file(source, destination):
@@ -289,7 +290,7 @@ def copy_file(source, destination):
         raise ToolError(f"Folder not found: {dst.parent}")
     _os(f"copy {src.name}", shutil.copytree if src.is_dir() else shutil.copy2, src, dst)
     journal.record("copy_file", "create", src, dst)
-    return f"Copied {src} to {dst}. Undo: /undo"
+    return f"Copied {show(src)} to {show(dst)}. Undo: /undo"
 
 
 def _zip_plan(source, destination, extra_files=None):
@@ -318,13 +319,13 @@ def zip_folder(source, destination=None, extra_files=None):
         dst.unlink(missing_ok=True)  # never leave a half-written zip
         raise ToolError(f"Couldn't zip {src.name}: {e.strerror or e}")
     journal.record("zip_folder", "create", src, dst)
-    return f"Created {dst} ({len(files)} files, {size(dst.stat().st_size)}). Undo: /undo"
+    return f"Created {show(dst)} ({len(files)} files, {size(dst.stat().st_size)}). Undo: /undo"
 
 
 def _organize_plan(path, strategy):
     root = resolve_safe(path)
     if not root.is_dir():
-        raise ToolError(f"Not a folder: {root}")
+        raise ToolError(f"Not a folder: {show(root)}")
     moves, skipped = [], []
     for f in sorted(x for x in root.iterdir() if x.is_file() and not is_sensitive(x)
                     and x.suffix.lower() not in SKIP_ORGANIZE and not x.name.startswith((".", "~$"))):
@@ -340,7 +341,7 @@ def _organize_plan(path, strategy):
 def organize_folder(path, strategy="by_type"):
     root, moves, skipped = _organize_plan(path, strategy)
     if not moves:
-        return f"Nothing to organize in {root}."
+        return f"Nothing to organize in {show(root)}."
     created = sorted({str(d.parent) for _, d in moves if not d.parent.exists()})
     done, failed = [], []
     for src, dst in moves:
@@ -351,7 +352,7 @@ def organize_folder(path, strategy="by_type"):
         except OSError:  # e.g. a file open in another app: skip it and keep going
             failed.append(src.name)
     if not done:
-        raise ToolError(f"Couldn't move any files in {root} (are they open in another app?)")
+        raise ToolError(f"Couldn't move any files in {show(root)} (are they open in another app?)")
     journal.record("organize_folder", "organize", root, None,  # only what really moved, so /undo is exact
                    {"moves": [[str(s), str(d)] for s, d in done], "created": created})
     moves = done
@@ -362,7 +363,7 @@ def organize_folder(path, strategy="by_type"):
     skip = f" Skipped {len(skipped)} (a file with that name is already in the target folder)." if skipped else ""
     if failed:
         skip += f" Couldn't move {len(failed)} (in use?): {', '.join(failed[:5])}."
-    return f"Moved {len(moves)} files in {root}: {parts}.{skip} Undo: /undo"
+    return f"Moved {len(moves)} files in {show(root)}: {parts}.{skip} Undo: /undo"
 
 
 def move_to_recycle_bin(path):
@@ -372,7 +373,7 @@ def move_to_recycle_bin(path):
                         "permanent.")
     _os(f"move {p.name} to the Recycle Bin", journal.trash, p)
     journal.record("move_to_recycle_bin", "recycle", p)
-    return f"Moved {p} to the Recycle Bin. Undo: /undo"
+    return f"Moved {show(p)} to the Recycle Bin. Undo: /undo"
 
 
 def open_path(path):
@@ -380,7 +381,7 @@ def open_path(path):
     if p.is_file() and is_executable(p):
         raise ToolError(f"Refused: {p.name} is a program or script; Alfred doesn't run those.")
     launch(str(p))
-    return f"Opened {p} in its default app."
+    return f"Opened {show(p)} in its default app."
 
 
 def launch(target: str):

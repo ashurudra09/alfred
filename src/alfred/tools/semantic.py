@@ -26,7 +26,7 @@ from pathlib import Path
 import numpy as np
 
 from alfred.tools import files, memory
-from alfred.tools.guards import config, home, is_sensitive
+from alfred.tools.guards import config, folder_roots, home, is_sensitive, show
 
 EXTS = files.TEXT_EXT | {".pdf", ".docx"}
 MAX_BYTES = 5_000_000
@@ -236,7 +236,8 @@ def search_by_meaning(query, folder=None):
     else:  # still busy: search what is there
         left, up = -1, embedder_up()
     hits = rank(query, roots)[:TOP]
-    out = files.listing("", [f'{p}: "...{snippet(t, query)}..."' for p, t in hits])
+    kf = folder_roots()
+    out = files.listing("", [f'{show(p, kf)}: "...{snippet(t, query)}..."' for p, t in hits])
     if not up:
         out += "\n(Matched by keywords only: the embedding model isn't running.)"
     if left:
