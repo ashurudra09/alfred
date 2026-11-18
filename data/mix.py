@@ -24,6 +24,8 @@ from data import augment
 from data.v3 import is_hinglish
 
 OUT = ROOT / "data" / "out"
+HINGLISH_V4 = {s for s in (ROOT / "data" / "hinglish_v4.txt").read_text(encoding="utf-8").splitlines()
+               if s and not s.startswith("#")}
 MAX_TOKENS = 4096  # SFT sequence length
 SHARE = {"when2call": 0.15, "xlam": 0.15}  # of the final mix; synthetic (in-domain + refusal/injection) is the rest
 SEED = 3407
@@ -131,7 +133,7 @@ def main():
     for name in ALFRED:
         for line in (OUT / name).read_text(encoding="utf-8").splitlines():
             e = Example.model_validate_json(line)
-            if is_hinglish(e):  # dropped in v3 as well (data/v3.py)
+            if is_hinglish(e) or e.id in HINGLISH_V4:  # v3 heuristic + the ids it misses (data/hinglish_v4.txt)
                 hinglish += 1
                 continue
             synthetic.append(e.model_copy(update={"tools": tools}))

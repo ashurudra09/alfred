@@ -1,7 +1,7 @@
 """The single-turn unseen-tools set (track 4F, step F3 (i)): requests answered with Alfred's 26 tools plus the 10
 held-out ones (eval/unseen/specs.py) in the tool list. Written by Claude, like the other test sets, and disclosed.
 
-- held-out: a held-out tool is the right call (6-7 per tool, phrasing varied, a few Hinglish and typos);
+- held-out: a held-out tool is the right call (6-7 per tool, phrasing varied, a few typos; English only);
 - lookalike: a built-in tool is right although a held-out one sounds close (reminder vs to-do, calculate vs
   convertUnits, read_file vs countWords, ...);
 - none_fits: neither list can do it, the answer is "cannot".
@@ -34,13 +34,11 @@ ITEMS = [
     call("clip-get-01", "what's on my clipboard right now?", "clipboard_get", {}),
     call("clip-get-02", "read me whatever I copied last", "clipboard_get", {}),
     call("clip-get-03", "paste the clipboard contents here so I can see them", "clipboard_get", {}),
-    call("clip-get-04", "clipboard mein kya hai?", "clipboard_get", {}, tags=["hinglish"]),
     call("clip-set-01", "copy 'MEADOW-8687' to my clipboard", "clipboard_set", {"text": "MEADOW-8687"}),
     call("clip-set-02", "put my address on the clipboard: 14 Larkfield Road, Leeds", "clipboard_set",
          {"text": "14 Larkfield Road, Leeds"}, {"text": "text"}),
     call("clip-set-03", "copy this so I can paste it: https://example.com/invite/7731", "clipboard_set",
          {"text": "https://example.com/invite/7731"}),
-    call("clip-set-04", "clipbord pe daal do: otter-285", "clipboard_set", {"text": "otter-285"}, tags=["hinglish", "typo"]),
     # convertUnits
     call("units-01", "how many km is 26.2 miles?", "convertUnits", {"value": 26.2, "from_unit": "mi", "to_unit": "km"}),
     call("units-02", "convert 72 fahrenheit to celsius", "convertUnits", {"value": 72, "from_unit": "F", "to_unit": "C"}),
@@ -48,7 +46,6 @@ ITEMS = [
     call("units-04", "2 gallons in litres?", "convertUnits", {"value": 2, "from_unit": "gal", "to_unit": "l"}),
     call("units-05", "my height is 180 cm, what's that in feet", "convertUnits", {"value": 180, "from_unit": "cm", "to_unit": "ft"}),
     call("units-06", "conver 3 cups to ml", "convertUnits", {"value": 3, "from_unit": "cup", "to_unit": "ml"}, tags=["typo"]),
-    call("units-07", "10 km kitne miles hote hain", "convertUnits", {"value": 10, "from_unit": "km", "to_unit": "mi"}, tags=["hinglish"]),
     # countWords
     call("words-01", "how many words are in Documents\\essay_final.txt?", "countWords", {"file": "Documents\\essay_final.txt"}),
     call("words-02", "word count of Desktop\\cover_letter.txt please", "countWords", {"file": "Desktop\\cover_letter.txt"}),
@@ -56,8 +53,6 @@ ITEMS = [
          "countWords", {"file": "Downloads\\notes.txt"}),
     call("words-04", "is my statement in Documents\\personal_statement.txt under 650 words?", "countWords",
          {"file": "Documents\\personal_statement.txt"}),
-    call("words-05", "Documents\\thesis\\chapter2.md mein kitne words hain", "countWords",
-         {"file": "Documents\\thesis\\chapter2.md"}, tags=["hinglish"]),
     call("words-06", "count teh words in Desktop\\speech.txt", "countWords", {"file": "Desktop\\speech.txt"}, tags=["typo"]),
     # hashFile
     call("hash-01", "give me the sha256 of Downloads\\ubuntu-24.04.iso", "hashFile", {"file": "Downloads\\ubuntu-24.04.iso"},
@@ -70,8 +65,6 @@ ITEMS = [
          {"file": "Documents\\contract_signed.pdf", "algorithm": "sha1"}),
     call("hash-05", "the website lists a checksum for this photo. what's the checksum of my Desktop\\photo.jpg?",
          "hashFile", {"file": "Desktop\\photo.jpg"}, {"algorithm": "any"}),
-    call("hash-06", "Downloads\\installer.msi ka hash nikalo", "hashFile", {"file": "Downloads\\installer.msi"},
-         {"algorithm": "any"}, tags=["hinglish"]),
     # files-differ
     call("diff-01", "what changed between Documents\\cv_old.txt and Documents\\cv_new.txt?", "files-differ",
          {"first": "Documents\\cv_old.txt", "second": "Documents\\cv_new.txt"}),
@@ -81,8 +74,6 @@ ITEMS = [
          {"first": "Downloads\\config.ini", "second": "Documents\\config.ini"}),
     call("diff-04", "did anything change between Documents\\draft.txt and Documents\\draft_final.txt", "files-differ",
          {"first": "Documents\\draft.txt", "second": "Documents\\draft_final.txt"}),
-    call("diff-05", "Desktop\\a.txt aur Desktop\\b.txt mein kya farak hai", "files-differ",
-         {"first": "Desktop\\a.txt", "second": "Desktop\\b.txt"}, tags=["hinglish"]),
     call("diff-06", "diff Documents\\list1.txt and Documents\\list2.txt", "files-differ",
          {"first": "Documents\\list1.txt", "second": "Documents\\list2.txt"}),
     # todo_add / todo_list / todo_done
@@ -93,8 +84,6 @@ ITEMS = [
          {"item": "submit the expense report", "due": "2026-10-30"}),
     call("todo-add-04", "add call the plumber to my tasks, low priority", "todo_add",
          {"item": "call the plumber", "priority": "low"}),
-    call("todo-add-05", "todo list mein daal do: gym membership cancel karna", "todo_add",
-         {"item": "gym membership cancel karna"}, tags=["hinglish"]),
     call("todo-list-01", "what's on my to-do list?", "todo_list", {}, {"show": "any"}),
     call("todo-list-02", "show me the to-dos I've already finished", "todo_list", {"show": "done"}),
     call("todo-list-03", "list every to-do item, done or not", "todo_list", {"show": "all"}),
@@ -102,13 +91,11 @@ ITEMS = [
     call("todo-done-01", "mark to-do 3 as done", "todo_done", {"number": 3}),
     call("todo-done-02", "I finished item 1 on my todo list", "todo_done", {"number": 1}),
     call("todo-done-03", "tick off number 2 on the to-do list", "todo_done", {"number": 2}),
-    call("todo-done-04", "todo 4 ho gaya, done mark karo", "todo_done", {"number": 4}, tags=["hinglish"]),
     # colorConvert
     call("color-01", "what's #1e90ff in rgb?", "colorConvert", {"color": "#1e90ff", "to": "rgb"}),
     call("color-02", "convert rgb(255, 99, 71) to hex", "colorConvert", {"color": "rgb(255, 99, 71)", "to": "hex"}),
     call("color-03", "give me the HSL for #ff8800", "colorConvert", {"color": "#ff8800", "to": "hsl"}),
     call("color-04", "hex code for rgb(0, 128, 0)?", "colorConvert", {"color": "rgb(0, 128, 0)", "to": "hex"}),
-    call("color-05", "#333333 ko rgb mein badlo", "colorConvert", {"color": "#333333", "to": "rgb"}, tags=["hinglish"]),
     call("color-06", "covnert hsl(210, 100%, 56%) to hex", "colorConvert", {"color": "hsl(210, 100%, 56%)", "to": "hex"},
          tags=["typo"]),
     call("color-07", "I have the colour rgb(46, 139, 87); what's its hex code?", "colorConvert",

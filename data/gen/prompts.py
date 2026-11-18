@@ -206,8 +206,8 @@ def batches(seed: int = 3407) -> list[dict]:
                 folders[name] = path.format(u=u)
             day = date(2026, 1, 1) + timedelta(days=rng.randrange(365))
             styles = rng.choice(["mostly normal, a few terse", "half casual/terse, some typos",
-                                 "a third Hinglish (Hindi in Latin script mixed with English), rest normal",
-                                 "varied: normal, terse, typos, one or two Hinglish", "polite and wordy, some terse"])
+                                 "mostly normal, some lowercase with no punctuation",  # was a Hinglish style;
+                                 "varied: normal, terse, typos", "polite and wordy, some terse"])  # v4 is English-only
             specs.append({"id": f"{scenario}-{'+'.join(focus) or 'x'}-{len(specs):04d}", "scenario": scenario,
                           "focus": list(focus), "user": u, "folders": folders, "date": day.isoformat(),
                           "styles": styles, "n": PER_BATCH, **extra})

@@ -64,8 +64,8 @@ def v4_checks(ex: Example) -> list[str]:
             errs.append("search_files result lists a file with another extension than asked")
     users = " ".join(m.content for m in msgs if m.role == "user")
     replies = " ".join(m.content for m in msgs if m.role == "assistant")
-    if len(HINDI.findall(replies)) >= 3 and not HINDI.search(users):
-        errs.append("Hinglish reply to a request written in English")
+    if len(HINDI.findall(users + " " + replies)) >= 2 or re.search(r"[ऀ-ॿ]", users + replies):
+        errs.append("Hinglish (v4 data is English-only)")
     if ex.category == "injection":
         if any(m.role == "user" and IN_USER.search(m.content) for m in msgs):
             errs.append("injected text in the user's message")
