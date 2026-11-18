@@ -1,0 +1,1628 @@
+{
+ "system": "alfred-2b-v4a-q4",
+ "prompt": "1.2",
+ "tools": null,
+ "rename": null,
+ "contracts": "1.3",
+ "backend": "local",
+ "model": "local",
+ "set": "regressions",
+ "date": "2026-11-18T10:28:14",
+ "commit": "224f7d4",
+ "unreviewed": 46,
+ "metrics": {
+  "n": 46,
+  "accuracy": 0.6957,
+  "valid_rate": 1.0,
+  "decision_accuracy": 0.913,
+  "tool_accuracy": 0.8478,
+  "args_score": 0.7402,
+  "decision_macro_f1": 0.878,
+  "per_decision": {
+   "tool_call": {
+    "precision": 0.9429,
+    "recall": 0.9706,
+    "f1": 0.9565,
+    "support": 34
+   },
+   "direct": {
+    "precision": 0.8,
+    "recall": 1.0,
+    "f1": 0.8889,
+    "support": 4
+   },
+   "ask": {
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0,
+    "support": 2
+   },
+   "cannot": {
+    "precision": 1.0,
+    "recall": 0.5,
+    "f1": 0.6667,
+    "support": 6
+   },
+   "refuse": {
+    "precision": 0.0,
+    "recall": 0.0,
+    "f1": 0.0,
+    "support": 0
+   }
+  },
+  "per_label_accuracy": {
+   "ask": 1.0,
+   "calculate": 0.5,
+   "cannot": 0.5,
+   "direct": 1.0,
+   "disk_usage": 1.0,
+   "list_directory": 0.5,
+   "read_file": 0.5,
+   "recall": 0.6667,
+   "search_files": 0.9167,
+   "search_notes": 0.0,
+   "set_reminder": 0.5,
+   "zip_folder": 0.5
+  },
+  "confusion": {
+   "ask": {
+    "ask": 2
+   },
+   "calculate": {
+    "calculate": 4
+   },
+   "cannot": {
+    "cannot": 3,
+    "set_reminder": 1,
+    "remember": 1,
+    "refuse": 1
+   },
+   "direct": {
+    "direct": 4
+   },
+   "disk_usage": {
+    "disk_usage": 2
+   },
+   "list_directory": {
+    "list_directory": 2,
+    "list_directory+list_directory": 1,
+    "search_files": 1
+   },
+   "read_file": {
+    "read_file": 2
+   },
+   "recall": {
+    "recall": 2,
+    "list_directory": 1
+   },
+   "search_files": {
+    "search_files": 11,
+    "move_file": 1
+   },
+   "search_notes": {
+    "direct": 1
+   },
+   "set_reminder": {
+    "set_reminder": 4
+   },
+   "zip_folder": {
+    "zip_folder": 2
+   }
+  }
+ },
+ "latency": {
+  "ttft_median": 1.44,
+  "total_median": 3.44,
+  "prompt_tokens_median": 2808.0
+ },
+ "items": [
+  {
+   "id": "regress-001-call",
+   "decision": "tool_call",
+   "decision_ok": true,
+   "tool_ok": true,
+   "args_score": 1.0,
+   "valid": true,
+   "ok": true,
+   "expected_label": "disk_usage",
+   "label": "disk_usage",
+   "tags": [
+    "regression",
+    "issue-001"
+   ],
+   "asked": "a2486af0f4ec",
+   "ttft": 1.5170276999999714,
+   "total": 2.603,
+   "prompt_tokens": 2810,
+   "cached_tokens": 2784,
+   "output": {
+    "content": "",
+    "error": null,
+    "tool_calls": [
+     {
+      "name": "disk_usage",
+      "arguments": {
+       "path": "C:\\work"
+      },
+      "raw": "{\"path\":\"C:\\\\work\"}"
+     }
+    ]
+   }
+  },
+  {
+   "id": "regress-001-after",
+   "decision": "direct",
+   "decision_ok": true,
+   "tool_ok": true,
+   "args_score": null,
+   "valid": true,
+   "ok": true,
+   "expected_label": "direct",
+   "label": "direct",
+   "tags": [
+    "regression",
+    "issue-001",
+    "no_unrequested_write"
+   ],
+   "asked": "dec784ce587f",
+   "ttft": 1.2069155000001501,
+   "total": 7.255,
+   "prompt_tokens": 2991,
+   "cached_tokens": 2837,
+   "output": {
+    "content": "The biggest items in C:\\work are projects (43.6 GB), Research (7.8 GB), classwork (2.7 GB), data analysis (2.4 GB), personal (230.0 MB), photo.jpeg (131 KB), offer.pdf (55 KB) and .vscode (377 B).",
+    "error": null,
+    "tool_calls": []
+   }
+  },
+  {
+   "id": "regress-002-call",
+   "decision": "tool_call",
+   "decision_ok": true,
+   "tool_ok": true,
+   "args_score": 1.0,
+   "valid": true,
+   "ok": true,
+   "expected_label": "disk_usage",
+   "label": "disk_usage",
+   "tags": [
+    "regression",
+    "issue-002"
+   ],
+   "asked": "c73a3cb97007",
+   "ttft": 1.6378521999999975,
+   "total": 3.863,
+   "prompt_tokens": 2822,
+   "cached_tokens": 2784,
+   "output": {
+    "content": "",
+    "error": null,
+    "tool_calls": [
+     {
+      "name": "disk_usage",
+      "arguments": {
+       "path": "C:\\work",
+       "top_n": 7
+      },
+      "raw": "{\"path\":\"C:\\\\work\",\"top_n\":7}"
+     }
+    ]
+   }
+  },
+  {
+   "id": "regress-002-after",
+   "decision": "tool_call",
+   "decision_ok": true,
+   "tool_ok": true,
+   "args_score": 1.0,
+   "valid": true,
+   "ok": true,
+   "expected_label": "calculate",
+   "label": "calculate",
+   "tags": [
+    "regression",
+    "issue-002",
+    "mixed_units"
+   ],
+   "asked": "6574525cdc5a",
+   "ttft": 1.854945700000144,
+   "total": 5.816,
+   "prompt_tokens": 3003,
+   "cached_tokens": 2861,
+   "output": {
+    "content": "",
+    "error": null,
+    "tool_calls": [
+     {
+      "name": "calculate",
+      "arguments": {
+       "expression": "43.6 GB + 7.8 GB + 2.7 GB + 2.4 GB + 230.0 MB + 131 KB + 55 KB"
+      },
+      "raw": "{\"expression\":\"43.6 GB + 7.8 GB + 2.7 GB + 2.4 GB + 230.0 MB + 131 KB + 55 KB\"}"
+     }
+    ]
+   }
+  },
+  {
+   "id": "regress-003-mkdir",
+   "decision": "cannot",
+   "decision_ok": true,
+   "tool_ok": true,
+   "args_score": null,
+   "valid": true,
+   "ok": true,
+   "expected_label": "cannot",
+   "label": "cannot",
+   "tags": [
+    "regression",
+    "issue-003",
+    "no_tool_near_miss"
+   ],
+   "asked": "b66a1bc540a0",
+   "ttft": 0.6030238999999256,
+   "total": 3.432,
+   "prompt_tokens": 2807,
+   "cached_tokens": 2784,
+   "output": {
+    "content": "I can't create an empty folder: I don't have a tool for that. You can make it in File Explorer (right-click, New, Folder), and then I can move or copy files into it.",
+    "error": null,
+    "tool_calls": []
+   }
+  },
+  {
+   "id": "regress-003-cancel-reminder",
+   "decision": "tool_call",
+   "decision_ok": false,
+   "tool_ok": false,
+   "args_score": null,
+   "valid": true,
+   "ok": false,
+   "expected_label": "cannot",
+   "label": "set_reminder",
+   "tags": [
+    "regression",
+    "issue-003",
+    "no_tool_near_miss"
+   ],
+   "asked": "e3c26cb08005",
+   "ttft": 1.5911697999999888,
+   "total": 3.643,
+   "prompt_tokens": 2928,
+   "cached_tokens": 2784,
+   "output": {
+    "content": "",
+    "error": null,
+    "tool_calls": [
+     {
+      "name": "set_reminder",
+      "arguments": {
+       "text": "drink water",
+       "time": "in 30 minutes"
+      },
+      "raw": "{\"text\":\"drink water\",\"time\":\"in 30 minutes\"}"
+     }
+    ]
+   }
+  },
+  {
+   "id": "regress-004-move-all-pdfs",
+   "decision": "tool_call",
+   "decision_ok": true,
+   "tool_ok": true,
+   "args_score": 1.0,
+   "valid": true,
+   "ok": true,
+   "expected_label": "search_files",
+   "label": "search_files",
+   "tags": [
+    "regression",
+    "issue-004",
+    "bulk_write"
+   ],
+   "asked": "db11ce487fc9",
+   "ttft": 0.934412199999997,
+   "total": 3.666,
+   "prompt_tokens": 2807,
+   "cached_tokens": 2784,
+   "output": {
+    "content": "",
+    "error": null,
+    "tool_calls": [
+     {
+      "name": "search_files",
+      "arguments": {
+       "query": "*",
+       "folder": "Downloads",
+       "extension": "pdf"
+      },
+      "raw": "{\"query\":\"*\",\"folder\":\"Downloads\",\"extension\":\"pdf\"}"
+     }
+    ]
+   }
+  },
+  {
+   "id": "regress-004-delete-except",
+   "decision": "tool_call",
+   "decision_ok": true,
+   "tool_ok": true,
+   "args_score": 1.0,
+   "valid": true,
+   "ok": true,
+   "expected_label": "list_directory",
+   "label": "list_directory",
+   "tags": [
+    "regression",
+    "issue-004",
+    "bulk_write"
+   ],
+   "asked": "424be4e0398e",
+   "ttft": 0.9314712000000327,
+   "total": 1.982,
+   "prompt_tokens": 2804,
+   "cached_tokens": 2784,
+   "output": {
+    "content": "",
+    "error": null,
+    "tool_calls": [
+     {
+      "name": "list_directory",
+      "arguments": {
+       "path": "Downloads"
+      },
+      "raw": "{\"path\":\"Downloads\"}"
+     }
+    ]
+   }
+  },
+  {
+   "id": "regress-005-recent-files",
+   "decision": "tool_call",
+   "decision_ok": true,
+   "tool_ok": true,
+   "args_score": 1.0,
+   "valid": true,
+   "ok": true,
+   "expected_label": "search_files",
+   "label": "search_files",
+   "tags": [
+    "regression",
+    "issue-005",
+    "date_search"
+   ],
+   "asked": "224d694e486e",
+   "ttft": 0.9588032999999996,
+   "total": 3.764,
+   "prompt_tokens": 2811,
+   "cached_tokens": 2784,
+   "output": {
+    "content": "",
+    "error": null,
+    "tool_calls": [
+     {
+      "name": "search_files",
+      "arguments": {
+       "query": "*",
+       "folder": "Downloads",
+       "modified_within_days": 7
+      },
+      "raw": "{\"query\":\"*\",\"folder\":\"Downloads\",\"modified_within_days\":7}"
+     }
+    ]
+   }
+  },
+  {
+   "id": "regress-006-days-until",
+   "decision": "tool_call",
+   "decision_ok": true,
+   "tool_ok": true,
+   "args_score": 0.0,
+   "valid": true,
+   "ok": false,
+   "expected_label": "calculate",
+   "label": "calculate",
+   "tags": [
+    "regression",
+    "issue-006",
+    "date_math"
+   ],
+   "asked": "6b586c0ed9d4",
+   "ttft": 0.9401441999998497,
+   "total": 6.003,
+   "prompt_tokens": 2804,
+   "cached_tokens": 2784,
+   "output": {
+    "content": "",
+    "error": null,
+    "tool_calls": [
+     {
+      "name": "calculate",
+      "arguments": {
+       "expression": "(31 - 22) + 30 + 31 + 31 + 30 + 31 + 31 + 30 + 31 + 31 + 30 + 31"
+      },
+      "raw": "{\"expression\":\"(31 - 22) + 30 + 31 + 31 + 30 + 31 + 31 + 30 + 31 + 31 + 30 + 31\"}"
+     }
+    ]
+   }
+  },
+  {
+   "id": "regress-008-count-files",
+   "decision": "tool_call",
+   "decision_ok": true,
+   "tool_ok": false,
+   "args_score": 1.0,
+   "valid": true,
+   "ok": false,
+   "expected_label": "list_directory",
+   "label": "list_directory+list_directory",
+   "tags": [
+    "regression",
+    "issue-008",
+    "count_files"
+   ],
+   "asked": "ee85038e6c7b",
+   "ttft": 1.384420500000033,
+   "total": 4.223,
+   "prompt_tokens": 2807,
+   "cached_tokens": 2784,
+   "output": {
+    "content": "",
+    "error": null,
+    "tool_calls": [
+     {
+      "name": "list_directory",
+      "arguments": {
+       "path": "Desktop"
+      },
+      "raw": "{\"path\":\"Desktop\"}"
+     },
+     {
+      "name": "list_directory",
+      "arguments": {
+       "path": "Downloads"
+      },
+      "raw": "{\"path\":\"Downloads\"}"
+     }
+    ]
+   }
+  },
+  {
+   "id": "regress-009-cover-letter",
+   "decision": "tool_call",
+   "decision_ok": true,
+   "tool_ok": true,
+   "args_score": 1.0,
+   "valid": true,
+   "ok": true,
+   "expected_label": "search_files",
+   "label": "search_files",
+   "tags": [
+    "regression",
+    "issue-009",
+    "invented_filter"
+   ],
+   "asked": "83a61da161aa",
+   "ttft": 1.3209695000000465,
+   "total": 2.445,
+   "prompt_tokens": 2803,
+   "cached_tokens": 2784,
+   "output": {
+    "content": "",
+    "error": null,
+    "tool_calls": [
+     {
+      "name": "search_files",
+      "arguments": {
+       "query": "cover letter"
+      },
+      "raw": "{\"query\":\"cover letter\"}"
+     }
+    ]
+   }
+  },
+  {
+   "id": "regress-010-move-read-answer",
+   "decision": "direct",
+   "decision_ok": true,
+   "tool_ok": true,
+   "args_score": null,
+   "valid": true,
+   "ok": true,
+   "expected_label": "direct",
+   "label": "direct",
+   "tags": [
+    "regression",
+    "issue-010",
+    "no_unrequested_write"
+   ],
+   "asked": "500389f639a4",
+   "ttft": 1.3826042000000598,
+   "total": 2.267,
+   "prompt_tokens": 2977,
+   "cached_tokens": 2784,
+   "output": {
+    "content": "Moved todo.md to Documents. It has two items: buy milk and call mom.",
+    "error": null,
+    "tool_calls": []
+   }
+  },
+  {
+   "id": "regress-011-weekday",
+   "decision": "tool_call",
+   "decision_ok": true,
+   "tool_ok": true,
+   "args_score": 1.0,
+   "valid": true,
+   "ok": true,
+   "expected_label": "set_reminder",
+   "label": "set_reminder",
+   "tags": [
+    "regression",
+    "issue-011",
+    "reminder_date"
+   ],
+   "asked": "9983f724da6e",
+   "ttft": 1.2341166999999587,
+   "total": 3.493,
+   "prompt_tokens": 2808,
+   "cached_tokens": 2784,
+   "output": {
+    "content": "",
+    "error": null,
+    "tool_calls": [
+     {
+      "name": "set_reminder",
+      "arguments": {
+       "text": "pay rent",
+       "time": "friday 17:00"
+      },
+      "raw": "{\"text\":\"pay rent\",\"time\":\"friday 17:00\"}"
+     }
+    ]
+   }
+  },
+  {
+   "id": "regress-011-every-monday",
+   "decision": "tool_call",
+   "decision_ok": true,
+   "tool_ok": true,
+   "args_score": 1.0,
+   "valid": true,
+   "ok": true,
+   "expected_label": "set_reminder",
+   "label": "set_reminder",
+   "tags": [
+    "regression",
+    "issue-011",
+    "reminder_date"
+   ],
+   "asked": "96fec2f4ff21",
+   "ttft": 1.5435261000000082,
+   "total": 3.746,
+   "prompt_tokens": 2810,
+   "cached_tokens": 2784,
+   "output": {
+    "content": "",
+    "error": null,
+    "tool_calls": [
+     {
+      "name": "set_reminder",
+      "arguments": {
+       "text": "submit my timesheet",
+       "time": "monday 9am"
+      },
+      "raw": "{\"text\":\"submit my timesheet\",\"time\":\"monday 9am\"}"
+     }
+    ]
+   }
+  },
+  {
+   "id": "regress-011-days-before",
+   "decision": "tool_call",
+   "decision_ok": true,
+   "tool_ok": true,
+   "args_score": 0.5,
+   "valid": true,
+   "ok": false,
+   "expected_label": "set_reminder",
+   "label": "set_reminder",
+   "tags": [
+    "regression",
+    "issue-011",
+    "reminder_date"
+   ],
+   "asked": "4d547319ba40",
+   "ttft": 1.4489720999999918,
+   "total": 4.047,
+   "prompt_tokens": 2812,
+   "cached_tokens": 2784,
+   "output": {
+    "content": "",
+    "error": null,
+    "tool_calls": [
+     {
+      "name": "set_reminder",
+      "arguments": {
+       "text": "buy gifts",
+       "time": "2026-12-24 10:00"
+      },
+      "raw": "{\"text\":\"buy gifts\",\"time\":\"2026-12-24 10:00\"}"
+     }
+    ]
+   }
+  },
+  {
+   "id": "regress-011-before-event",
+   "decision": "tool_call",
+   "decision_ok": true,
+   "tool_ok": true,
+   "args_score": 0.5,
+   "valid": true,
+   "ok": false,
+   "expected_label": "set_reminder",
+   "label": "set_reminder",
+   "tags": [
+    "regression",
+    "issue-011",
+    "reminder_date"
+   ],
+   "asked": "b43286465aeb",
+   "ttft": 1.5173445999998876,
+   "total": 4.319,
+   "prompt_tokens": 2900,
+   "cached_tokens": 2784,
+   "output": {
+    "content": "",
+    "error": null,
+    "tool_calls": [
+     {
+      "name": "set_reminder",
+      "arguments": {
+       "text": "Standup",
+       "time": "2026-10-23 09:00"
+      },
+      "raw": "{\"text\":\"Standup\",\"time\":\"2026-10-23 09:00\"}"
+     }
+    ]
+   }
+  },
+  {
+   "id": "regress-012-recall-person",
+   "decision": "tool_call",
+   "decision_ok": true,
+   "tool_ok": true,
+   "args_score": 0.6666666666666666,
+   "valid": true,
+   "ok": true,
+   "expected_label": "recall",
+   "label": "recall",
+   "tags": [
+    "regression",
+    "issue-012",
+    "memory"
+   ],
+   "asked": "3fbf57fb84bd",
+   "ttft": 1.4684735999999248,
+   "total": 2.573,
+   "prompt_tokens": 2812,
+   "cached_tokens": 2784,
+   "output": {
+    "content": "",
+    "error": null,
+    "tool_calls": [
+     {
+      "name": "recall",
+      "arguments": {
+       "query": "boss name"
+      },
+      "raw": "{\"query\":\"boss name\"}"
+     }
+    ]
+   }
+  },
+  {
+   "id": "regress-012-recall-place",
+   "decision": "tool_call",
+   "decision_ok": true,
+   "tool_ok": false,
+   "args_score": 0.0,
+   "valid": true,
+   "ok": false,
+   "expected_label": "recall",
+   "label": "list_directory",
+   "tags": [
+    "regression",
+    "issue-012",
+    "memory"
+   ],
+   "asked": "5f0a3ecad403",
+   "ttft": 1.523837599999979,
+   "total": 2.599,
+   "prompt_tokens": 2803,
+   "cached_tokens": 2784,
+   "output": {
+    "content": "",
+    "error": null,
+    "tool_calls": [
+     {
+      "name": "list_directory",
+      "arguments": {
+       "path": "Projects"
+      },
+      "raw": "{\"path\":\"Projects\"}"
+     }
+    ]
+   }
+  },
+  {
+   "id": "regress-013-note-from-search",
+   "decision": "tool_call",
+   "decision_ok": true,
+   "tool_ok": true,
+   "args_score": 1.0,
+   "valid": true,
+   "ok": true,
+   "expected_label": "search_files",
+   "label": "search_files",
+   "tags": [
+    "regression",
+    "issue-013",
+    "lookup_first"
+   ],
+   "asked": "98b45477d552",
+   "ttft": 1.3492965999998887,
+   "total": 4.064,
+   "prompt_tokens": 2809,
+   "cached_tokens": 2784,
+   "output": {
+    "content": "",
+    "error": null,
+    "tool_calls": [
+     {
+      "name": "search_files",
+      "arguments": {
+       "query": "*",
+       "folder": "Downloads",
+       "extension": "pdf"
+      },
+      "raw": "{\"query\":\"*\",\"folder\":\"Downloads\",\"extension\":\"pdf\"}"
+     }
+    ]
+   }
+  },
+  {
+   "id": "regress-013-check-condition",
+   "decision": "tool_call",
+   "decision_ok": true,
+   "tool_ok": true,
+   "args_score": 1.0,
+   "valid": true,
+   "ok": true,
+   "expected_label": "list_directory",
+   "label": "list_directory",
+   "tags": [
+    "regression",
+    "issue-013",
+    "lookup_first"
+   ],
+   "asked": "34ec50e849e4",
+   "ttft": 1.473491200000126,
+   "total": 2.452,
+   "prompt_tokens": 2810,
+   "cached_tokens": 2784,
+   "output": {
+    "content": "",
+    "error": null,
+    "tool_calls": [
+     {
+      "name": "list_directory",
+      "arguments": {
+       "path": "Downloads"
+      },
+      "raw": "{\"path\":\"Downloads\"}"
+     }
+    ]
+   }
+  },
+  {
+   "id": "regress-014-oldest",
+   "decision": "tool_call",
+   "decision_ok": true,
+   "tool_ok": true,
+   "args_score": 1.0,
+   "valid": true,
+   "ok": true,
+   "expected_label": "search_files",
+   "label": "search_files",
+   "tags": [
+    "regression",
+    "issue-014",
+    "pick_from_results"
+   ],
+   "asked": "f83e8da0a6f8",
+   "ttft": 1.2502618999999413,
+   "total": 3.015,
+   "prompt_tokens": 2808,
+   "cached_tokens": 2784,
+   "output": {
+    "content": "",
+    "error": null,
+    "tool_calls": [
+     {
+      "name": "search_files",
+      "arguments": {
+       "query": "*",
+       "folder": "Downloads"
+      },
+      "raw": "{\"query\":\"*\",\"folder\":\"Downloads\"}"
+     }
+    ]
+   }
+  },
+  {
+   "id": "regress-014-bigger-than",
+   "decision": "direct",
+   "decision_ok": true,
+   "tool_ok": true,
+   "args_score": null,
+   "valid": true,
+   "ok": true,
+   "expected_label": "direct",
+   "label": "direct",
+   "tags": [
+    "regression",
+    "issue-014",
+    "pick_from_results"
+   ],
+   "asked": "b4062a6f5c91",
+   "ttft": 1.2633941999999934,
+   "total": 2.481,
+   "prompt_tokens": 2932,
+   "cached_tokens": 2784,
+   "output": {
+    "content": "video.mp4 is the biggest at 5.1 MB, over 1 MB.",
+    "error": null,
+    "tool_calls": []
+   }
+  },
+  {
+   "id": "regress-014-zip-those",
+   "decision": "tool_call",
+   "decision_ok": true,
+   "tool_ok": true,
+   "args_score": 1.0,
+   "valid": true,
+   "ok": true,
+   "expected_label": "zip_folder",
+   "label": "zip_folder",
+   "tags": [
+    "regression",
+    "issue-014",
+    "pick_from_results"
+   ],
+   "asked": "73aa397a1717",
+   "ttft": 2.3361225000001014,
+   "total": 5.377,
+   "prompt_tokens": 2989,
+   "cached_tokens": 2784,
+   "output": {
+    "content": "",
+    "error": null,
+    "tool_calls": [
+     {
+      "name": "zip_folder",
+      "arguments": {
+       "source": "Downloads\\lecture1.pdf",
+       "extra_files": [
+        "Downloads\\attention_transformer.pdf",
+        "Downloads\\old_invoice.pdf"
+       ]
+      },
+      "raw": "{\"source\":\"Downloads\\\\lecture1.pdf\",\"extra_files\":[\"Downloads\\\\attention_transformer.pdf\", \"Downloads\\\\old_invoice.pdf\"]}"
+     }
+    ]
+   }
+  },
+  {
+   "id": "regress-003-close-app",
+   "decision": "cannot",
+   "decision_ok": true,
+   "tool_ok": true,
+   "args_score": null,
+   "valid": true,
+   "ok": true,
+   "expected_label": "cannot",
+   "label": "cannot",
+   "tags": [
+    "regression",
+    "issue-003",
+    "no_tool_near_miss"
+   ],
+   "asked": "3076045e8772",
+   "ttft": 0.9692150000000765,
+   "total": 2.536,
+   "prompt_tokens": 2798,
+   "cached_tokens": 2784,
+   "output": {
+    "content": "I can't close Chrome: I don't have a tool to close apps. I can open a file or folder instead.",
+    "error": null,
+    "tool_calls": []
+   }
+  },
+  {
+   "id": "regress-003-forget",
+   "decision": "tool_call",
+   "decision_ok": false,
+   "tool_ok": false,
+   "args_score": null,
+   "valid": true,
+   "ok": false,
+   "expected_label": "cannot",
+   "label": "remember",
+   "tags": [
+    "regression",
+    "issue-003",
+    "no_tool_near_miss"
+   ],
+   "asked": "a5a2e93d894f",
+   "ttft": 1.7715332000000217,
+   "total": 2.734,
+   "prompt_tokens": 2894,
+   "cached_tokens": 2784,
+   "output": {
+    "content": "",
+    "error": null,
+    "tool_calls": [
+     {
+      "name": "remember",
+      "arguments": {
+       "fact": "None"
+      },
+      "raw": "{\"fact\":\"None\"}"
+     }
+    ]
+   }
+  },
+  {
+   "id": "regress-003-edit-file",
+   "decision": "cannot",
+   "decision_ok": true,
+   "tool_ok": true,
+   "args_score": null,
+   "valid": true,
+   "ok": true,
+   "expected_label": "cannot",
+   "label": "cannot",
+   "tags": [
+    "regression",
+    "issue-003",
+    "no_tool_near_miss"
+   ],
+   "asked": "61159d3f1ca5",
+   "ttft": 0.9830156999998962,
+   "total": 2.934,
+   "prompt_tokens": 2808,
+   "cached_tokens": 2784,
+   "output": {
+    "content": "I can't add to a todo list: I don't have a tool for that. I can save 'buy eggs' as an Alfred note instead.",
+    "error": null,
+    "tool_calls": []
+   }
+  },
+  {
+   "id": "regress-003-undo",
+   "decision": "direct",
+   "decision_ok": true,
+   "tool_ok": true,
+   "args_score": null,
+   "valid": true,
+   "ok": true,
+   "expected_label": "direct",
+   "label": "direct",
+   "tags": [
+    "regression",
+    "issue-003",
+    "no_tool_near_miss"
+   ],
+   "asked": "636f6d5ec2fe",
+   "ttft": 1.0370634000000791,
+   "total": 1.604,
+   "prompt_tokens": 2802,
+   "cached_tokens": 2784,
+   "output": {
+    "content": "Type /undo to reverse the last change.",
+    "error": null,
+    "tool_calls": []
+   }
+  },
+  {
+   "id": "regress-003-zip-two-files",
+   "decision": "tool_call",
+   "decision_ok": true,
+   "tool_ok": true,
+   "args_score": 0.5,
+   "valid": true,
+   "ok": false,
+   "expected_label": "zip_folder",
+   "label": "zip_folder",
+   "tags": [
+    "regression",
+    "issue-003",
+    "zip_files"
+   ],
+   "asked": "2059c82c7666",
+   "ttft": 1.3470283000001473,
+   "total": 4.401,
+   "prompt_tokens": 2805,
+   "cached_tokens": 2784,
+   "output": {
+    "content": "",
+    "error": null,
+    "tool_calls": [
+     {
+      "name": "zip_folder",
+      "arguments": {
+       "source": "C:\\Users\\neha\\Downloads\\notes.txt",
+       "extra_files": [
+        "C:\\Users\\neha\\Downloads\\budget.xlsx"
+       ]
+      },
+      "raw": "{\"source\":\"C:\\\\Users\\\\neha\\\\Downloads\\\\notes.txt\",\"extra_files\":[\"C:\\\\Users\\\\neha\\\\Downloads\\\\budget.xlsx\"]}"
+     }
+    ]
+   }
+  },
+  {
+   "id": "regress-009-where-is",
+   "decision": "tool_call",
+   "decision_ok": true,
+   "tool_ok": true,
+   "args_score": 1.0,
+   "valid": true,
+   "ok": true,
+   "expected_label": "search_files",
+   "label": "search_files",
+   "tags": [
+    "regression",
+    "issue-009",
+    "invented_filter"
+   ],
+   "asked": "881fb1210552",
+   "ttft": 1.4780773999998473,
+   "total": 2.703,
+   "prompt_tokens": 2801,
+   "cached_tokens": 2784,
+   "output": {
+    "content": "",
+    "error": null,
+    "tool_calls": [
+     {
+      "name": "search_files",
+      "arguments": {
+       "query": "budget"
+      },
+      "raw": "{\"query\":\"budget\"}"
+     }
+    ]
+   }
+  },
+  {
+   "id": "regress-009-which-resume",
+   "decision": "tool_call",
+   "decision_ok": true,
+   "tool_ok": false,
+   "args_score": 0.0,
+   "valid": true,
+   "ok": false,
+   "expected_label": "search_files",
+   "label": "move_file",
+   "tags": [
+    "regression",
+    "issue-009",
+    "invented_filter"
+   ],
+   "asked": "637b97384e36",
+   "ttft": 1.469961000000012,
+   "total": 4.535,
+   "prompt_tokens": 2802,
+   "cached_tokens": 2784,
+   "output": {
+    "content": "",
+    "error": null,
+    "tool_calls": [
+     {
+      "name": "move_file",
+      "arguments": {
+       "source": "C:\\Users\\neha\\Documents\\resume.pdf",
+       "destination": "C:\\Users\\neha\\Desktop"
+      },
+      "raw": "{\"source\":\"C:\\\\Users\\\\neha\\\\Documents\\\\resume.pdf\",\"destination\":\"C:\\\\Users\\\\neha\\\\Desktop\"}"
+     }
+    ]
+   }
+  },
+  {
+   "id": "regress-016-no-referent",
+   "decision": "ask",
+   "decision_ok": true,
+   "tool_ok": true,
+   "args_score": null,
+   "valid": true,
+   "ok": true,
+   "expected_label": "ask",
+   "label": "ask",
+   "tags": [
+    "regression",
+    "issue-016",
+    "underspecified"
+   ],
+   "asked": "8bcbb7f5c536",
+   "ttft": 0.91086469999982,
+   "total": 1.418,
+   "prompt_tokens": 2800,
+   "cached_tokens": 2784,
+   "output": {
+    "content": "Which file should I move to Documents?",
+    "error": null,
+    "tool_calls": []
+   }
+  },
+  {
+   "id": "regress-016-vague-cleanup",
+   "decision": "ask",
+   "decision_ok": true,
+   "tool_ok": true,
+   "args_score": null,
+   "valid": true,
+   "ok": true,
+   "expected_label": "ask",
+   "label": "ask",
+   "tags": [
+    "regression",
+    "issue-016",
+    "underspecified"
+   ],
+   "asked": "15db3d95fb1e",
+   "ttft": 1.0455420999999205,
+   "total": 2.124,
+   "prompt_tokens": 2800,
+   "cached_tokens": 2784,
+   "output": {
+    "content": "Which folder should I organize: Documents, Downloads, Desktop, Pictures or Projects?",
+    "error": null,
+    "tool_calls": []
+   }
+  },
+  {
+   "id": "regress-017-sum-file",
+   "decision": "tool_call",
+   "decision_ok": true,
+   "tool_ok": true,
+   "args_score": 1.0,
+   "valid": true,
+   "ok": true,
+   "expected_label": "read_file",
+   "label": "read_file",
+   "tags": [
+    "regression",
+    "issue-017",
+    "values_from_file"
+   ],
+   "asked": "afd73b882e88",
+   "ttft": 1.3470714000000044,
+   "total": 2.831,
+   "prompt_tokens": 2807,
+   "cached_tokens": 2784,
+   "output": {
+    "content": "",
+    "error": null,
+    "tool_calls": [
+     {
+      "name": "read_file",
+      "arguments": {
+       "path": "Documents\\expenses.txt"
+      },
+      "raw": "{\"path\":\"Documents\\\\expenses.txt\"}"
+     }
+    ]
+   }
+  },
+  {
+   "id": "regress-017-sum-after-read",
+   "decision": "tool_call",
+   "decision_ok": true,
+   "tool_ok": true,
+   "args_score": 1.0,
+   "valid": true,
+   "ok": true,
+   "expected_label": "calculate",
+   "label": "calculate",
+   "tags": [
+    "regression",
+    "issue-017",
+    "values_from_file"
+   ],
+   "asked": "859c8b45f820",
+   "ttft": 1.377469599999813,
+   "total": 3.905,
+   "prompt_tokens": 2907,
+   "cached_tokens": 2834,
+   "output": {
+    "content": "",
+    "error": null,
+    "tool_calls": [
+     {
+      "name": "calculate",
+      "arguments": {
+       "expression": "18000 + 4250 + 1830 + 999"
+      },
+      "raw": "{\"expression\":\"18000 + 4250 + 1830 + 999\"}"
+     }
+    ]
+   }
+  },
+  {
+   "id": "regress-007-share-after-read",
+   "decision": "tool_call",
+   "decision_ok": true,
+   "tool_ok": true,
+   "args_score": 0.0,
+   "valid": true,
+   "ok": false,
+   "expected_label": "calculate",
+   "label": "calculate",
+   "tags": [
+    "regression",
+    "issue-007",
+    "multi_part"
+   ],
+   "asked": "dd445ee3ca12",
+   "ttft": 1.5567728000000898,
+   "total": 4.922,
+   "prompt_tokens": 2912,
+   "cached_tokens": 2784,
+   "output": {
+    "content": "",
+    "error": null,
+    "tool_calls": [
+     {
+      "name": "calculate",
+      "arguments": {
+       "expression": "18000 / 18000 + 18000 / 18000 * 100"
+      },
+      "raw": "{\"expression\":\"18000 / 18000 + 18000 / 18000 * 100\"}"
+     }
+    ]
+   }
+  },
+  {
+   "id": "regress-018-notes-after-recall",
+   "decision": "direct",
+   "decision_ok": false,
+   "tool_ok": false,
+   "args_score": 0.0,
+   "valid": true,
+   "ok": false,
+   "expected_label": "search_notes",
+   "label": "direct",
+   "tags": [
+    "regression",
+    "issue-018",
+    "notes_lookup"
+   ],
+   "asked": "1b097e14e70f",
+   "ttft": 1.542352999999821,
+   "total": 2.869,
+   "prompt_tokens": 2868,
+   "cached_tokens": 2784,
+   "output": {
+    "content": "I don't have that saved. Tell me the password and I'll remember it for later chats.",
+    "error": null,
+    "tool_calls": []
+   }
+  },
+  {
+   "id": "regress-012-recall-calc",
+   "decision": "tool_call",
+   "decision_ok": true,
+   "tool_ok": true,
+   "args_score": 1.0,
+   "valid": true,
+   "ok": true,
+   "expected_label": "recall",
+   "label": "recall",
+   "tags": [
+    "regression",
+    "issue-012",
+    "memory"
+   ],
+   "asked": "6e2089fac120",
+   "ttft": 1.439057000000048,
+   "total": 2.778,
+   "prompt_tokens": 2806,
+   "cached_tokens": 2784,
+   "output": {
+    "content": "",
+    "error": null,
+    "tool_calls": [
+     {
+      "name": "recall",
+      "arguments": {
+       "query": "salary"
+      },
+      "raw": "{\"query\":\"salary\"}"
+     }
+    ]
+   }
+  },
+  {
+   "id": "regress-004-copy-txts",
+   "decision": "tool_call",
+   "decision_ok": true,
+   "tool_ok": true,
+   "args_score": 1.0,
+   "valid": true,
+   "ok": true,
+   "expected_label": "search_files",
+   "label": "search_files",
+   "tags": [
+    "regression",
+    "issue-004",
+    "bulk_write"
+   ],
+   "asked": "3a37e52fb6fe",
+   "ttft": 1.5211117000001195,
+   "total": 4.949,
+   "prompt_tokens": 2806,
+   "cached_tokens": 2784,
+   "output": {
+    "content": "",
+    "error": null,
+    "tool_calls": [
+     {
+      "name": "search_files",
+      "arguments": {
+       "query": "*",
+       "folder": "Downloads",
+       "extension": "txt"
+      },
+      "raw": "{\"query\":\"*\",\"folder\":\"Downloads\",\"extension\":\"txt\"}"
+     }
+    ]
+   }
+  },
+  {
+   "id": "regress-008-pdf-total-size",
+   "decision": "tool_call",
+   "decision_ok": true,
+   "tool_ok": true,
+   "args_score": 1.0,
+   "valid": true,
+   "ok": true,
+   "expected_label": "search_files",
+   "label": "search_files",
+   "tags": [
+    "regression",
+    "issue-008",
+    "wrong_tool_for_files"
+   ],
+   "asked": "61b1367a0114",
+   "ttft": 3.3958388999999443,
+   "total": 10.331,
+   "prompt_tokens": 2810,
+   "cached_tokens": 2784,
+   "output": {
+    "content": "",
+    "error": null,
+    "tool_calls": [
+     {
+      "name": "search_files",
+      "arguments": {
+       "query": "*",
+       "folder": "Downloads",
+       "extension": "pdf"
+      },
+      "raw": "{\"query\":\"*\",\"folder\":\"Downloads\",\"extension\":\"pdf\"}"
+     }
+    ]
+   }
+  },
+  {
+   "id": "regress-009-open-parent",
+   "decision": "tool_call",
+   "decision_ok": true,
+   "tool_ok": true,
+   "args_score": 1.0,
+   "valid": true,
+   "ok": true,
+   "expected_label": "search_files",
+   "label": "search_files",
+   "tags": [
+    "regression",
+    "issue-009",
+    "invented_filter"
+   ],
+   "asked": "220e8547143e",
+   "ttft": 1.505472300000065,
+   "total": 2.638,
+   "prompt_tokens": 2806,
+   "cached_tokens": 2784,
+   "output": {
+    "content": "",
+    "error": null,
+    "tool_calls": [
+     {
+      "name": "search_files",
+      "arguments": {
+       "query": "cover_letter"
+      },
+      "raw": "{\"query\":\"cover_letter\"}"
+     }
+    ]
+   }
+  },
+  {
+   "id": "regress-009-chain-find",
+   "decision": "tool_call",
+   "decision_ok": true,
+   "tool_ok": true,
+   "args_score": 1.0,
+   "valid": true,
+   "ok": true,
+   "expected_label": "search_files",
+   "label": "search_files",
+   "tags": [
+    "regression",
+    "issue-009",
+    "invented_filter"
+   ],
+   "asked": "5cd76bf5a22c",
+   "ttft": 1.5513802999998916,
+   "total": 2.629,
+   "prompt_tokens": 2817,
+   "cached_tokens": 2784,
+   "output": {
+    "content": "",
+    "error": null,
+    "tool_calls": [
+     {
+      "name": "search_files",
+      "arguments": {
+       "query": "cv"
+      },
+      "raw": "{\"query\":\"cv\"}"
+     }
+    ]
+   }
+  },
+  {
+   "id": "regress-009-invented-subfolder",
+   "decision": "tool_call",
+   "decision_ok": true,
+   "tool_ok": true,
+   "args_score": 0.0,
+   "valid": true,
+   "ok": false,
+   "expected_label": "read_file",
+   "label": "read_file",
+   "tags": [
+    "regression",
+    "issue-009",
+    "invented_filter"
+   ],
+   "asked": "9d57fb4008f5",
+   "ttft": 1.4882527000002028,
+   "total": 3.193,
+   "prompt_tokens": 2810,
+   "cached_tokens": 2784,
+   "output": {
+    "content": "",
+    "error": null,
+    "tool_calls": [
+     {
+      "name": "read_file",
+      "arguments": {
+       "path": "Documents\\meetings\\meetings.txt"
+      },
+      "raw": "{\"path\":\"Documents\\\\meetings\\\\meetings.txt\"}"
+     }
+    ]
+   }
+  },
+  {
+   "id": "regress-014-newest",
+   "decision": "tool_call",
+   "decision_ok": true,
+   "tool_ok": true,
+   "args_score": 1.0,
+   "valid": true,
+   "ok": true,
+   "expected_label": "search_files",
+   "label": "search_files",
+   "tags": [
+    "regression",
+    "issue-014",
+    "pick_from_results"
+   ],
+   "asked": "17ab47fd9e65",
+   "ttft": 1.5098766000000978,
+   "total": 3.74,
+   "prompt_tokens": 2805,
+   "cached_tokens": 2784,
+   "output": {
+    "content": "",
+    "error": null,
+    "tool_calls": [
+     {
+      "name": "search_files",
+      "arguments": {
+       "query": "*",
+       "folder": "Documents"
+      },
+      "raw": "{\"query\":\"*\",\"folder\":\"Documents\"}"
+     }
+    ]
+   }
+  },
+  {
+   "id": "regress-014-smallest",
+   "decision": "tool_call",
+   "decision_ok": true,
+   "tool_ok": false,
+   "args_score": 0.0,
+   "valid": true,
+   "ok": false,
+   "expected_label": "list_directory",
+   "label": "search_files",
+   "tags": [
+    "regression",
+    "issue-014",
+    "pick_from_results"
+   ],
+   "asked": "b38895f4a0a3",
+   "ttft": 1.5964446000000407,
+   "total": 3.775,
+   "prompt_tokens": 2805,
+   "cached_tokens": 2784,
+   "output": {
+    "content": "",
+    "error": null,
+    "tool_calls": [
+     {
+      "name": "search_files",
+      "arguments": {
+       "query": "*",
+       "folder": "Downloads"
+      },
+      "raw": "{\"query\":\"*\",\"folder\":\"Downloads\"}"
+     }
+    ]
+   }
+  },
+  {
+   "id": "regress-003-exe-safe",
+   "decision": "refuse",
+   "decision_ok": false,
+   "tool_ok": true,
+   "args_score": null,
+   "valid": true,
+   "ok": false,
+   "expected_label": "cannot",
+   "label": "refuse",
+   "tags": [
+    "regression",
+    "issue-003",
+    "no_tool_near_miss"
+   ],
+   "asked": "43e4b2be2a42",
+   "ttft": 1.0900344000001496,
+   "total": 3.45,
+   "prompt_tokens": 2806,
+   "cached_tokens": 2784,
+   "output": {
+    "content": "I can't tell if setup.exe is safe: I don't have a tool to scan or verify downloads. Please scan it with a trusted antivirus before running it.",
+    "error": null,
+    "tool_calls": []
+   }
+  }
+ ]
+}
