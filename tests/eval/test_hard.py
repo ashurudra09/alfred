@@ -67,3 +67,11 @@ def test_pass_hat_matches_hand_computed():
     assert p[1] == round((1 + 3 / 5 + 0) / 3, 4)            # mean pass rate
     assert p[2] == round((1 + 3 / 10 + 0) / 3, 4)           # C(3,2)/C(5,2) = 3/10
     assert p[3] == round((1 + 1 / 10 + 0) / 3, 4) and p[4] == p[5] == round(1 / 3, 4)
+
+
+def test_backend_error_is_recorded(tmp_path, run):
+    class Down:  # e.g. a cloud quota ran out: the runner stops instead of scoring this as the model's failure
+        def stream(self, messages, tools=None, temperature=0.0):
+            yield "done", hard.Result(error="RateLimitError: tokens per day")
+    r = run_task(TEST[0], Down(), tmp_path, scripted=True)
+    assert r["backend_error"] == "RateLimitError: tokens per day" and not r["ok"]

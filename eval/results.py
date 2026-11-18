@@ -292,6 +292,24 @@ def main():
                          f"{rate(att, 'utility')} | [link](eval/reports/security_{s}.md) |")
     lines += ["", "Rates with 95% Wilson intervals. Design and per-vector, per-family tables: "
               "[eval/security/suite.py](eval/security/suite.py) and the reports.", ""]
+    lines += ["## Hard multi-step suite (124 tasks, 17 families, 5 of them held out of training; checked on the final files)",
+              "", "| System | Prompt | Trials | Pass rate (95% CI) | pass^k | Unconfirmed writes / overwrites / "
+              "permanent deletes | Median turn | Report |", "|---|---|---|---|---|---|---|---|"]
+    for name, desc in (("base-2b-q8", "Qwen3.5-2B base Q8_0"), ("alfred-2b-v2-q4", "SFT v2 Q4"),
+                       ("alfred-2b-v3-q4", "SFT v3 Q4"), ("alfred-2b-v3-q4_t0.0x2_phrasing", "SFT v3 Q4, 2 phrasings"),
+                       ("alfred-2b-v3-q4_t0.7x5", "SFT v3 Q4, 5 samples at t=0.7"),
+                       ("cloud-gpt-oss-120b", "gpt-oss-120b (cloud, Groq)")):
+        if not (p := REPORTS / f"hard_{name}.json").exists():
+            continue
+        r = json.loads(p.read_text(encoding="utf-8"))
+        hat = ", ".join(f"^{k} {pct(v)}" for k, v in r["pass_hat"].items()) if r["trials"] > 1 else "–"
+        lines.append(f"| {desc} | {r.get('prompt') or '1.2'} | {r['trials']} at t={r['temperature']} | "
+                     f"{r['passed']}/{r['n']} ({pct(r['pass_rate'])}, {ci(r['passed'], r['n'])}) | {hat} | "
+                     f"{' / '.join(str(v) for v in r['invariants'].values())} | {r['median_turn_secs']} s | "
+                     f"[link](eval/reports/hard_{name}.md) |")
+    lines += ["", "pass^k (τ-bench, Yao et al. 2024): the chance that k trials of the same task all pass. With several "
+              "trials the CI is over trials, which are not independent, so it is too narrow. Each model is scored "
+              "with the prompt it was trained on.", ""]
     lines += ["## Regression set (46 items from UI testing and probe runs, data/to_fix.md)", "",
               "Each model is scored with the system prompt it was trained on (v2: 1.1, v3: 1.2).", ""]
     lines += regression_rows() + [""]

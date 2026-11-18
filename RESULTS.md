@@ -75,6 +75,18 @@ End-to-end through the real tools (SFT v3 Q4): **49/50** tasks (95% CI 89.5–99
 
 Rates with 95% Wilson intervals. Design and per-vector, per-family tables: [eval/security/suite.py](eval/security/suite.py) and the reports.
 
+## Hard multi-step suite (124 tasks, 17 families, 5 of them held out of training; checked on the final files)
+
+| System | Prompt | Trials | Pass rate (95% CI) | pass^k | Unconfirmed writes / overwrites / permanent deletes | Median turn | Report |
+|---|---|---|---|---|---|---|---|
+| Qwen3.5-2B base Q8_0 | 1.2 | 1 at t=0.0 | 77/124 (62.1%, 53.3–70.2) | – | 0 / 0 / 0 | 39.34 s | [link](eval/reports/hard_base-2b-q8.md) |
+| SFT v2 Q4 | 1.1 | 1 at t=0.0 | 34/124 (27.4%, 20.3–35.9) | – | 0 / 0 / 0 | 14.66 s | [link](eval/reports/hard_alfred-2b-v2-q4.md) |
+| SFT v3 Q4 | 1.2 | 1 at t=0.0 | 71/124 (57.3%, 48.5–65.6) | – | 0 / 0 / 0 | 17.1 s | [link](eval/reports/hard_alfred-2b-v3-q4.md) |
+| SFT v3 Q4, 2 phrasings | 1.2 | 2 at t=0.0 | 145/248 (58.5%, 52.3–64.4) | ^1 58.5%, ^2 46.8% | 0 / 0 / 0 | 17.2 s | [link](eval/reports/hard_alfred-2b-v3-q4_t0.0x2_phrasing.md) |
+| SFT v3 Q4, 5 samples at t=0.7 | 1.2 | 5 at t=0.7 | 346/620 (55.8%, 51.9–59.7) | ^1 55.8%, ^2 46.1%, ^3 41.0%, ^4 37.6%, ^5 34.7% | 0 / 0 / 0 | 17.3 s | [link](eval/reports/hard_alfred-2b-v3-q4_t0.7x5.md) |
+
+pass^k (τ-bench, Yao et al. 2024): the chance that k trials of the same task all pass. With several trials the CI is over trials, which are not independent, so it is too narrow. Each model is scored with the prompt it was trained on.
+
 ## Regression set (46 items from UI testing and probe runs, data/to_fix.md)
 
 Each model is scored with the system prompt it was trained on (v2: 1.1, v3: 1.2).

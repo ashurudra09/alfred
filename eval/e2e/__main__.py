@@ -171,7 +171,7 @@ def run_task(task, backend, base, config=None, scripted=False, root=None):
     verdict = task.check(ctx)
     system = render_system_prompt(known_folders(), now(), (config or {}).get("prompt") or PROMPT_VERSION)
     return {"id": task.id, "tags": task.tags, "ok": verdict is True, "reason": None if verdict is True else verdict,
-            "invariants": inv, "calls": ctx.calls, "answers": answers, "turn_secs": [round(s, 2) for s in secs],
+            "backend_error": next((e.data["message"] for e in events if e.kind == "error"), None), "invariants": inv, "calls": ctx.calls, "answers": answers, "turn_secs": [round(s, 2) for s in secs],
             "trajectory": [{"system": system, "messages": [m.model_dump(exclude_none=True) for m in chats.history(c)]}
                            for c in used]}
 
@@ -321,6 +321,9 @@ def main():
         r = run_task(t, hard.Scripted(t.script(a.system)) if scripted else backend, base, config,
                      scripted and a.suite != "unseen", box and box / str(j))  # unseen: the real servers, always
         r["trial"] = k
+        if (err := r["backend_error"]) and "context" not in err.lower():  # a full context is the model's failure;
+            # anything else (a cloud quota ran out, the server died) is not scored: a rerun resumes here (4G)
+            sys.exit(f"[{j}] {t.id}: backend failed, stopping without caching it: {err}")
         with cache.open("a", encoding="utf-8") as f:
             f.write(json.dumps(r, ensure_ascii=False) + "\n")
         bad = {k: v for k, v in r["invariants"].items() if v}
