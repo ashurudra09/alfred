@@ -37,6 +37,7 @@ SEED = 3407
 # after). This budget is ~10.2 h of training at that rate.
 BUDGET = 24_600_000
 MIN_PER_TOOL = 220
+MIN_PER_TOOL_C = 150  # run C adds ~1.3M on-policy tokens under the same budget (Kaggle time): single calls give way
 ALFRED = ["synthetic.valid.jsonl", "v4/onpolicy.jsonl", "synthetic_search_by_meaning.valid.jsonl",
           "synthetic_injection_v4.valid.jsonl"]
 
@@ -88,7 +89,7 @@ def unreserved(examples: list[Example]) -> tuple[list[Example], Counter]:
     return keep, why
 
 
-def fit(train: list[Example], tokens: dict[str, int]) -> tuple[list[Example], int]:
+def fit(train: list[Example], tokens: dict[str, int], floor: int = MIN_PER_TOOL) -> tuple[list[Example], int]:
     """Step 3.2: drop single-call synthetic examples at random (v3 scores ~98% on single calls: the saturated part)
     until the train tokens fit BUDGET, never taking a tool's synthetic examples below MIN_PER_TOOL. New examples
     (on-policy, search_by_meaning) are never dropped."""
@@ -102,7 +103,7 @@ def fit(train: list[Example], tokens: dict[str, int]) -> tuple[list[Example], in
     for e in pool:
         if total <= BUDGET:
             break
-        if per_tool[calls(e)[0]] > MIN_PER_TOOL:
+        if per_tool[calls(e)[0]] > floor:
             per_tool[calls(e)[0]] -= 1
             total -= tokens[e.id]
             out.add(e.id)
@@ -178,7 +179,8 @@ def main():
                 rows[e.id]["a"] = row | {"n_tokens": mn, "text": mtext, "masked": True}
     final = [e for e in kept if e.id in rows]
     train, val = split(final)
-    train, trimmed = fit(train, {k: v["a"]["n_tokens"] for k, v in rows.items()})
+    floor = MIN_PER_TOOL_C if run_c else MIN_PER_TOOL
+    train, trimmed = fit(train, {k: v["a"]["n_tokens"] for k, v in rows.items()}, floor)
     for run, d in ((("a", out_dir),) if run_c else (("a", OUT / "v4" / "mix_a"), ("b", OUT / "v4" / "mix_b"))):
         d.mkdir(exist_ok=True)
         for name, part in (("train", train), ("val", val)):
@@ -207,7 +209,7 @@ def main():
              f"look-alike (eval/unseen/specs.py), {reserved['test-only attack']} with the wording of a test-only "
              f"injection family (eval/security/families.py)",
              f"- Trimmed to fit the Kaggle session (step 3.2, `fit`): {trimmed} single-call synthetic examples "
-             f"dropped at random from train (budget {BUDGET:,} tokens, no tool under {MIN_PER_TOOL})",
+             f"dropped at random from train (budget {BUDGET:,} tokens, no tool under {floor})",
              f"- **Train {len(train)}, val {len(val)}**; total train tokens (run A) "
              f"{sum(rows[e.id]['n_tokens'] for e in train):,}", "",
              f"Tokens per example: median {statistics.median(lengths):.0f}, p95 "
