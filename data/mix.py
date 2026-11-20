@@ -178,7 +178,16 @@ def main():
             else:
                 rows[e.id]["a"] = row | {"n_tokens": mn, "text": mtext, "masked": True}
     final = [e for e in kept if e.id in rows]
-    train, val = split(final)
+    if run_c:  # run C starts from run A's adapter: run A's val stays val, its train stays train, only new rows split
+        ids = lambda p: {json.loads(x)["id"] for x in (OUT / "v4" / "mix_a" / p).read_text(encoding="utf-8").splitlines()}
+        a_train, a_val = ids("train.jsonl"), ids("val.jsonl")
+        new_train, new_val = split([e for e in final if e.id not in a_train | a_val])
+        train = [e for e in final if e.id in a_train] + new_train
+        val = [e for e in final if e.id in a_val] + new_val
+        random.Random(SEED).shuffle(train)
+        assert not {e.id for e in val} & a_train, "run C's val holds rows run A trained on"
+    else:
+        train, val = split(final)
     floor = MIN_PER_TOOL_C if run_c else MIN_PER_TOOL
     train, trimmed = fit(train, {k: v["a"]["n_tokens"] for k, v in rows.items()}, floor)
     for run, d in ((("a", out_dir),) if run_c else (("a", OUT / "v4" / "mix_a"), ("b", OUT / "v4" / "mix_b"))):

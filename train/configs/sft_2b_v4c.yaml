@@ -1,0 +1,28 @@
+# SFT v4 run C of Qwen3.5-2B: warm start from run A's adapter on mix C (the owner's one remaining run, 2026-11-20).
+# Packaged as sft_2b.yaml by `train.package_data --mix c`; read by train/sft_kernel/sft.py on Kaggle.
+model: unsloth/Qwen3.5-2B
+load_in_4bit: false
+max_seq_length: 4096         # longest mix C example is 4,041 tokens (data/stats_c.md)
+lora:                        # must match run A's adapter (same shapes)
+  r: 16
+  alpha: 32
+  dropout: 0.0
+  target_modules: [q_proj, k_proj, v_proj, o_proj, gate_proj, up_proj, down_proj]
+init_adapter: true           # load run A's adapter_model.safetensors (Kaggle dataset alfred-runa-lora); fails if absent
+train:
+  # A full epoch of mix C: ~11,170 examples / batch 8 ~ 1,397 steps. Same 24.6M-token budget as run A (37,891 s for
+  # 1,340 steps), so ~10.5-10.7 h. lr halved: the adapter is already trained, this is a second pass, not a fresh start.
+  epochs: 1
+  max_steps: -1
+  lr: 1.0e-4
+  scheduler: cosine
+  warmup_ratio: 0.03
+  batch_size: 2
+  grad_accum: 4              # effective batch 8
+  weight_decay: 0.01
+  seed: 3407
+  eval_every: 233            # steps (6 evals); best checkpoint by val loss (val excludes run A's train rows)
+  eval_subset: 60
+  max_hours: 11              # safety stop; leaves ~48 min of the 12 h session for setup, save and export
+probe_steps: 20
+export: [q4_k_m, q8_0]

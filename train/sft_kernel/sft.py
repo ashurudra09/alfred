@@ -39,6 +39,16 @@ model = FastLanguageModel.get_peft_model(
     model, r=cfg["lora"]["r"], lora_alpha=cfg["lora"]["alpha"], lora_dropout=cfg["lora"]["dropout"],
     target_modules=cfg["lora"]["target_modules"], bias="none", use_gradient_checkpointing="unsloth",
     random_state=tc["seed"])
+if cfg.get("init_adapter"):  # warm start (run C): run A's adapter from the Kaggle dataset alfred-runa-lora
+    from peft import set_peft_model_state_dict
+    from safetensors.torch import load_file
+    found = glob.glob("/kaggle/input/**/adapter_model.safetensors", recursive=True)
+    assert len(found) == 1, f"init_adapter: expected one adapter_model.safetensors, found {found}"
+    sd = load_file(found[0])
+    res = set_peft_model_state_dict(model, sd)
+    missing = [k for k in res.missing_keys if "lora_" in k]
+    assert not res.unexpected_keys and not missing, (res.unexpected_keys[:5], missing[:5])
+    print("loaded", len(sd), "lora tensors from", found[0], flush=True)
 
 data = load_dataset("json", data_files={"train": f"{IN}/train.jsonl", "val": f"{IN}/val.jsonl"})
 val_small = data["val"].shuffle(seed=tc["seed"]).select(range(min(tc["eval_subset"], len(data["val"]))))
@@ -74,6 +84,8 @@ trainer = SFTTrainer(model=model, tokenizer=tok, train_dataset=data["train"], ev
 trainer = train_on_responses_only(trainer, instruction_part="<|im_start|>user\n",
                                   response_part="<|im_start|>assistant\n")
 
+start_val = trainer.evaluate()  # a warm start shows run A's level (~0.17); a fresh LoRA is far higher
+print("start val", start_val, flush=True)
 t = time.time()
 stats = trainer.train()
 secs = time.time() - t

@@ -7,7 +7,7 @@
   "is_private": true,
   "enable_gpu": true,
   "enable_internet": true,
-  "dataset_sources": ["ashurudra09/alfred-sft-data"],
+  "dataset_sources": ["ashurudra09/alfred-sft-data", "ashurudra09/alfred-runa-lora"],
   "competition_sources": [],
   "kernel_sources": []
 }
