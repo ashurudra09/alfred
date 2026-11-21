@@ -57,7 +57,7 @@ if __name__ == "__main__":
     src = f"{WORK}/llama.cpp"  # Unsloth's copy is prebuilt (no sources), so build our own
     run(["git", "clone", "-q", "--depth", "1", "--branch", "b11804", "https://github.com/ggml-org/llama.cpp", src])  # = the laptop's build
     run(["cmake", "-S", src, "-B", f"{WORK}/lcpp", "-DGGML_CUDA=ON", "-DCMAKE_CUDA_ARCHITECTURES=75",
-         "-DLLAMA_CURL=OFF", "-DCMAKE_BUILD_TYPE=Release",
+         "-DLLAMA_CURL=OFF", "-DCMAKE_BUILD_TYPE=Release", "-DLLAMA_USE_PREBUILT_UI=OFF",  # no web UI (its download broke the build)
          "-DCMAKE_LIBRARY_PATH=/usr/local/nvidia/lib64"],  # where Kaggle keeps libcuda
         stdout=subprocess.DEVNULL)
     run(["cmake", "--build", f"{WORK}/lcpp", "--target", "llama-server", "llama-quantize", "-j", "4"],
