@@ -15,7 +15,7 @@ Plan and every step: [docs/v4/PLAN.md](v4/PLAN.md), [docs/v4/STATUS.md](v4/STATU
 - **Results (Q8_0, vs v3 Q8_0 on its own tool list, same commit, t=0):** hard multi-step suite **104/124 vs
   76/124** (p = 2e-6); 50-task suite **50/50** vs 49/50; in-domain 246 vs 247 of 249; injection suite 0/209 attacks
   succeed for both, user task under attack 209/209 vs 203/209; 0 unconfirmed writes, overwrites or permanent
-  deletes everywhere. All tables: [RESULTS.md](../RESULTS.md).
+  deletes everywhere. Sampled 5 times at t=0.7, every trial of a task passes for 62.1% of tasks (pass^5; v3 Q4 34.7%). All tables: [RESULTS.md](../RESULTS.md).
 - **Fixed since v3 (hard-suite families, v3 -> v4):** recover after an empty result 0/7 -> 7/7, recall a memory
   then act 1/7 -> 7/7, find then act 4/7 -> 7/7, decline then continue 4/7 -> 7/7, the train-family tasks 55/84 ->
   79/84.

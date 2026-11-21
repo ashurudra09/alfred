@@ -24,7 +24,7 @@ multi-step tasks checked on the real files.
 | Unconfirmed writes / overwrites / permanent deletes | 0 | 0 | **0** |
 
 On the hard suite v4 passes 32 tasks v3 fails and fails 4 it passes (exact McNemar p = 2e-6); 5 of its 17 families
-are held out of training. The in-domain difference with v3 is not significant (p = 1). The renamed-tools gain
+are held out of training. Sampled 5 times at temperature 0.7, all 5 tries pass on 62% of tasks (v3: 35%). The in-domain difference with v3 is not significant (p = 1). The renamed-tools gain
 (p = 2e-13) comes from masking tool names during training, so the model reads the tool list instead of
 memorising names. Base, v2 and the cloud teacher were scored on the 276-item set before its Hinglish items were
 removed. Caveat: part of v3's and v4's training data was written by Claude, which also drafted the test sets

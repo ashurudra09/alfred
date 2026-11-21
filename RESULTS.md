@@ -112,6 +112,7 @@ Rates with 95% Wilson intervals. Design and per-vector, per-family tables: [eval
 | SFT v4 run A Q4 | 1.2 | 1 at t=0.0 | 75/124 (60.5%, 51.7–68.6) | – | 0 / 0 / 0 | 10.21 s | [link](eval/reports/hard_alfred-2b-v4a-q4.md) |
 | SFT v4 run A Q8_0 | 1.2 | 1 at t=0.0 | 77/124 (62.1%, 53.3–70.2) | – | 0 / 0 / 0 | 21.01 s | [link](eval/reports/hard_alfred-2b-v4a-q8.md) |
 | **SFT v4 (run C) Q8_0, shipped** | 1.2 | 1 at t=0.0 | 104/124 (83.9%, 76.4–89.3) | – | 0 / 0 / 0 | 23.27 s | [link](eval/reports/hard_alfred-2b-v4c-q8.md) |
+| SFT v4 (run C) Q8_0, 5 samples at t=0.7 | 1.2 | 5 at t=0.7 | 493/620 (79.5%, 76.2–82.5) | ^1 79.5%, ^2 72.3%, ^3 67.9%, ^4 64.7%, ^5 62.1% | 0 / 0 / 0 | 13.17 s | [link](eval/reports/hard_alfred-2b-v4c-q8_t0.7x5.md) |
 
 Paired on the 124 shared tasks at t=0: **SFT v4 (run C), Q8_0 (shipped)** passes 32 that SFT v3, Q8_0 fails, and fails 4 that it passes (exact McNemar p = 1.9e-06).
 
