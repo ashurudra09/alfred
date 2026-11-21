@@ -12,16 +12,16 @@ flowchart TB
         CD[Claude Desktop<br/>any MCP client]
     end
     subgraph AG[Agent: agent/]
-        LOOP[run_turn: event generator<br/>validate · retry · ≤3 calls · confirm]
+        LOOP[run_turn: event generator<br/>validate · retry · ≤8 calls · confirm]
         CH[(chats.db<br/>chat history)]
         TM[timing + JSONL log]
     end
     subgraph MD[Model]
         LS[llama-server :8080<br/>prefix cache]
-        GG[alfred-2b-v2-q4.gguf<br/>Qwen3.5-2B + LoRA, Q4_K_M]
+        GG[alfred-2b-v4c-q8.gguf<br/>Qwen3.5-2B + LoRA (v4), Q8_0]
     end
     subgraph TS[MCP tool server: tools/]
-        SRV[server.py<br/>25 tools under frozen contracts]
+        SRV[server.py<br/>26 tools under frozen contracts 1.3]
         GD[guards.py<br/>known folders · secrets · executables · no overwrite]
         JR[(journal.db<br/>undo)]
         MEM[(memory.db<br/>+ Ollama embeddinggemma)]
@@ -51,7 +51,7 @@ sequenceDiagram
     participant T as Tool server (MCP)
     U->>F: "move notes.txt to Documents"
     F->>L: run_turn(chat, text)
-    L->>M: history + system prompt + 25 tool schemas
+    L->>M: history + system prompt + 26 tool schemas
     M-->>L: tool call move_file(source, destination)
     L->>L: validate args against the schema
     L->>T: preview (resolve paths, check guards)
@@ -72,12 +72,13 @@ On Cancel the loop sends the model "The user declined this change. Nothing was c
 ## Training and evaluation pipeline
 ```mermaid
 flowchart LR
-    C[contracts v1.0<br/>25 tools · prompt] --> G[data/gen<br/>teacher gpt-oss-120b]
+    C[contracts 1.3<br/>26 tools · prompt 1.2] --> G[data/gen<br/>teacher gpt-oss-120b, Claude Haiku]
     G --> V[data/validate<br/>same scorer as eval]
+    O[data/onpolicy<br/>student runs the real tools,<br/>teacher fixes failing turns] --> X
     V --> X[data/mix<br/>+ When2Call + xLAM · dedup vs test]
     X --> K[Kaggle T4<br/>LoRA SFT · Unsloth]
     K --> Q[GGUF<br/>F16 · Q8_0 · Q4_K_M]
-    Q --> E[eval: in-domain · safety · e2e<br/>BFCL · When2Call]
+    Q --> E[eval: in-domain · safety · e2e · hard<br/>security · unseen tools · BFCL · When2Call]
     E --> R[RESULTS.md]
 ```
 

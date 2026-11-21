@@ -481,3 +481,14 @@ and indexing ran at about 2.4 chunks per second on a shared CPU.
     two Hinglish phrasing styles are English styles and `data/validate.py` rejects any Hinglish turn. Run A was
     trained before this (its data held the 55 rows); **run B is trained on the English-only mix** (Kaggle dataset
     `alfred-sft-data`, version of 2026-11-18). Step 6.last records both facts.
+
+### 2026-11-20/21, one run left; run C is v4 (owner's decisions)
+14. **Run C replaces run B, and run C is v4.** The owner had GPU time for one more run and wanted the strongest model,
+    not the masking ablation. Run C starts from run A's adapter and trains one epoch on mix C at lr 1e-4: run A's mix
+    with relative paths in tool results (fix 1), the list-iteration family (fix 2) and run A's own corrected
+    on-policy trajectories (fix 3, `docs/v4/run_a_findings.md`). Run A's val rows stay val, so its val loss is not
+    measured on rows run A trained on. **Step 5.4 (run B, masking attribution) is not done**: masking is in run A and
+    run C, and nothing isolates its effect. The shipped file is **Q8_0** (same weights scored better end to end at
+    Q8 for run A: 47/50 vs 43/50), converted locally because Unsloth's Kaggle GGUF does not load in llama-server
+    build 11804. On 2026-11-21 the owner made run C Q8 the v4 model and the headline, in place of v2 (see
+    `docs/decisions.md`, 2026-11-21).

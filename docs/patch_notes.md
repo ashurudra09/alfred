@@ -1,9 +1,44 @@
 # Patch notes
 
-Model versions of Alfred (Qwen3.5-2B + LoRA). Every number is from a report in `eval/reports/`; details in
+Model versions of Alfred (Qwen3.5-2B + LoRA), newest first. Every number is from a report in `eval/reports/`; details in
 [decisions.md](decisions.md).
 
-## v3 (planned, not trained)
+## v4 (shipped, 2026-11-21: run C, Q8_0)
+Plan and every step: [docs/v4/PLAN.md](v4/PLAN.md), [docs/v4/STATUS.md](v4/STATUS.md). Decision:
+[decisions.md](decisions.md) 2026-11-21.
+- **What changed:** 26 tools (new `search_by_meaning`: embedding search over file contents, contracts 1.3); tool
+  results print paths relative to their known folder; on-policy training data (the student's own runs through the
+  real tools, failing turns rewritten by a teacher, kept only when the check passes on the final files); a
+  list-iteration family (one lookup, then one write per file); tool and argument names masked in a third of the
+  general examples; English only. Training: run A (fresh LoRA, 1,340 steps), then run C = run A's adapter plus one
+  epoch on mix C (1,398 steps, lr 1e-4).
+- **Results (Q8_0, vs v3 Q8_0 on its own tool list, same commit, t=0):** hard multi-step suite **104/124 vs
+  76/124** (p = 2e-6); 50-task suite **50/50** vs 49/50; in-domain 246 vs 247 of 249; injection suite 0/209 attacks
+  succeed for both, user task under attack 209/209 vs 203/209; 0 unconfirmed writes, overwrites or permanent
+  deletes everywhere. All tables: [RESULTS.md](../RESULTS.md).
+- **Fixed since v3 (hard-suite families, v3 -> v4):** recover after an empty result 0/7 -> 7/7, recall a memory
+  then act 1/7 -> 7/7, find then act 4/7 -> 7/7, decline then continue 4/7 -> 7/7, the train-family tasks 55/84 ->
+  79/84.
+- **Known failures (all 23 hard-suite misses at t=0, read one by one: 20 of the 124 shared tasks and 3 of the 25 semantic-search tasks):**
+
+| Family | Misses | What goes wrong |
+|---|---|---|
+| act_on_list (held out) | 6/8 | Reads the list file, then moves the list file itself instead of the files it names (4), or moves the right files to the wrong folder (2) |
+| bulk_rename (held out) | 3/8 | Renames files outside the asked set, or keeps the old name pattern |
+| conditional_act | 3/8 | Checks the condition, then stops before the zip (2), or zips when the condition is false (1) |
+| topic_then_read | 3/5 | Finds the right note or file by topic but answers without reading it (the number or word asked for is missing) |
+| compare_files | 2/8 | Reads both files, then the answer lacks the computed difference |
+| pick_extreme | 2/7 | Acts on the right file, but the answer does not name it |
+| ask_then_act | 2/7 | After the user's answer, acts on one file more than asked |
+| all_except | 1/7 | Moves the right files to the wrong folder |
+| deadline_reminder | 1/8 | Reads the deadline, then sets no reminder |
+
+Two of these families (act_on_list, bulk_rename) are held out of training on purpose, so they measure transfer.
+- **Not done for v4:** When2Call and the BFCL subset (Kaggle GPU), the masking ablation (run B), a Q4_K_M build.
+
+## v3 (trained 2026-10-25/26; superseded by v4)
+The planned fixes below went into v3's data; v3 reached 98.6% in-domain (276 items) and 49/50 end to end ([decisions.md](decisions.md)).
+
 Data fixes collected from testing, applied together before the next training run. Full write-ups, affected example
 ids and regression items: [data/to_fix.md](../data/to_fix.md).
 
@@ -69,7 +104,7 @@ generated; in-domain is reported on its 257 English items (21 Hinglish items kep
 **Gate for v3:** the regression set passes, and in-domain, safety, e2e, When2Call and BFCL don't regress.
 v2 on the regression set: 7/46.
 
-## v2 (shipped, 2026-10-23)
+## v2 (2026-10-23; the headline model until v4)
 - **Fix: clarifying questions.** v1 almost stopped asking ("move the file" → it recycled an invented file; ask recall
   6.7–33%). The chat template drops the empty `<think></think>` block from earlier turns, so every clarify example was
   trained in a form the model never sees at inference. v2 adds each clarify example cut right after the question

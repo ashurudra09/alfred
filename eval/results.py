@@ -19,7 +19,8 @@ from eval.run import load_set  # noqa: E402
 REPORTS = ROOT / "eval" / "reports"
 BFCL_SCORE = ROOT / "eval" / "bfcl" / "score"
 OUT = ROOT / "RESULTS.md"
-FIG = ROOT / "docs" / "confusion_alfred-2b-v2-q4.png"
+SHIPPED = "alfred-2b-v4c-q8"  # v4 = run C
+FIG = ROOT / "docs" / f"confusion_{SHIPPED}.png"
 DECISIONS = ["tool_call", "direct", "ask", "cannot", "refuse"]
 BFCL_CATS = [("simple_python", "non_live"), ("multiple", "non_live"), ("parallel", "non_live"),
              ("irrelevance", "non_live"), ("live_relevance", "live")]
@@ -29,8 +30,12 @@ SYSTEMS = [  # (report name, description) in table order
     ("alfred-2b-v1-q4", "SFT v1, Q4_K_M"),
     ("alfred-2b-v2-f16", "SFT v2, F16 (unquantized)"),
     ("alfred-2b-v2-q8", "SFT v2, Q8_0"),
-    ("alfred-2b-v2-q4", "SFT v2, Q4_K_M (shipped)"),
+    ("alfred-2b-v2-q4", "SFT v2, Q4_K_M"),
     ("alfred-2b-v3-q4", "SFT v3, Q4_K_M"),
+    ("alfred-2b-v3-q8", "SFT v3, Q8_0"),
+    ("alfred-2b-v4a-q4", "SFT v4 run A, Q4_K_M"),
+    ("alfred-2b-v4a-q8", "SFT v4 run A, Q8_0"),
+    ("alfred-2b-v4c-q8", "**SFT v4 (run C), Q8_0 (shipped)**"),
     ("cloud-gpt-oss-120b", "gpt-oss-120b (cloud, Groq)"),
 ]
 
@@ -78,6 +83,11 @@ PAIRS = [  # (system a, system b, test set, what it shows)
     ("alfred-2b-v2-q4", "alfred-2b-v2-q8", "indomain", "Q4 quantization cost"),
     ("alfred-2b-v3-q4", "alfred-2b-v2-q4", "safety", "v3 vs v2"),
     ("alfred-2b-v3-q4", "alfred-2b-v2-q4", "regressions", "v3 vs v2"),
+    ("alfred-2b-v4c-q8", "alfred-2b-v3-q8", "indomain", "v4 vs v3"),
+    ("alfred-2b-v4c-q8", "alfred-2b-v3-q8", "safety", "v4 vs v3"),
+    ("alfred-2b-v4c-q8", "alfred-2b-v3-q8", "regressions", "v4 vs v3"),
+    ("alfred-2b-v4c-q8", "alfred-2b-v3-q8", "unseen", "v4 vs v3, held-out tools"),
+    ("alfred-2b-v4c-q8", "alfred-2b-v3-q8", "indomain_renamed1", "v4 vs v3, every tool renamed"),
 ]
 
 
@@ -120,15 +130,16 @@ def look_first_rows() -> list[str]:
 
 
 def indomain_table() -> list[str]:
-    rows = ["| System | In-domain accuracy | 95% CI | Decision macro-F1 | Ask recall | Tool accuracy | Args score | "
-            "Median first token | Report |", "|---|---|---|---|---|---|---|---|---|"]
+    rows = ["| System | Items | In-domain accuracy | 95% CI | Decision macro-F1 | Ask recall | Tool accuracy | "
+            "Args score | Median first token | Report |", "|---|---|---|---|---|---|---|---|---|---|"]
     for name, desc in SYSTEMS:
         r = report(name, "indomain")
         if not r:
             continue
         m, lat = r["metrics"], r.get("latency", {})
         ttft = f"{lat['ttft_median']:.1f} s" if r["backend"] == "local" and lat.get("ttft_median") else "–"
-        rows.append(f"| {desc} | {pct(m['accuracy'])} | {ci_items(r['items'])} | {m['decision_macro_f1']:.3f} | "
+        rows.append(f"| {desc} | {m['n']} | {pct(m['accuracy'])} | {ci_items(r['items'])} | "
+                    f"{m['decision_macro_f1']:.3f} | "
                     f"{pct(m['per_decision']['ask']['recall'])} | {pct(m['tool_accuracy'])} | "
                     f"{m['args_score']:.3f} | {ttft} | [link](eval/reports/{name}_indomain.md) |")
     return rows
@@ -201,7 +212,7 @@ def bfcl(system: str) -> dict | None:
     return out
 
 
-def confusion_png(system="alfred-2b-v2-q4"):
+def confusion_png(system=SHIPPED):
     r = report(system, "indomain")
     expected = {t.id: t.expected_decision for t in load_set("indomain")}
     counts = Counter((expected[i["id"]], i["decision"]) for i in r["items"])
@@ -218,6 +229,37 @@ def confusion_png(system="alfred-2b-v2-q4"):
     fig.tight_layout()
     fig.savefig(FIG, metadata={"Software": None})  # no version string: the PNG is byte-stable
     plt.close(fig)
+
+
+def hard_pair(a: str, b: str) -> str:
+    """Paired hard-suite comparison on the shared (non semantic-search) tasks."""
+    ra, rb = (json.loads((REPORTS / f"hard_{s}.json").read_text(encoding="utf-8")) for s in (a, b))
+    ok_a, ok_b = ({t["id"]: t["ok"] for t in r["tasks"] if "new_capability" not in t["tags"]} for r in (ra, rb))
+    ids = [i for i in ok_a if i in ok_b]
+    x, y, p = mcnemar([ok_a[i] for i in ids], [ok_b[i] for i in ids])
+    desc = dict(SYSTEMS)
+    return (f"Paired on the {len(ids)} shared tasks at t=0: {desc[a]} passes {x} that {desc[b]} fails, and fails {y} "
+            f"that it passes (exact McNemar p = {p:.2g}).")
+
+
+def unseen_rows() -> list[str]:
+    """Track 4F: held-out tools single-turn and end to end, and every tool renamed (seed 1)."""
+    rows = ["## Unseen and renamed tools (does it read the tool list, or memorise names?)", "",
+            "| System | Held-out tools, single turn | 95% CI | Held-out tools, end to end | Every tool renamed (seed 1) "
+            "| 95% CI |", "|---|---|---|---|---|---|"]
+    for name, desc in SYSTEMS:
+        u, ren = report(name, "unseen"), report(name, "indomain_renamed1")
+        if not (u or ren):
+            continue
+        e = REPORTS / f"unseen_{name}.json"
+        e2e = json.loads(e.read_text(encoding="utf-8")) if e.exists() else None
+        rows.append(f"| {desc} | {pct(u and u['metrics']['accuracy'])} | {ci_items(u['items']) if u else '–'} | "
+                    f"{str(e2e['passed']) + '/' + str(e2e['n']) if e2e else '–'} | "
+                    f"{pct(ren and ren['metrics']['accuracy'])} | {ci_items(ren['items']) if ren else '–'} |")
+    return rows + ["", "Held-out tools: tools no model was trained on, served by a second MCP server "
+                   "([eval/unseen/specs.py](eval/unseen/specs.py)). Renamed: every tool and argument name replaced at "
+                   "random and mapped back before scoring. Many comparisons are made on this page; read single "
+                   "p-values near 0.05 with that in mind.", ""]
 
 
 def review_lines() -> list[str]:
@@ -245,7 +287,11 @@ def main():
     lines = ["# Results", "",
              "Generated by `uv run python -m eval.results` from the reports in `eval/reports/` and "
              "`eval/bfcl/score/`; every number links to its report. Laptop: Windows 11, CPU only (llama.cpp).", "",
-             f"## In-domain test set ({len(load_set('indomain'))} items, our 25 tools)", ""] + indomain_table()
+             f"## In-domain test set ({len(load_set('indomain'))} items now, our tools)", "",
+             "The set lost its 27 Hinglish items on 2026-11-18 (276 -> 249: v4 is English-only), so rows on 276 "
+             "items are from before that date and are not compared directly with rows on 249; the paired tests use "
+             "only shared items. v4 is scored with tool list 1.3 (26 tools), earlier models with the list they were "
+             "trained on (25).", ""] + indomain_table()
     lines += [""] + [x for line in review_lines() for x in (line, "")][:-1]
     lines += ["", "Quantization: compare the three **SFT v2** rows (F16 → Q8_0 → Q4_K_M). 95% CI = Wilson score "
               "interval on accuracy; one run per system (greedy decoding), so it covers test-set sampling only, not "
@@ -268,13 +314,16 @@ def main():
               f"![decision confusion matrix]({FIG.relative_to(ROOT).as_posix()})", "",
               "## Safety (48 items) and prompt injection", ""] + safety_rows()
     lines.append("")
-    for v in ("v2", "v3"):
-        e2e = json.loads((REPORTS / f"e2e_alfred-2b-{v}-q4.json").read_text(encoding="utf-8"))
-        lines += [f"End-to-end through the real tools (SFT {v} Q4): **{e2e['passed']}/{e2e['n']}** tasks "
+    for v, desc in (("v2-q4", "SFT v2 Q4"), ("v3-q4", "SFT v3 Q4"), ("v3-q8", "SFT v3 Q8_0"),
+                    ("v4a-q8", "SFT v4 run A Q8_0"), ("v4c-q8", "**SFT v4 (run C) Q8_0, shipped**")):
+        if not (p := REPORTS / f"e2e_alfred-2b-{v}.json").exists():
+            continue
+        e2e = json.loads(p.read_text(encoding="utf-8"))
+        lines += [f"End-to-end through the real tools ({desc}): **{e2e['passed']}/{e2e['n']}** tasks "
                   f"(95% CI {ci(e2e['passed'], e2e['n'])}%), "
                   f"prompt-injection files resisted **{e2e['injection_resisted']}/{e2e['injection_n']}**, unconfirmed "
                   f"writes / overwrites / permanent deletes = {' / '.join(str(v) for v in e2e['invariants'].values())} "
-                  f"([report](eval/reports/e2e_alfred-2b-{v}-q4.md)).", ""]
+                  f"([report](eval/reports/e2e_alfred-2b-{v}.md)).", ""]
     from eval.security.__main__ import rate
     from eval.security.families import TEST_ONLY
     lines += ["## Prompt-injection suite (209 attacked cases + 48 clean, 6 vectors x 6 goals x 8 families)", "",
@@ -282,7 +331,9 @@ def main():
               "request | Test-only families: proposed | Task done, no attack | Task done, under attack | Report |",
               "|---|---|---|---|---|---|---|---|"]
     for s, desc in (("base-2b-q8", "Qwen3.5-2B base Q8_0"), ("alfred-2b-v2-q4", "SFT v2 Q4"),
-                    ("alfred-2b-v3-q4", "SFT v3 Q4"), ("alfred-2b-v3-q4-e6", "SFT v3 Q4, tool output escaped (E6 fix)")):
+                    ("alfred-2b-v3-q4", "SFT v3 Q4"), ("alfred-2b-v3-q4-e6", "SFT v3 Q4, tool output escaped (E6 fix)"),
+                    ("alfred-2b-v3-q8", "SFT v3 Q8_0"), ("alfred-2b-v4a-q4", "SFT v4 run A Q4"),
+                    ("alfred-2b-v4a-q8", "SFT v4 run A Q8_0"), ("alfred-2b-v4c-q8", "**SFT v4 (run C) Q8_0, shipped**")):
         if (p := REPORTS / f"security_{s}.json").exists():
             rows = json.loads(p.read_text(encoding="utf-8"))["cases"]
             att, clean = [r for r in rows if r["goal"]], [r for r in rows if not r["goal"]]
@@ -298,7 +349,10 @@ def main():
     for name, desc in (("base-2b-q8", "Qwen3.5-2B base Q8_0"), ("alfred-2b-v2-q4", "SFT v2 Q4"),
                        ("alfred-2b-v3-q4", "SFT v3 Q4"), ("alfred-2b-v3-q4_t0.0x2_phrasing", "SFT v3 Q4, 2 phrasings"),
                        ("alfred-2b-v3-q4_t0.7x5", "SFT v3 Q4, 5 samples at t=0.7"),
-                       ("cloud-gpt-oss-120b", "gpt-oss-120b (cloud, Groq)")):
+                       ("cloud-gpt-oss-120b", "gpt-oss-120b (cloud, Groq)"), ("alfred-2b-v3-q8", "SFT v3 Q8_0"),
+                       ("alfred-2b-v4a-q4", "SFT v4 run A Q4"), ("alfred-2b-v4a-q8", "SFT v4 run A Q8_0"),
+                       ("alfred-2b-v4c-q8", "**SFT v4 (run C) Q8_0, shipped**"),
+                       ("alfred-2b-v4c-q8_t0.7x5", "SFT v4 (run C) Q8_0, 5 samples at t=0.7")):
         if not (p := REPORTS / f"hard_{name}.json").exists():
             continue
         r = json.loads(p.read_text(encoding="utf-8"))
@@ -307,12 +361,13 @@ def main():
                      f"{r['passed']}/{r['n']} ({pct(r['pass_rate'])}, {ci(r['passed'], r['n'])}) | {hat} | "
                      f"{' / '.join(str(v) for v in r['invariants'].values())} | {r['median_turn_secs']} s | "
                      f"[link](eval/reports/hard_{name}.md) |")
+    lines += ["", hard_pair("alfred-2b-v4c-q8", "alfred-2b-v3-q8")]
     lines += ["", "pass^k (τ-bench, Yao et al. 2024): the chance that k trials of the same task all pass. With several "
               "trials the CI is over trials, which are not independent, so it is too narrow. Each model is scored "
               "with the prompt it was trained on.", ""]
     lines += ["## Regression set (46 items from UI testing and probe runs, data/to_fix.md)", "",
-              "Each model is scored with the system prompt it was trained on (v2: 1.1, v3: 1.2).", ""]
-    lines += regression_rows() + [""]
+              "Each model is scored with the system prompt it was trained on (v2: 1.1, v3 and v4: 1.2).", ""]
+    lines += regression_rows() + [""] + unseen_rows()
 
     w = {k: when2call(k) for k in ("base", "sft", "v3")}
     if all(w.values()):

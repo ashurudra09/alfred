@@ -26,7 +26,7 @@ from alfred.agent.timing import format_timing
 from alfred.tools import journal, memory
 from alfred.tools.guards import config
 
-DEFAULT_MODEL = ROOT / "runs" / "sft_2b_v2" / "alfred-2b-v2-q4.gguf"
+DEFAULT_MODEL = ROOT / "runs" / "sft_2b_v4c" / "alfred-2b-v4c-q8.gguf"  # v4 = run C
 HELP = ("/new  /chats  /open <id>  /delete <id>  /undo [id]  /actions  /memories  /forget <id>  /help  /quit\n"
         "Write actions (move, rename, copy, zip, organize, delete) always ask you first; /undo reverses them.")
 console = Console()

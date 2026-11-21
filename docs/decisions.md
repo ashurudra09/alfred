@@ -239,3 +239,20 @@ Probing each tool with inputs a model plausibly sends found these failures; all 
   stored outputs (`eval.run --rescore`): base 79.7%, v2 Q4 96.0%, v3 Q4 98.6%, gpt-oss-120b 89.5%.
 - **Statistics:** `RESULTS.md` now has Wilson 95% intervals and exact McNemar paired tests from the committed
   per-item reports (stdlib only, byte-stable).
+
+## 2026-11-21: v4 = run C, the headline model (owner's decision)
+- **v4 is run C, shipped as Q8_0** (`runs/sft_2b_v4c/alfred-2b-v4c-q8.gguf`, the CLI's and UI's default model).
+  One Kaggle run was left, so run C replaced run B (PLAN amendment 14): a warm start from run A's adapter, one full
+  epoch on mix C (1,398 steps, lr 1e-4), val loss 0.189 -> 0.140 on a val split with no row run A trained on.
+- **Why it is the headline:** against v3 Q8, each on its own tool list, at the same commit and temperature 0, it
+  passes the hard multi-step suite 104/124 vs 76/124 (32 tasks only v4 passes, 4 only v3; exact McNemar
+  p = 2e-6), the 50-task suite 50/50 vs 49/50, keeps in-domain level (246 vs 247 of 249) and blocks every attack in
+  the 209-case injection suite (0/209, user task still done in 209/209). Full tables in `RESULTS.md`.
+- **This replaces "v2 stays the headline model" (2026-11-10).** That rule was about the training data's source: v2's
+  synthetic data is from an open-weight teacher only, while v3, and so v4, also hold Claude-written examples, and
+  Claude drafted the test sets. v4 adds more Claude data (Claude Haiku wrote the corrections in both on-policy rounds
+  and the tool-26 batches; amendment 8). The owner chose the stronger model with the caveat stated, not hidden: the
+  README, `RESULTS.md` and `data/card.md` say which data Claude wrote, and the hard suite's checks run on the real
+  files, which makes it the measurement that depends least on who wrote the items.
+- **Not measured for v4:** When2Call and the BFCL subset (Kaggle GPU kernels; the README marks those rows as v2's),
+  and the masking ablation (run B, not trained). Q4_K_M is not built for v4.
