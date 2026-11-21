@@ -157,16 +157,18 @@ Paired, SFT v4 vs SFT v3 (exact McNemar): right on 165 items v3 gets wrong and w
 
 ## BFCL v4 subset (general function calling: did fine-tuning hurt it?)
 
-| Category | n | Base Q8_0 | SFT v2 Q8_0 | SFT v3 Q8_0 |
-|---|---|---|---|---|
-| simple_python | 400 | 74.8% | 83.8% | 79.8% |
-| multiple | 200 | 84.0% | 87.0% | 81.5% |
-| parallel | 200 | 50.5% | 85.5% | 87.5% |
-| irrelevance | 240 | 57.5% | 73.8% | 90.4% |
-| live_relevance | 16 | 93.8% | 56.2% | 50.0% |
-| **unweighted mean** | | **72.1%** | **77.2%** | **77.8%** |
+| Category | n | Base Q8_0 | SFT v2 Q8_0 | SFT v3 Q8_0 | **SFT v4 (run C) Q8_0, shipped** |
+|---|---|---|---|---|---|
+| simple_python | 400 | 74.8% | 83.8% | 79.8% | 82.0% |
+| multiple | 200 | 84.0% | 87.0% | 81.5% | 84.0% |
+| parallel | 200 | 50.5% | 85.5% | 87.5% | 88.5% |
+| irrelevance | 240 | 57.5% | 73.8% | 90.4% | 75.0% |
+| live_relevance | 16 | 93.8% | 56.2% | 50.0% | 50.0% |
+| **unweighted mean** | | **72.1%** | **77.2%** | **77.8%** | **75.9%** |
 
 Pinned `bfcl-eval==2026.3.23`, non-thinking mode, AST checker; Qwen3.5 handler in [eval/bfcl/run.py](eval/bfcl/run.py). Not comparable to the vendor's 43.6 (full BFCL v4, thinking mode).
+
+Paired, SFT v4 vs SFT v3 (right only for v4 / right only for v3, exact McNemar): simple_python 24/15 (p = 0.2), multiple 9/4 (p = 0.27), parallel 7/5 (p = 0.77), irrelevance 4/41 (p = 9.3e-09), live_relevance 0/0 (p = 1). Only irrelevance moves: v4 calls a function where none fits, the same slip as its When2Call tool hallucination.
 
 ## Semantic file search: retrieval only, no LLM (300 SciFact abstracts, 150 expert claims, held-out half)
 

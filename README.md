@@ -41,7 +41,7 @@ removed. Caveat: part of v3's and v4's training data was written by Claude, whic
 | BFCL v4 subset (general function calling, 1,056 items) | 72.1% | **77.2%** | – |
 | Time to first token | 1.9 s | **1.0 s** | network |
 
-When2Call and BFCL were not re-run for v4. Read the cloud column with care: gpt-oss-120b wrote most of the
+v4 on the same public benchmarks: When2Call 71.5% (v3 69.0%, p = 6e-9) but tool hallucination 6.2% (v3 3.1%, p = 0.008); BFCL subset mean 75.9% (v3 77.8%), the drop all in irrelevance, 75.0% vs 90.4% (p = 9e-9): v4 more often calls a tool when none fits. Read the cloud column with care: gpt-oss-120b wrote most of the
 synthetic training data and runs zero-shot, and 11 of its 29 misses are listing a folder before moving or copying in
 it, a habit the test set marks wrong. Counting those as right gives it 93.5%, inside the student's interval.
 

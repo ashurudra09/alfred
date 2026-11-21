@@ -34,7 +34,11 @@ Plan and every step: [docs/v4/PLAN.md](v4/PLAN.md), [docs/v4/STATUS.md](v4/STATU
 | deadline_reminder | 1/8 | Reads the deadline, then sets no reminder |
 
 Two of these families (act_on_list, bulk_rename) are held out of training on purpose, so they measure transfer.
-- **Not done for v4:** When2Call and the BFCL subset (Kaggle GPU), the masking ablation (run B), a Q4_K_M build.
+- **Regressed vs v3: calling a tool when none fits.** When2Call tool hallucination 6.2% vs 3.1% (16 vs 8 of 258,
+  p = 0.008) and BFCL irrelevance 75.0% vs 90.4% (41 vs 4 items, p = 9e-9), though When2Call accuracy rose to
+  71.5% (v3 69.0%). Likely from the act-heavy on-policy and iteration data; the fix is more no-tool and
+  irrelevant-tool examples in the next mix.
+- **Not done for v4:** the masking ablation (run B), a Q4_K_M build.
 
 ## v3 (trained 2026-10-25/26; superseded by v4)
 The planned fixes below went into v3's data; v3 reached 98.6% in-domain (276 items) and 49/50 end to end ([decisions.md](decisions.md)).

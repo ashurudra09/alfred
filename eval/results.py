@@ -226,6 +226,23 @@ def bfcl(system: str) -> dict | None:
     return out
 
 
+def bfcl_pair(a: str, b: str) -> str:
+    """Paired BFCL per category (exact McNemar), from the failure ids in the score files."""
+    parts = []
+    for cat, group in BFCL_CATS:
+        fail, ids = {}, None
+        for s in (a, b):
+            lines = (BFCL_SCORE / s / group / f"BFCL_v4_{cat}_score.json").read_text(encoding="utf-8").splitlines()
+            fail[s] = {json.loads(line)["id"] for line in lines[1:] if line.strip()}
+        res = BFCL_SCORE.parent / "result" / a / group / f"BFCL_v4_{cat}_result.json"
+        ids = [json.loads(line)["id"] for line in res.read_text(encoding="utf-8").splitlines() if line.strip()]
+        x, y, p = mcnemar([i not in fail[a] for i in ids], [i not in fail[b] for i in ids])
+        parts.append(f"{cat} {x}/{y} (p = {p:.2g})")
+    return ("Paired, SFT v4 vs SFT v3 (right only for v4 / right only for v3, exact McNemar): " + ", ".join(parts)
+            + ". Only irrelevance moves: v4 calls a function where none fits, the same slip as its When2Call "
+            "tool hallucination.")
+
+
 def confusion_png(system=SHIPPED):
     r = report(system, "indomain")
     expected = {t.id: t.expected_decision for t in load_set("indomain")}
@@ -415,6 +432,8 @@ def main():
                   "Pinned `bfcl-eval==2026.3.23`, non-thinking mode, AST checker; Qwen3.5 handler in "
                   "[eval/bfcl/run.py](eval/bfcl/run.py). Not comparable to the vendor's 43.6 (full BFCL v4, "
                   "thinking mode).", ""]
+        if "alfred-2b-v4c-q8" in b:
+            lines += [bfcl_pair("alfred-2b-v4c-q8", "alfred-2b-v3-q8"), ""]
 
     if (rp := REPORTS / "retrieval_scifact_test.json").exists():
         r = json.loads(rp.read_text(encoding="utf-8"))

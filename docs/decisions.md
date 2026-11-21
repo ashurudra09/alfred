@@ -240,7 +240,7 @@ Probing each tool with inputs a model plausibly sends found these failures; all 
 - **Statistics:** `RESULTS.md` now has Wilson 95% intervals and exact McNemar paired tests from the committed
   per-item reports (stdlib only, byte-stable).
 
-## 2026-11-21: v4 = run C, the headline model (owner's decision)
+## 2026-11-21: v4 = run C, the headline model (owner's decision; When2Call / BFCL added 2026-11-22: more tool hallucination than v3, see patch notes)
 - **v4 is run C, shipped as Q8_0** (`runs/sft_2b_v4c/alfred-2b-v4c-q8.gguf`, the CLI's and UI's default model).
   One Kaggle run was left, so run C replaced run B (PLAN amendment 14): a warm start from run A's adapter, one full
   epoch on mix C (1,398 steps, lr 1e-4), val loss 0.189 -> 0.140 on a val split with no row run A trained on.
@@ -254,5 +254,7 @@ Probing each tool with inputs a model plausibly sends found these failures; all 
   and the tool-26 batches; amendment 8). The owner chose the stronger model with the caveat stated, not hidden: the
   README, `RESULTS.md` and `data/card.md` say which data Claude wrote, and the hard suite's checks run on the real
   files, which makes it the measurement that depends least on who wrote the items.
-- **Not measured for v4:** When2Call and the BFCL subset (Kaggle GPU kernels; the README marks those rows as v2's),
-  and the masking ablation (run B, not trained). Q4_K_M is not built for v4.
+- **Public benchmarks (added 2026-11-22):** When2Call 71.5% vs v3 69.0% (p = 6e-9), but tool hallucination 6.2% vs
+  3.1% (p = 0.008) and BFCL irrelevance 75.0% vs 90.4% (p = 9e-9): v4 more often calls a tool when none fits. The
+  owner's decision stands; the regression is stated in the README and patch notes.
+- **Not measured for v4:** the masking ablation (run B, not trained). Q4_K_M is not built for v4.
