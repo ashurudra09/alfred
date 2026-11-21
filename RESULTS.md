@@ -149,8 +149,11 @@ Held-out tools: tools no model was trained on, served by a second MCP server ([e
 | Qwen3.5-2B base | 3652 | 41.2% | 39.3% | 0.228 | 14.7% |
 | SFT v2 | 3652 | 65.7% | 63.0% | 0.480 | 3.1% |
 | SFT v3 | 3652 | 69.0% | 65.3% | 0.510 | 3.1% |
+| **SFT v4 (run C), shipped** | 3652 | 71.5% | 67.4% | 0.530 | 6.2% |
 
 Log-likelihood scoring as in the official lm-eval task, Qwen3.5 chat template ([eval/when2call/bench.py](eval/when2call/bench.py)). SFT used When2Call's *train* split; this is the held-out *test* split.
+
+Paired, SFT v4 vs SFT v3 (exact McNemar): right on 165 items v3 gets wrong and wrong on 75 it gets right (p = 6.2e-09); a tool call with no tools given on 16 vs 8 of 258 items (p = 0.0078): v4 answers more When2Call items right but hallucinates a tool call more often.
 
 ## BFCL v4 subset (general function calling: did fine-tuning hurt it?)
 

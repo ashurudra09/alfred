@@ -179,6 +179,20 @@ def safety_rows() -> list[str]:
     return rows
 
 
+def when2call_pair(a: str, b: str) -> str:
+    """Paired When2Call v4 vs v3: accuracy, and tool calls on the no-tools items (hallucination)."""
+    ra, rb = (json.loads((REPORTS / f"when2call_{k}.json").read_text(encoding="utf-8")) for k in (a, b))
+    assert [r["uuid"] for r in ra] == [r["uuid"] for r in rb]
+    pa, pb = ([max(range(4), key=lambda k: r["lls"][k]) for r in rows] for rows in (ra, rb))
+    x, y, p = mcnemar([q == r["gold"] for q, r in zip(pa, ra)], [q == r["gold"] for q, r in zip(pb, rb)])
+    idx = [i for i, r in enumerate(ra) if r["no_tools"] and r["names"][r["gold"]] == "cannot_answer"]
+    hx, hy, hp = mcnemar([pa[i] == 1 for i in idx], [pb[i] == 1 for i in idx])
+    return (f"Paired, SFT v4 vs SFT v3 (exact McNemar): right on {x} items v3 gets wrong and wrong on {y} it gets "
+            f"right (p = {p:.2g}); a tool call with no tools given on {sum(pa[i] == 1 for i in idx)} vs "
+            f"{sum(pb[i] == 1 for i in idx)} of {len(idx)} items (p = {hp:.2g}): v4 answers more When2Call items "
+            "right but hallucinates a tool call more often.")
+
+
 def when2call(which: str) -> dict | None:
     """Official When2Call MCQ metrics from the per-item log-likelihoods (eval/when2call/bench.py)."""
     p = REPORTS / f"when2call_{which}.json"
@@ -369,23 +383,30 @@ def main():
               "Each model is scored with the system prompt it was trained on (v2: 1.1, v3 and v4: 1.2).", ""]
     lines += regression_rows() + [""] + unseen_rows()
 
-    w = {k: when2call(k) for k in ("base", "sft", "v3")}
-    if all(w.values()):
+    w = {k: when2call(k) for k in ("base", "sft", "v3", "v4c")}
+    if w["base"] and w["sft"] and w["v3"]:
         lines += ["## When2Call MCQ test (public benchmark: call / ask / answer / can't)", "",
                   "| Model (full precision) | n | Accuracy | Acc-norm | Macro-F1 | Tool hallucination ↓ |",
                   "|---|---|---|---|---|---|"]
-        for k, desc in (("base", "Qwen3.5-2B base"), ("sft", "SFT v2"), ("v3", "SFT v3")):
-            m = w[k]
+        for k, desc in (("base", "Qwen3.5-2B base"), ("sft", "SFT v2"), ("v3", "SFT v3"),
+                        ("v4c", "**SFT v4 (run C), shipped**")):
+            if not (m := w[k]):
+                continue
             lines.append(f"| {desc} | {m['n']} | {pct(m['acc'])} | {pct(m['acc_norm'])} | {m['macro_f1']:.3f} | "
                          f"{pct(m['hallucination'])} |")
         lines += ["", "Log-likelihood scoring as in the official lm-eval task, Qwen3.5 chat template "
                   "([eval/when2call/bench.py](eval/when2call/bench.py)). SFT used When2Call's *train* split; "
                   "this is the held-out *test* split.", ""]
+        if w["v4c"]:
+            lines += [when2call_pair("v4c", "v3"), ""]
 
-    b = {s: bfcl(s) for s in ("base-2b-q8", "alfred-2b-v2-q8", "alfred-2b-v3-q8")}
-    if all(b.values()):
+    b = {s: bfcl(s) for s in ("base-2b-q8", "alfred-2b-v2-q8", "alfred-2b-v3-q8", "alfred-2b-v4c-q8")}
+    if b["base-2b-q8"] and b["alfred-2b-v2-q8"] and b["alfred-2b-v3-q8"]:
+        heads = ["Base Q8_0", "SFT v2 Q8_0", "SFT v3 Q8_0", "**SFT v4 (run C) Q8_0, shipped**"]
+        heads = [h for h, v in zip(heads, b.values()) if v]
+        b = {k: v for k, v in b.items() if v}
         lines += ["## BFCL v4 subset (general function calling: did fine-tuning hurt it?)", "",
-                  "| Category | n | Base Q8_0 | SFT v2 Q8_0 | SFT v3 Q8_0 |", "|---|---|---|---|---|"]
+                  "| Category | n | " + " | ".join(heads) + " |", "|---|---|" + "---|" * len(heads)]
         for cat, _ in BFCL_CATS:
             n = b["base-2b-q8"][cat][1]
             lines.append(f"| {cat} | {n} | " + " | ".join(pct(v[cat][0]) for v in b.values()) + " |")
