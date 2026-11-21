@@ -1,7 +1,7 @@
 """Phase 9a on Kaggle (2x T4): the BFCL v4 subset for base vs. SFT v2, both as Q8_0 GGUFs on llama.cpp (CUDA).
 
 Pushed with: kaggle kernels push -p eval/bfcl/kernel
-Inputs: alfred-adapters (the SFT LoRA adapter and, from v4, the shipped Q8_0 GGUF), alfred-bfcl-kit (eval/bfcl/run.py + qwen3.5-tokenizer/).
+Inputs: alfred-adapters (the SFT LoRA adapter, now v4 = run C), alfred-bfcl-kit (eval/bfcl/run.py + qwen3.5-tokenizer/).
 1. Unsloth converts base and base+adapter to Q8_0 the same way (the shipped GGUFs came from the same code).
 2. llama.cpp (fresh clone) is built with CUDA; base serves on GPU 0 (:8080), SFT on GPU 1 (:8081).
 3. Pinned bfcl-eval in its own venv generates and evaluates both in parallel through eval/bfcl/run.py.
@@ -18,8 +18,9 @@ import urllib.request
 
 OUT, WORK = "/kaggle/working", "/tmp/alfred"  # big intermediates stay out of the output
 T0 = time.time()
-SYSTEMS = {"alfred-2b-v4c-q8": ("gguf", 0, 8080)}  # base, v2, v3 were scored by earlier versions of this kernel
-# "gguf": serve the uploaded file as is (the shipped weights; Unsloth's Kaggle GGUF export no longer loads in b11804)
+SYSTEMS = {"alfred-2b-v4c-q8": ("convert", 0, 8080)}  # base, v2, v3 were scored by earlier versions of this kernel
+# "convert": Unsloth merges the adapter to 16-bit, then llama.cpp b11804's own converter -> F16 -> llama-quantize Q8_0,
+# the steps that built the shipped v4 file on the laptop (Unsloth's GGUF export no longer loads in b11804).
 
 
 def log(msg):
@@ -31,10 +32,14 @@ def export(system: str):
     import torch
     from unsloth import FastLanguageModel
     source = SYSTEMS[system][0]
-    if source == "adapter":
-        source = os.path.dirname(glob.glob("/kaggle/input/**/adapter_config.json", recursive=True)[0])
-    model, tok = FastLanguageModel.from_pretrained(model_name=source, max_seq_length=4096, dtype=torch.float32,
-                                                   load_in_4bit=False)
+    if source in ("adapter", "convert"):
+        adapter = os.path.dirname(glob.glob("/kaggle/input/**/adapter_config.json", recursive=True)[0])
+    if source == "convert":
+        model, tok = FastLanguageModel.from_pretrained(model_name=adapter, max_seq_length=4096, load_in_4bit=False)
+        model.save_pretrained_merged(f"{WORK}/{system}_merged", tok, save_method="merged_16bit")
+        return
+    model, tok = FastLanguageModel.from_pretrained(model_name=adapter if source == "adapter" else source,
+                                                   max_seq_length=4096, dtype=torch.float32, load_in_4bit=False)
     model.save_pretrained_gguf(f"{WORK}/{system}", tok, quantization_method="q8_0")
 
 
@@ -48,24 +53,29 @@ if __name__ == "__main__":
         export(sys.argv[1])
         sys.exit()
     os.makedirs(WORK, exist_ok=True)
-    ggufs = {}
-    for system, (source, _, _) in SYSTEMS.items():
-        if source == "gguf":
-            ggufs[system] = glob.glob(f"/kaggle/input/**/{system}.gguf", recursive=True)[0]
-        else:
-            run([sys.executable, "-m", "pip", "install", "-q", "unsloth"])
-            run([sys.executable, __file__, system])
-            ggufs[system] = max(glob.glob(f"{WORK}/{system}*/**/*.gguf", recursive=True), key=os.path.getsize)
-        log(f"{system}: {ggufs[system]} {os.path.getsize(ggufs[system]) / 1e9:.2f} GB")
-
+    run([sys.executable, "-m", "pip", "install", "-q", "unsloth"])
     src = f"{WORK}/llama.cpp"  # Unsloth's copy is prebuilt (no sources), so build our own
     run(["git", "clone", "-q", "--depth", "1", "--branch", "b11804", "https://github.com/ggml-org/llama.cpp", src])  # = the laptop's build
     run(["cmake", "-S", src, "-B", f"{WORK}/lcpp", "-DGGML_CUDA=ON", "-DCMAKE_CUDA_ARCHITECTURES=75",
          "-DLLAMA_CURL=OFF", "-DCMAKE_BUILD_TYPE=Release",
          "-DCMAKE_LIBRARY_PATH=/usr/local/nvidia/lib64"],  # where Kaggle keeps libcuda
         stdout=subprocess.DEVNULL)
-    run(["cmake", "--build", f"{WORK}/lcpp", "--target", "llama-server", "-j", "4"], stdout=subprocess.DEVNULL)
+    run(["cmake", "--build", f"{WORK}/lcpp", "--target", "llama-server", "llama-quantize", "-j", "4"],
+        stdout=subprocess.DEVNULL)
     server = glob.glob(f"{WORK}/lcpp/**/llama-server", recursive=True)[0]
+    quantize = glob.glob(f"{WORK}/lcpp/**/llama-quantize", recursive=True)[0]
+
+    ggufs = {}
+    for system, (source, _, _) in SYSTEMS.items():
+        run([sys.executable, __file__, system])
+        if source == "convert":
+            f16, ggufs[system] = f"{WORK}/{system}-f16.gguf", f"{WORK}/{system}.gguf"
+            run([sys.executable, f"{src}/convert_hf_to_gguf.py", f"{WORK}/{system}_merged", "--outtype", "f16",
+                 "--outfile", f16])
+            run([quantize, f16, ggufs[system], "Q8_0"], stdout=subprocess.DEVNULL)
+        else:
+            ggufs[system] = max(glob.glob(f"{WORK}/{system}*/**/*.gguf", recursive=True), key=os.path.getsize)
+        log(f"{system}: {ggufs[system]} {os.path.getsize(ggufs[system]) / 1e9:.2f} GB")
 
     servers = []
     for system, (_, gpu, port) in SYSTEMS.items():
