@@ -1,6 +1,6 @@
 """Phase 9 on Kaggle (2x T4): the When2Call MCQ test for base vs. SFT, and an F16 GGUF of the SFT model.
 
-Pushed with: kaggle kernels push -p eval/when2call   (inputs: dataset alfred-adapters = the SFT LoRA adapter, now v3)
+Pushed with: kaggle kernels push -p eval/when2call   (inputs: dataset alfred-adapters = the SFT LoRA adapter, now v4 = run C)
 Scoring is the official When2Call MCQ rule (lm-eval-harness `multiple_choice`, target_delimiter ""): each answer's
 log-likelihood after the prompt; acc = argmax, acc_norm = argmax of loglik / len(answer in characters),
 macro-F1 over the 4 answer types, tool hallucination rate (tool call chosen when no tools were given).
