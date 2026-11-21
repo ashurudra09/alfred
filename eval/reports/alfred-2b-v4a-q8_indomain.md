@@ -1,6 +1,6 @@
 # alfred-2b-v4a-q8 on indomain (n=249)
 
-Backend `local` / model `local`, 2026-11-18T14:22:59, commit `393f907`.
+Backend `local` / model `local`, 2026-11-21T14:25:40, commit `d014e96`.
 
 | Metric | Value |
 |---|---|

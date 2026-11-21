@@ -7,8 +7,8 @@
  "backend": "local",
  "model": "local",
  "set": "indomain",
- "date": "2026-11-18T14:22:59",
- "commit": "393f907",
+ "date": "2026-11-21T14:25:40",
+ "commit": "d014e96",
  "unreviewed": 0,
  "metrics": {
   "n": 249,
