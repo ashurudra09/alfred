@@ -1,6 +1,6 @@
 #!/bin/bash
 # v4 = run C: the remaining PLAN 5.1/5.2 evals, run C Q8 against v3 Q8 (each on its own tool list), one server on :8081.
-cd "/c/work/interview prep/projects/alfred"
+cd "$(dirname "$0")/../.."  # repo root
 export ALFRED_EVAL_COMMIT=${ALFRED_EVAL_COMMIT:-$(git rev-parse --short HEAD)}
 url=http://127.0.0.1:8081/v1
 up() {  # system gguf

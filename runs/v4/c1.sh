@@ -1,7 +1,7 @@
 #!/bin/bash
 # Run C scoring: one model on one llama-server port, all four suites, current prompt 1.2 / contracts 1.3.
 # Usage: bash runs/v4/c1.sh <system> <gguf> <port> [--contracts X --prompt Y]   (never 8080: the user's UI). Stops only its own server.
-cd "/c/work/interview prep/projects/alfred"
+cd "$(dirname "$0")/../.."  # repo root
 export ALFRED_EVAL_COMMIT=${ALFRED_EVAL_COMMIT:-$(git rev-parse --short HEAD)}
 sys=$1 model=$2 port=$3; shift 3  # extra args go to every suite, e.g. --contracts 1.2
 url=http://127.0.0.1:$port/v1

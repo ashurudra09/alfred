@@ -7,51 +7,60 @@ It runs entirely on a laptop CPU. No files leave the machine, it costs nothing p
 makes can be undone.
 
 The question behind it: *can a small fine-tuned model match the large model that taught it, on a fixed tool set,
-at a fraction of the size and cost, fully offline?* On single requests it does (v2 below); v4 extends that to
-multi-step tasks checked on the real files.
+at a fraction of the size and cost, fully offline?* On single requests it does (v2); v4 extends that to multi-step
+tasks checked on the real files.
 
-**v4 (shipped, Q8_0), against the base model and the previous version**, every number from a committed report in
-[RESULTS.md](RESULTS.md):
+**Highlights (v4, the shipped model):**
+- **Multi-step tasks 61% → 84%** over the previous version (124 tasks checked on the files they leave behind,
+  exact McNemar p = 2e-6), from **on-policy training data**: the model's own runs through the real tools, the
+  failing turn corrected by a teacher, kept only when the task's check passes.
+- **0 of 209 prompt-injection attacks succeed**, and it still finishes the user's task in all 209.
+- **94% accuracy with every tool renamed at random** (v3: 67%): it reads the tool list instead of memorising names.
+- **Never writes without confirmation:** 0 unconfirmed writes, overwrites or permanent deletes in every suite.
+- Trained on free Kaggle T4s, served as a 2 GB Q8_0 GGUF by llama.cpp on a laptop CPU; ₹0 in API or GPU spend.
+
+Every number comes from a committed report in **[RESULTS.md](RESULTS.md)**.
 
 | | Qwen3.5-2B base | SFT v3 | **Alfred v4** |
 |---|---|---|---|
-| Hard multi-step tasks, checked on the final files (124) | 62.1% | 61.3% | **83.9%** (76.4–89.3) |
+| Hard multi-step tasks, checked on the final files (124), 95% CI | 62.1% | 61.3% | **83.9%** (76.4–89.3) |
+| ... all 5 of 5 samples pass at temperature 0.7 (pass^5) | – | 34.7% (Q4) | **62.1%** |
 | 50-task end-to-end suite through the real tools | – | 49/50 | **50/50** |
-| In-domain single requests (249 items), 95% CI | – | 99.2% | **98.8%** (96.5–99.6) |
+| In-domain single requests (249 items) | – | 99.2% | **98.8%** |
 | Every tool and argument renamed at random (249) | – | 67.1% | **93.6%** |
-| Prompt-injection attacks that succeed (209 attacked cases) | 6% proposed | 0/209 | **0/209** |
+| Prompt-injection attacks that succeed (209) | 6% proposed | 0/209 | **0/209** |
 | User's task still done while under attack | 73% | 97% | **100%** |
-| Unconfirmed writes / overwrites / permanent deletes | 0 | 0 | **0** |
+| When2Call, public (3,652 items) | 41.2% | 69.0% | **71.5%** |
+| Tool hallucination on When2Call (lower is better) | 14.7% | **3.1%** | 6.2% |
+| BFCL v4 subset, public (mean of 5 categories) | 72.1% | **77.8%** | 75.9% |
 
-On the hard suite v4 passes 32 tasks v3 fails and fails 4 it passes (exact McNemar p = 2e-6); 5 of its 17 families
-are held out of training. Sampled 5 times at temperature 0.7, all 5 tries pass on 62% of tasks (v3 Q4: 35%). The in-domain difference with v3 is not significant (p = 1). The renamed-tools gain
-(p = 2e-13) comes from masking tool names during training, so the model reads the tool list instead of
-memorising names. Base, v2 and the cloud teacher were scored on the 276-item set before its Hinglish items were
-removed. Caveat: part of v3's and v4's training data was written by Claude, which also drafted the test sets
+v3 and v4 are both Q8_0, scored at the same commit, each with the tool list it was trained on. Hard suite: v4 passes
+32 tasks v3 fails and fails 4 it passes; 5 of its 17 families are held out of training. In-domain is a tie (p = 1).
+**Known regression:** v4 calls a tool when none fits more often than v3 (When2Call hallucination p = 0.008, BFCL
+irrelevance 75.0% vs 90.4%, p = 9e-9), likely from its act-heavy new data ([patch notes](docs/patch_notes.md)). The
+renamed-tools gain is expected from masking tool names in training, but no unmasked run was trained to isolate it.
+Caveat: part of v3's and v4's training data was written by Claude, which also drafted the test sets
 ([data card](data/card.md)).
 
-**v2 (2026-10-23, Q4_K_M), the open-teacher-only model**, on the 276-item set:
+**v2 (2026-10-23), the open-teacher-only model**, against the 120B model that wrote its training data (276-item
+in-domain set, before its Hinglish items were removed):
 
 | | Qwen3.5-2B base | **SFT v2 (Q4, laptop CPU)** | gpt-oss-120b (cloud, its teacher) |
 |---|---|---|---|
 | In-domain accuracy (276 test items), 95% CI | 79.7% (74.6–84.0) | **96.0% (93.0–97.8)** | 89.5% (85.3–92.6) |
 | Safety (48 items: harmful refused, benign answered) | 66.7% | **95.8%** | 95.8% |
-| When2Call: call / ask / answer / can't (3,652 public test items) | 41.2% | **65.7%** | – |
-| Tool hallucination on When2Call (lower is better) | 14.7% | **3.1%** | – |
-| BFCL v4 subset (general function calling, 1,056 items) | 72.1% | **77.2%** | – |
 | Time to first token | 1.9 s | **1.0 s** | network |
 
-v4 on the same public benchmarks: When2Call 71.5% (v3 69.0%, p = 6e-9) but tool hallucination 6.2% (v3 3.1%, p = 0.008); BFCL subset mean 75.9% (v3 77.8%), the drop all in irrelevance, 75.0% vs 90.4% (p = 9e-9): v4 more often calls a tool when none fits. Read the cloud column with care: gpt-oss-120b wrote most of the
-synthetic training data and runs zero-shot, and 11 of its 29 misses are listing a folder before moving or copying in
-it, a habit the test set marks wrong. Counting those as right gives it 93.5%, inside the student's interval.
+Read the cloud column with care: gpt-oss-120b runs zero-shot, and 11 of its 29 misses are listing a folder before
+moving or copying in it, a habit the test set marks wrong. Counting those as right gives it 93.5%, inside the
+student's interval.
 
 <p align="center"><img src="docs/ui/3_confirm.jpg" width="720" alt="Alfred's web UI asking for confirmation before a change"></p>
 <p align="center"><sub>The web UI: a tool call shown as a card, and the exact change waiting for Confirm/Cancel.</sub></p>
 
 ## What it does
 - **26 tools** for everyday laptop chores: find, read, move, rename, copy, zip and organize files; search files by
-  meaning; disk, CPU,
-  battery, network and process info; ports and git status; notes, reminders, long-term memory; a calculator.
+  meaning (embeddings + BM25); disk, CPU, battery, network and process info; ports and git status; notes, reminders, long-term memory; a calculator.
 - **Safe by construction:** tools only touch your known folders (Documents, Downloads, Desktop, …), never read
   secrets (`.env`, SSH keys, browser profiles), never overwrite, never delete permanently (Recycle Bin only) and
   never run executables. Every write shows its exact plan and waits for your confirmation, and every write is
@@ -80,8 +89,9 @@ flowchart LR
 - NVIDIA When2Call, so it learns when *not* to call, and Salesforce xLAM, so it keeps general tool-calling skill;
 - tool and argument names masked in a fifth of the examples, so it reads the tool list.
 
-Trained on a free Kaggle T4, quantized to GGUF and served by `llama-server` with prompt caching (1–2 s to first
-token on a laptop CPU).
+Trained on a free Kaggle T4 (v4: run A, 1,340 steps from scratch, then run C, one more epoch on the corrected data
+from run A's adapter, about 11 h each; [loss curve](docs/sft_2b_v4_loss.png), val sets differ between the runs),
+quantized to GGUF and served by `llama-server` with prompt caching (1–2 s to first token on a laptop CPU).
 
 **The evaluation.**
 - A 249-item in-domain test set and a 48-item safety set, scored on decision (call / ask / answer / can't / refuse),
