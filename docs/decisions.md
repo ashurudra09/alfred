@@ -257,4 +257,6 @@ Probing each tool with inputs a model plausibly sends found these failures; all 
 - **Public benchmarks (added 2026-11-22):** When2Call 71.5% vs v3 69.0% (p = 6e-9), but tool hallucination 6.2% vs
   3.1% (p = 0.008) and BFCL irrelevance 75.0% vs 90.4% (p = 9e-9): v4 more often calls a tool when none fits. The
   owner's decision stands; the regression is stated in the README and patch notes.
+- **Published (2026-11-23, owner's yes):** `main` = v4 on GitHub (tag `v4-final`); the Q8_0 GGUF, LoRA, training
+  logs and a model card public on Hugging Face as `ashurudra09/alfred-2b-v4`.
 - **Not measured for v4:** the masking ablation (run B, not trained). Q4_K_M is not built for v4.

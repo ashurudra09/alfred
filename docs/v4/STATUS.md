@@ -41,10 +41,9 @@ checkout while a machine job runs.
 | 4F Unseen-tools eval | done (2026-11-18, merged into `v4` in 12eab1a; conflicts in `eval/e2e/__main__.py` and `loop.py` resolved keeping 4F's `--prompt`/unseen suite and 4G's `--vary`/pass^k; 422 tests pass) | 1A, 1C | was branch `v4-4F` |
 | 4G Reliability + baselines | done locally; the teacher baseline stopped at 32/124 tasks on Groq's daily quota (2026-11-18) and was not resumed | 1A | main checkout, branch `v4` |
 | 5 Evaluate v4 | done (2026-11-22): run C passes the no-regression gate against v3 Q8; the owner made run C the headline (5.7); When2Call and BFCL run (more tool hallucination than v3). Not done: the masking attribution (5.4) | 3, 4G | main checkout, branch `v4` |
-| 6 Write-up | done (2026-11-21, 6.1 and 6.last); the Hugging Face upload waits for the owner's yes | 5 | main checkout, branch `v4` |
+| 6 Write-up | done (2026-11-21, 6.1 and 6.last); weights public on Hugging Face (`ashurudra09/alfred-2b-v4`, owner's yes, 2026-11-23) | 5 | main checkout, branch `v4` |
 
 ## Waiting on the owner
-- **Hugging Face upload** of run C's Q8 GGUF and LoRA: needs your yes (outward-facing).
 - **Step 2.8, your part of the audit** (`data/out/v4/audit_sample.txt`): never done; not blocking.
 
 ## Machine

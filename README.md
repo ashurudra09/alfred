@@ -107,12 +107,14 @@ Needs [uv](https://docs.astral.sh/uv/), llama.cpp (`winget install ggml.llamacpp
 ```
 uv sync
 uv run pytest                 # 425 tests, no model needed (also run by CI on windows-latest)
+uv run hf download ashurudra09/alfred-2b-v4 alfred-2b-v4c-q8.gguf --local-dir runs/sft_2b_v4c   # 2.1 GB
 uv run alfred                 # terminal assistant
 uv run alfred-ui              # web UI on http://127.0.0.1:7860
 ```
 Both start `llama-server` on the fine-tuned model (`runs/sft_2b_v4c/alfred-2b-v4c-q8.gguf`, or pass `--model`).
-The fine-tuned weights aren't published yet. Until they are, the same app runs on the base model:
-`ollama pull qwen3.5:2b`, then `uv run alfred --model qwen3.5:2b`.
+The weights (Q8_0 GGUF and the LoRA adapter) are on Hugging Face:
+**[ashurudra09/alfred-2b-v4](https://huggingface.co/ashurudra09/alfred-2b-v4)**. The same app also runs on the base
+model: `ollama pull qwen3.5:2b`, then `uv run alfred --model qwen3.5:2b`.
 
 **Use the tools from Claude Desktop:** quit Claude Desktop, run `uv run python scripts/add_to_claude_desktop.py`,
 reopen it and ask "what's using space on my C drive?".
@@ -154,8 +156,8 @@ spikes/                 Phase 1 feasibility experiments (latency, caching, teach
 
 ## Status and roadmap
 Done: data, SFT (v1–v4), evaluation with intervals and paired tests, tool server, agent and CLI, web UI, public
-benchmarks and quantization.
-Next: public weights.
+benchmarks and quantization, public weights.
+Weights: [Hugging Face](https://huggingface.co/ashurudra09/alfred-2b-v4).
 Not planned for now: DPO / GRPO, smaller-model ablations, a larger test set, a Windows Copilot comparison.
 
 ## License
